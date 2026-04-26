@@ -1,4 +1,0 @@
-﻿IDEscala	NomEscala	BreuEscala	NomCompletEscala
-1	Habilitació de caràcter nacional	HN	Funcionari amb Habilitació de caràcter nacional
-2	Administració general	AG	Funcionari Administració general
-3	Administració especial	AE	Funcionari Administració especial

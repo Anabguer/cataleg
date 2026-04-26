@@ -1,6 +1,0 @@
-﻿IDOrganic1	NomOrganic1
-1	Alcaldia
-2	Economia i Serveis Centrals
-3	Serveis Personals
-4	Sostenibilitat i Territori
-5	Desenvolupament Econòmic de la Vila

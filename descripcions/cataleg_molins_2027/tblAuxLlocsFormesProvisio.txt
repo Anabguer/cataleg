@@ -1,6 +1,0 @@
-﻿IDFormaProvisio	NomFormaProvisio	Ordre
-CMI	Concurs mobilitat interadministrativa	4
-CNR	Concurs	3
-DMC	Designació mèrit, capacitat i criteri idoneïtat	5
-LDS	Lliure designació	2
-LNM	Lliure nomenament	1

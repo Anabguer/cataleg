@@ -1,5 +1,0 @@
-﻿IDDisponibilitat	NomDisponibilitat	Ordre
-CAN	Canvis de jornada i/o horari	4
-ESP	Esporàdica	1
-HAB	Habitual	2
-LOC	Localitzable les 24 hores	3

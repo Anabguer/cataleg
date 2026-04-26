@@ -1,5 +1,0 @@
-﻿IDClassePlaça	NomClassePlaça
-1	Funcionaris/àries de carrera
-2	Personal laboral
-3	Personal eventual
-4	Personal directiu

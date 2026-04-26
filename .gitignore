@@ -50,3 +50,4 @@ vendor/
 # Archivos SQL locales sensibles
 *.sql
 descripcions/*.sql
+descripcions/
