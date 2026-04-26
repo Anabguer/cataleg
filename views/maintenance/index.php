@@ -148,6 +148,12 @@ ob_start();
                 $rid = trim((string) ($r['org_unit_level_3_id'] ?? ''));
             } elseif ($module === 'maintenance_programs') {
                 $rid = trim((string) ($r['program_id'] ?? ''));
+            } elseif ($module === 'maintenance_social_security_companies') {
+                $rid = trim((string) ($r['company_id'] ?? ''));
+            } elseif ($module === 'maintenance_social_security_coefficients') {
+                $rid = trim((string) ($r['contribution_epigraph_id'] ?? ''));
+            } elseif ($module === 'maintenance_social_security_base_limits') {
+                $rid = trim((string) ($r['contribution_group_id'] ?? ''));
             } elseif ($module === 'maintenance_subprograms') {
                 $rid = trim((string) ($r['subprogram_id'] ?? ''));
             } else {

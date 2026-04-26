@@ -100,6 +100,7 @@ function permissions_forms_with_role(PDO $db, int $roleId): array
                         WHEN \'training_management\' THEN 2
                         WHEN \'organization\' THEN 3
                         WHEN \'training_maintenance\' THEN 4
+                        WHEN \'social_security_companies\' THEN 5
                         ELSE 9
                      END ASC,
                      f.group_sort_order ASC,
@@ -172,6 +173,7 @@ function permissions_form_group_definitions(): array
         'system' => ['label' => 'Sistema', 'nav' => 'Seguretat'],
         'organization' => ['label' => 'Organització', 'nav' => 'Manteniments'],
         'training_maintenance' => ['label' => 'Manteniment', 'nav' => 'Manteniments'],
+        'social_security_companies' => ['label' => 'Empreses i Seguretat Social', 'nav' => 'Manteniments'],
         'training_management' => ['label' => 'Gestió', 'nav' => 'Gestió'],
     ];
 }

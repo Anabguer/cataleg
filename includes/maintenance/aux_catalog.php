@@ -22,6 +22,9 @@ function maintenance_modules_config(): array
         'maintenance_organic_level_2' => ['title' => 'Classificació Orgànica 2 dígits', 'table' => 'org_units_level_2', 'implemented' => true],
         'maintenance_organic_level_3' => ['title' => 'Classificació Orgànica 4 dígits', 'table' => 'org_units_level_3', 'implemented' => true],
         'maintenance_programs' => ['title' => 'Programes', 'table' => 'programs', 'implemented' => true],
+        'maintenance_social_security_companies' => ['title' => 'Empreses', 'table' => 'social_security_companies', 'implemented' => true],
+        'maintenance_social_security_coefficients' => ['title' => 'Coeficients Seguretat Social', 'table' => 'social_security_coefficients', 'implemented' => true],
+        'maintenance_social_security_base_limits' => ['title' => 'Bases mínimes i màximes Seguretat Social', 'table' => 'social_security_base_limits', 'implemented' => true],
         'maintenance_subprograms' => ['title' => 'Subprogrames', 'table' => 'subprograms', 'implemented' => true],
     ];
 }
@@ -43,7 +46,56 @@ function maintenance_sort_normalize(string $module, string $sortBy, string $sort
 /** Mòduls amb llistat SQL genèric (escales / subescales / classes / categories). */
 function maintenance_catalog_list_modules(): array
 {
-    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_subprograms'];
+    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_subprograms'];
+}
+
+/**
+ * Converteix entrada monetària textual (format europeu/internacional i € opcional) a decimal SQL amb punt i 2 decimals.
+ *
+ * @return array{ok:true, value:?string}|array{ok:false, error:string}
+ */
+function maintenance_parse_optional_money_input(string $raw): array
+{
+    $t = trim($raw);
+    if ($t === '') {
+        return ['ok' => true, 'value' => null];
+    }
+
+    $t = str_replace(["\xC2\xA0", '€', ' '], '', $t);
+    if ($t === '') {
+        return ['ok' => true, 'value' => null];
+    }
+    if (preg_match('/[^0-9.,]/', $t)) {
+        return ['ok' => false, 'error' => 'Import invàlid.'];
+    }
+
+    $lastDot = strrpos($t, '.');
+    $lastComma = strrpos($t, ',');
+    if ($lastDot !== false && $lastComma !== false) {
+        $decSep = $lastDot > $lastComma ? '.' : ',';
+    } elseif ($lastComma !== false) {
+        $decSep = ',';
+    } elseif ($lastDot !== false) {
+        $afterDot = strlen($t) - $lastDot - 1;
+        $decSep = ($afterDot >= 1 && $afterDot <= 2) ? '.' : '';
+    } else {
+        $decSep = '';
+    }
+
+    if ($decSep === ',') {
+        $norm = str_replace('.', '', $t);
+        $norm = str_replace(',', '.', $norm);
+    } elseif ($decSep === '.') {
+        $norm = str_replace(',', '', $t);
+    } else {
+        $norm = str_replace([',', '.'], '', $t);
+    }
+
+    if (!preg_match('/^\d+(?:\.\d{1,2})?$/', $norm)) {
+        return ['ok' => false, 'error' => 'Import invàlid (màxim 2 decimals).'];
+    }
+
+    return ['ok' => true, 'value' => number_format((float) $norm, 2, '.', '')];
 }
 
 /** Mòduls amb persistència CRUD al catàleg funcionarial. */
@@ -187,6 +239,12 @@ function maintenance_count(PDO $db, string $module, int $year, string $q): int
         $sql = 'SELECT COUNT(*) AS c FROM programs t
                 LEFT JOIN job_positions jp ON jp.catalog_year = t.catalog_year AND jp.job_position_id = t.responsible_person_code AND jp.deleted_at IS NULL
                 WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_social_security_companies') {
+        $sql = 'SELECT COUNT(*) AS c FROM social_security_companies t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_social_security_coefficients') {
+        $sql = 'SELECT COUNT(*) AS c FROM social_security_coefficients t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_social_security_base_limits') {
+        $sql = 'SELECT COUNT(*) AS c FROM social_security_base_limits t WHERE t.catalog_year = :y' . $search['sql'];
     } elseif ($module === 'maintenance_subprograms') {
         $sql = 'SELECT COUNT(*) AS c FROM subprograms t
                 INNER JOIN programs p ON p.catalog_year = t.catalog_year AND p.program_id = t.program_id
@@ -473,6 +531,55 @@ function maintenance_list(PDO $db, string $module, int $year, string $q, string 
         $params += $search['params'];
         $sql .= $search['sql'];
         $sql .= ' ORDER BY ' . $order . ' ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_social_security_companies') {
+        $order = match ($sortBy) {
+            'company_description' => 't.company_description ' . $dir,
+            'contribution_account_code' => 'REPLACE(t.contribution_account_code, \' \', \'\') ' . $dir,
+            default => 't.company_id ' . $dir,
+        };
+        $sql = 'SELECT t.company_id, t.company_description, t.contribution_account_code
+                FROM social_security_companies t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.company_id ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_social_security_coefficients') {
+        $order = match ($sortBy) {
+            'company_1' => 't.company_1 ' . $dir,
+            'company_2' => 't.company_2 ' . $dir,
+            'company_3' => 't.company_3 ' . $dir,
+            'company_4' => 't.company_4 ' . $dir,
+            'company_5a' => 't.company_5a ' . $dir,
+            'company_5b' => 't.company_5b ' . $dir,
+            'company_5c' => 't.company_5c ' . $dir,
+            'company_5d' => 't.company_5d ' . $dir,
+            'company_5e' => 't.company_5e ' . $dir,
+            'temporary_employment_company' => 't.temporary_employment_company ' . $dir,
+            default => 't.contribution_epigraph_id ' . $dir,
+        };
+        $sql = 'SELECT t.contribution_epigraph_id, t.company_1, t.company_2, t.company_3, t.company_4, t.company_5a, t.company_5b, t.company_5c, t.company_5d, t.company_5e, t.temporary_employment_company
+                FROM social_security_coefficients t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.contribution_epigraph_id ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_social_security_base_limits') {
+        $order = match ($sortBy) {
+            'contribution_group_description' => 't.contribution_group_description ' . $dir,
+            'minimum_base' => 't.minimum_base ' . $dir,
+            'maximum_base' => 't.maximum_base ' . $dir,
+            'period_label' => 't.period_label ' . $dir,
+            default => 't.contribution_group_id ' . $dir,
+        };
+        $sql = 'SELECT t.contribution_group_id, t.contribution_group_description, t.minimum_base, t.maximum_base, t.period_label
+                FROM social_security_base_limits t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.contribution_group_id ASC ' . db_sql_limit_offset($limit, $offset);
     } else {
         return [];
     }
@@ -522,6 +629,12 @@ function maintenance_get_by_id(PDO $db, string $module, int $year, string $id): 
                 FROM programs t
                 LEFT JOIN job_positions jp ON jp.catalog_year = t.catalog_year AND jp.job_position_id = t.responsible_person_code AND jp.deleted_at IS NULL
                 WHERE t.catalog_year = :y AND t.program_id = :id LIMIT 1';
+    } elseif ($module === 'maintenance_social_security_companies') {
+        $sql = 'SELECT * FROM social_security_companies WHERE catalog_year = :y AND company_id = :id LIMIT 1';
+    } elseif ($module === 'maintenance_social_security_coefficients') {
+        $sql = 'SELECT * FROM social_security_coefficients WHERE catalog_year = :y AND contribution_epigraph_id = :id LIMIT 1';
+    } elseif ($module === 'maintenance_social_security_base_limits') {
+        $sql = 'SELECT * FROM social_security_base_limits WHERE catalog_year = :y AND contribution_group_id = :id LIMIT 1';
     } elseif ($module === 'maintenance_subprograms') {
         $sql = 'SELECT t.*, p.program_name,
                 jp_t.job_title AS technical_job_title, jp_e.job_title AS elected_job_title
@@ -582,6 +695,12 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
         $sql = 'SELECT org_unit_level_3_id FROM org_units_level_3 WHERE catalog_year = :y AND org_unit_level_3_id = :id';
     } elseif ($module === 'maintenance_programs') {
         $sql = 'SELECT program_id FROM programs WHERE catalog_year = :y AND program_id = :id';
+    } elseif ($module === 'maintenance_social_security_companies') {
+        $sql = 'SELECT company_id FROM social_security_companies WHERE catalog_year = :y AND company_id = :id';
+    } elseif ($module === 'maintenance_social_security_coefficients') {
+        $sql = 'SELECT contribution_epigraph_id FROM social_security_coefficients WHERE catalog_year = :y AND contribution_epigraph_id = :id';
+    } elseif ($module === 'maintenance_social_security_base_limits') {
+        $sql = 'SELECT contribution_group_id FROM social_security_base_limits WHERE catalog_year = :y AND contribution_group_id = :id';
     } elseif ($module === 'maintenance_subprograms') {
         $sql = 'SELECT subprogram_id FROM subprograms WHERE catalog_year = :y AND subprogram_id = :id';
     } else {
@@ -595,6 +714,9 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
             'maintenance_categories' => 'category_id',
             'maintenance_subprograms' => 'subprogram_id',
             'maintenance_programs' => 'program_id',
+            'maintenance_social_security_companies' => 'company_id',
+            'maintenance_social_security_coefficients' => 'contribution_epigraph_id',
+            'maintenance_social_security_base_limits' => 'contribution_group_id',
             'maintenance_access_types' => 'access_type_id',
             'maintenance_access_systems' => 'access_system_id',
             'maintenance_position_classes' => 'position_class_id',
@@ -855,6 +977,169 @@ function maintenance_save(PDO $db, string $module, int $year, int|string|null $o
     }
     if ($module === 'maintenance_subprograms') {
         maintenance_save_subprograms($db, $year, $originalId, $data);
+        return;
+    }
+    if ($module === 'maintenance_social_security_companies') {
+        $companyId = strtoupper(trim((string) ($data['id'] ?? '')));
+        $companyDescription = trim((string) ($data['name'] ?? ''));
+        $cccRaw = trim((string) ($data['contribution_account_code'] ?? ''));
+        $cccDigits = maintenance_company_ccc_digits_only($cccRaw);
+        $errors = [];
+        if ($companyId === '') {
+            $errors['id'] = 'El codi és obligatori.';
+        } elseif (!preg_match('/^[A-Za-z0-9]+$/', $companyId)) {
+            $errors['id'] = 'El codi ha de ser alfanumèric.';
+        }
+        if ($companyDescription === '') {
+            $errors['name'] = 'La denominació és obligatòria.';
+        }
+        if ($cccRaw !== '') {
+            if (!preg_match('/^[0-9 ]+$/', $cccRaw)) {
+                $errors['contribution_account_code'] = 'El CCC només pot contenir dígits i espais.';
+            } elseif (strlen($cccDigits) !== MAINTENANCE_COMPANY_CCC_DIGITS) {
+                $errors['contribution_account_code'] = 'El CCC ha de tenir exactament 11 dígits.';
+            }
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $originalIdText = $originalId !== null ? strtoupper(trim((string) $originalId)) : null;
+        if (maintenance_id_exists($db, $module, $year, $companyId, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest codi dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        $cccStore = $cccRaw === '' ? null : $cccDigits;
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO social_security_companies (catalog_year, company_id, company_description, contribution_account_code) VALUES (:y,:id,:name,:ccc)');
+            $st->execute(['y' => $year, 'id' => $companyId, 'name' => $companyDescription, 'ccc' => $cccStore]);
+            return;
+        }
+        $st = $db->prepare('UPDATE social_security_companies SET company_id=:new_id, company_description=:name, contribution_account_code=:ccc WHERE catalog_year=:y AND company_id=:id');
+        $st->execute(['y' => $year, 'id' => $originalIdText, 'new_id' => $companyId, 'name' => $companyDescription, 'ccc' => $cccStore]);
+        return;
+    }
+    if ($module === 'maintenance_social_security_coefficients') {
+        $epiRaw = trim((string) ($data['id'] ?? ''));
+        $errors = [];
+        if ($epiRaw === '') {
+            $errors['id'] = 'L’epígraf és obligatori.';
+        } elseif (!preg_match('/^\d{1,3}$/', $epiRaw)) {
+            $errors['id'] = 'L’epígraf ha de ser numèric i tenir com a màxim 3 dígits.';
+        }
+        $epiStore = str_pad($epiRaw, MAINTENANCE_SOCIAL_SECURITY_EPIGRAPH_PAD, '0', STR_PAD_LEFT);
+        $pctFields = ['company_1', 'company_2', 'company_3', 'company_4', 'company_5a', 'company_5b', 'company_5c', 'company_5d', 'company_5e', 'temporary_employment_company'];
+        $pctStore = array_fill_keys($pctFields, null);
+        foreach ($pctFields as $f) {
+            $parsed = maintenance_parse_ss_coeff_visible_percent_field(trim((string) ($data[$f] ?? '')));
+            if (!$parsed['ok']) {
+                $errors[$f] = $parsed['error'];
+
+                continue;
+            }
+            $pctStore[$f] = $parsed['value'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $originalIdText = $originalId !== null ? trim((string) $originalId) : null;
+        if (maintenance_id_exists($db, $module, $year, $epiStore, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest epígraf dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO social_security_coefficients (catalog_year, contribution_epigraph_id, company_1, company_2, company_3, company_4, company_5a, company_5b, company_5c, company_5d, company_5e, temporary_employment_company) VALUES (:y,:id,:c1,:c2,:c3,:c4,:c5a,:c5b,:c5c,:c5d,:c5e,:cet)');
+            $st->execute([
+                'y' => $year,
+                'id' => $epiStore,
+                'c1' => $pctStore['company_1'],
+                'c2' => $pctStore['company_2'],
+                'c3' => $pctStore['company_3'],
+                'c4' => $pctStore['company_4'],
+                'c5a' => $pctStore['company_5a'],
+                'c5b' => $pctStore['company_5b'],
+                'c5c' => $pctStore['company_5c'],
+                'c5d' => $pctStore['company_5d'],
+                'c5e' => $pctStore['company_5e'],
+                'cet' => $pctStore['temporary_employment_company'],
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE social_security_coefficients SET contribution_epigraph_id=:new_id, company_1=:c1, company_2=:c2, company_3=:c3, company_4=:c4, company_5a=:c5a, company_5b=:c5b, company_5c=:c5c, company_5d=:c5d, company_5e=:c5e, temporary_employment_company=:cet WHERE catalog_year=:y AND contribution_epigraph_id=:id');
+        $st->execute([
+            'y' => $year,
+            'id' => $originalIdText,
+            'new_id' => $epiStore,
+            'c1' => $pctStore['company_1'],
+            'c2' => $pctStore['company_2'],
+            'c3' => $pctStore['company_3'],
+            'c4' => $pctStore['company_4'],
+            'c5a' => $pctStore['company_5a'],
+            'c5b' => $pctStore['company_5b'],
+            'c5c' => $pctStore['company_5c'],
+            'c5d' => $pctStore['company_5d'],
+            'c5e' => $pctStore['company_5e'],
+            'cet' => $pctStore['temporary_employment_company'],
+        ]);
+        return;
+    }
+    if ($module === 'maintenance_social_security_base_limits') {
+        $groupRaw = trim((string) ($data['id'] ?? ''));
+        $groupDescription = trim((string) ($data['name'] ?? ''));
+        $minimumBaseRaw = trim((string) ($data['minimum_base'] ?? ''));
+        $maximumBaseRaw = trim((string) ($data['maximum_base'] ?? ''));
+        $periodLabel = trim((string) ($data['period_label'] ?? ''));
+        $errors = [];
+
+        if ($groupRaw === '') {
+            $errors['id'] = 'El grup de cotització és obligatori.';
+        } elseif (!preg_match('/^\d{1,2}$/', $groupRaw)) {
+            $errors['id'] = 'El grup de cotització ha de ser numèric i tenir com a màxim 2 dígits.';
+        }
+        if ($groupDescription === '') {
+            $errors['name'] = 'La denominació és obligatòria.';
+        }
+
+        $minParsed = maintenance_parse_optional_money_input($minimumBaseRaw);
+        if (!$minParsed['ok']) {
+            $errors['minimum_base'] = $minParsed['error'];
+        }
+        $maxParsed = maintenance_parse_optional_money_input($maximumBaseRaw);
+        if (!$maxParsed['ok']) {
+            $errors['maximum_base'] = $maxParsed['error'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+
+        $groupStore = str_pad($groupRaw, MAINTENANCE_SOCIAL_SECURITY_BASE_GROUP_PAD, '0', STR_PAD_LEFT);
+        $originalIdText = $originalId !== null ? trim((string) $originalId) : null;
+        if (maintenance_id_exists($db, $module, $year, $groupStore, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest grup de cotització dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        $minimumBaseStore = $minParsed['value'];
+        $maximumBaseStore = $maxParsed['value'];
+        $periodLabelStore = $periodLabel === '' ? null : $periodLabel;
+
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO social_security_base_limits (catalog_year, contribution_group_id, contribution_group_description, minimum_base, maximum_base, period_label) VALUES (:y,:id,:name,:min_base,:max_base,:period)');
+            $st->execute([
+                'y' => $year,
+                'id' => $groupStore,
+                'name' => $groupDescription,
+                'min_base' => $minimumBaseStore,
+                'max_base' => $maximumBaseStore,
+                'period' => $periodLabelStore,
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE social_security_base_limits SET contribution_group_id=:new_id, contribution_group_description=:name, minimum_base=:min_base, maximum_base=:max_base, period_label=:period WHERE catalog_year=:y AND contribution_group_id=:id');
+        $st->execute([
+            'y' => $year,
+            'id' => $originalIdText,
+            'new_id' => $groupStore,
+            'name' => $groupDescription,
+            'min_base' => $minimumBaseStore,
+            'max_base' => $maximumBaseStore,
+            'period' => $periodLabelStore,
+        ]);
         return;
     }
     $isAvailabilityTypes = ($module === 'maintenance_availability_types');
@@ -1200,6 +1485,42 @@ function maintenance_delete(PDO $db, string $module, int $year, string $id): voi
             throw new RuntimeException('No es pot eliminar perquè hi ha subprogrames dependents d’aquest programa.');
         }
         $st = $db->prepare('DELETE FROM programs WHERE catalog_year=:y AND program_id=:id LIMIT 1');
+    } elseif ($module === 'maintenance_social_security_companies') {
+        $stCol = $db->prepare("SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'people' AND COLUMN_NAME = 'company_id'");
+        $stCol->execute();
+        $hasCompanyId = (int) (($stCol->fetch())['c'] ?? 0) > 0;
+        if ($hasCompanyId) {
+            $stc = $db->prepare('SELECT COUNT(*) AS c FROM people WHERE catalog_year=:y AND company_id=:id');
+            $stc->execute(['y' => $year, 'id' => $id]);
+            if ((int) (($stc->fetch())['c'] ?? 0) > 0) {
+                throw new RuntimeException('No es pot eliminar l’empresa perquè hi ha persones vinculades.');
+            }
+        }
+        $st = $db->prepare('DELETE FROM social_security_companies WHERE catalog_year=:y AND company_id=:id LIMIT 1');
+    } elseif ($module === 'maintenance_social_security_coefficients') {
+        $stCol = $db->prepare("SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'job_positions' AND COLUMN_NAME = 'contribution_epigraph_id'");
+        $stCol->execute();
+        $hasEpigraph = (int) (($stCol->fetch())['c'] ?? 0) > 0;
+        if ($hasEpigraph) {
+            $stc = $db->prepare('SELECT COUNT(*) AS c FROM job_positions WHERE catalog_year=:y AND contribution_epigraph_id=:id');
+            $stc->execute(['y' => $year, 'id' => $id]);
+            if ((int) (($stc->fetch())['c'] ?? 0) > 0) {
+                throw new RuntimeException('No es pot eliminar el coeficient perquè hi ha llocs de treball vinculats.');
+            }
+        }
+        $st = $db->prepare('DELETE FROM social_security_coefficients WHERE catalog_year=:y AND contribution_epigraph_id=:id LIMIT 1');
+    } elseif ($module === 'maintenance_social_security_base_limits') {
+        $stCol = $db->prepare("SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'job_positions' AND COLUMN_NAME = 'contribution_group_id'");
+        $stCol->execute();
+        $hasContributionGroupId = (int) (($stCol->fetch())['c'] ?? 0) > 0;
+        if ($hasContributionGroupId) {
+            $stc = $db->prepare('SELECT COUNT(*) AS c FROM job_positions WHERE catalog_year=:y AND contribution_group_id=:id');
+            $stc->execute(['y' => $year, 'id' => $id]);
+            if ((int) (($stc->fetch())['c'] ?? 0) > 0) {
+                throw new RuntimeException('No es pot eliminar el grup de cotització perquè hi ha llocs de treball vinculats.');
+            }
+        }
+        $st = $db->prepare('DELETE FROM social_security_base_limits WHERE catalog_year=:y AND contribution_group_id=:id LIMIT 1');
     } elseif ($module === 'maintenance_subprograms') {
         $stc = $db->prepare('SELECT COUNT(*) AS c FROM subprogram_people WHERE catalog_year=:y AND subprogram_id=:id');
         $stc->execute(['y' => $year, 'id' => $id]);

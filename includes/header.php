@@ -10,6 +10,7 @@ $groupDefs = function_exists('permissions_form_group_definitions') ? permissions
     'system' => ['label' => 'Sistema', 'nav' => 'Seguretat'],
     'organization' => ['label' => 'Organització', 'nav' => 'Manteniments'],
     'training_maintenance' => ['label' => 'Manteniment', 'nav' => 'Manteniments'],
+    'social_security_companies' => ['label' => 'Empreses i Seguretat Social', 'nav' => 'Manteniments'],
     'training_management' => ['label' => 'Gestió', 'nav' => 'Gestió'],
 ];
 $normalizeGroup = static function (string $group) use ($groupDefs): string {
@@ -44,7 +45,7 @@ foreach ($menuItems as $item) {
         ];
         continue;
     }
-    if ($groupKey === 'organization' || $groupKey === 'training_maintenance') {
+    if ($groupKey === 'organization' || $groupKey === 'training_maintenance' || $groupKey === 'social_security_companies') {
         if (!isset($maintenanceGroups[$groupLabel])) {
             $maintenanceGroups[$groupLabel] = [];
         }

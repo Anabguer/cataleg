@@ -18,6 +18,12 @@ const MAINTENANCE_PROGRAM_SUBFUNCTION_PAD = 3;
 
 /** Emmagatzematge i visualització de `subprogram_number` (2 dígits, VARCHAR). */
 const MAINTENANCE_SUBPROGRAM_NUMBER_PAD = 2;
+/** Longitud canònica del CCC d'empresa (només dígits). */
+const MAINTENANCE_COMPANY_CCC_DIGITS = 11;
+/** Amplada de visualització de l'epígraf de cotització (3 dígits). */
+const MAINTENANCE_SOCIAL_SECURITY_EPIGRAPH_PAD = 3;
+/** Amplada de visualització del grup de cotització de bases SS (2 dígits). */
+const MAINTENANCE_SOCIAL_SECURITY_BASE_GROUP_PAD = 2;
 
 /**
  * Codi de lloc (job_position_id) amb 6 dígits i punt: NNNN.DD (p. ex. 0012.34).
@@ -95,6 +101,124 @@ function maintenance_subprograms_nature_allowed(): array
 }
 
 /**
+ * Neteja el CCC deixant només dígits.
+ */
+function maintenance_company_ccc_digits_only(?string $ccc): string
+{
+    $s = trim((string) $ccc);
+    if ($s === '') {
+        return '';
+    }
+
+    return preg_replace('/\D+/', '', $s) ?? '';
+}
+
+/**
+ * Mascara de visualització del CCC: `00 0000000 00`.
+ */
+function maintenance_format_company_ccc_display(?string $ccc): string
+{
+    $digits = maintenance_company_ccc_digits_only($ccc);
+    if ($digits === '') {
+        return '';
+    }
+    if (strlen($digits) !== MAINTENANCE_COMPANY_CCC_DIGITS) {
+        return trim((string) $ccc);
+    }
+
+    return substr($digits, 0, 2) . ' ' . substr($digits, 2, 7) . ' ' . substr($digits, 9, 2);
+}
+
+/**
+ * Visualització de decimals amb 4 xifres.
+ */
+function maintenance_format_decimal_4_display(mixed $value): string
+{
+    if ($value === null) {
+        return '';
+    }
+    $s = trim((string) $value);
+    if ($s === '') {
+        return '';
+    }
+    if (!is_numeric($s)) {
+        return $s;
+    }
+
+    return number_format((float) $s, 4, '.', '');
+}
+
+/**
+ * Mostra imports com a moneda europea amb 2 decimals i símbol d'euro a la dreta.
+ */
+function maintenance_format_currency_eur_2_display(mixed $value): string
+{
+    if ($value === null) {
+        return '';
+    }
+    $s = trim((string) $value);
+    if ($s === '' || !is_numeric($s)) {
+        return '';
+    }
+
+    return number_format((float) $s, 2, ',', '.') . ' €';
+}
+
+/**
+ * Coeficients SS (llistat): percentatge tipus Access — valor BBDD × 100, 4 decimals, coma decimal, símbol %.
+ */
+function maintenance_format_ss_coeff_percent_display(mixed $dbFraction): string
+{
+    if ($dbFraction === null) {
+        return '';
+    }
+    $s = trim((string) $dbFraction);
+    if ($s === '') {
+        return '';
+    }
+    if (!is_numeric($s)) {
+        return '';
+    }
+
+    return number_format((float) $s * 100.0, 4, ',', '') . '%';
+}
+
+/**
+ * Parseja un camp opcional de percentatge visible (coma/punt, % opcional) cap al decimal real emmagatzemat (÷100, arrodonit a 6 decimals de fracció).
+ *
+ * @return array{ok:true, value:?string}|array{ok:false, error:string}
+ */
+function maintenance_parse_ss_coeff_visible_percent_field(string $raw): array
+{
+    $t = trim($raw);
+    if ($t === '') {
+        return ['ok' => true, 'value' => null];
+    }
+    $t = str_replace([' ', "\t", "\n", "\r"], '', $t);
+    $t = str_replace('%', '', $t);
+    $t = str_replace(',', '.', $t);
+    if ($t === '') {
+        return ['ok' => true, 'value' => null];
+    }
+    if (preg_match('/[^0-9.]/', $t)) {
+        return ['ok' => false, 'error' => 'Només es permeten xifres, coma o punt i, opcionalment, el símbol %.'];
+    }
+    if (!preg_match('/^\d+$/', $t) && !preg_match('/^\d+\.\d{1,4}$/', $t)) {
+        return ['ok' => false, 'error' => 'Valor numèric invàlid (màxim 4 decimals al percentatge visible).'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'Valor numèric invàlid.'];
+    }
+    if ($pct < 0.0 || $pct > 100.0) {
+        return ['ok' => false, 'error' => 'El percentatge ha d’estar entre 0 i 100.'];
+    }
+    $dec = round($pct / 100.0, 6);
+
+    return ['ok' => true, 'value' => number_format($dec, 6, '.', '')];
+}
+
+/**
  * Claus de ordenació vàlides per a SQL (independents de si el llistat ja està implementat a la UI).
  *
  * @return list<string>
@@ -118,6 +242,9 @@ function maintenance_list_sort_keys(string $module): array
         'maintenance_organic_level_2' => ['org_unit_level_2_id', 'org_unit_level_2_name', 'org_unit_level_1_id', 'org_unit_level_1_name'],
         'maintenance_organic_level_3' => ['org_unit_level_3_id', 'org_unit_level_3_name', 'org_unit_level_2_id', 'org_unit_level_2_name'],
         'maintenance_programs' => ['subfunction_id', 'program_number', 'program_code', 'program_name', 'responsible_person_code', 'responsible_job_title'],
+        'maintenance_social_security_companies' => ['company_id', 'company_description', 'contribution_account_code'],
+        'maintenance_social_security_coefficients' => ['contribution_epigraph_id', 'company_1', 'company_2', 'company_3', 'company_4', 'company_5a', 'company_5b', 'company_5c', 'company_5d', 'company_5e', 'temporary_employment_company'],
+        'maintenance_social_security_base_limits' => ['contribution_group_id', 'contribution_group_description', 'minimum_base', 'maximum_base', 'period_label'],
         'maintenance_subprograms' => [
             'subprogram_program_id', 'subprogram_program_name', 'subprogram_number', 'subprogram_code', 'subprogram_name',
             'technical_manager_code', 'technical_job_title',
@@ -141,7 +268,7 @@ function maintenance_list_sort_keys(string $module): array
  */
 function maintenance_table_columns(string $module, bool $implemented): array
 {
-    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_subprograms'], true);
+    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_subprograms'], true);
 
     if ($module === 'maintenance_scales') {
         return [
@@ -272,6 +399,37 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'description', 'label' => 'Descripció', 'sortable' => false, 'cell' => ['type' => 'program_description', 'field' => 'description']],
         ];
     }
+    if ($module === 'maintenance_social_security_companies') {
+        return [
+            ['sort_key' => 'company_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'company_id', 'strong' => true]],
+            ['sort_key' => 'company_description', 'label' => 'Denominació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'company_description']],
+            ['sort_key' => 'contribution_account_code', 'label' => 'CCC núm.', 'sortable' => $sortList, 'cell' => ['type' => 'company_ccc_display', 'field' => 'contribution_account_code']],
+        ];
+    }
+    if ($module === 'maintenance_social_security_coefficients') {
+        return [
+            ['sort_key' => 'contribution_epigraph_id', 'label' => 'Epígraf', 'sortable' => $sortList, 'cell' => ['type' => 'lpad_digits_varchar', 'field' => 'contribution_epigraph_id', 'pad' => MAINTENANCE_SOCIAL_SECURITY_EPIGRAPH_PAD, 'strong' => true]],
+            ['sort_key' => 'company_1', 'label' => 'Emp. 1', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_1', 'align' => 'right']],
+            ['sort_key' => 'company_2', 'label' => 'Emp. 2', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_2', 'align' => 'right']],
+            ['sort_key' => 'company_3', 'label' => 'Emp. 3', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_3', 'align' => 'right']],
+            ['sort_key' => 'company_4', 'label' => 'Emp. 4', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_4', 'align' => 'right']],
+            ['sort_key' => 'company_5a', 'label' => 'Emp. 5A', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_5a', 'align' => 'right']],
+            ['sort_key' => 'company_5b', 'label' => 'Emp. 5B', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_5b', 'align' => 'right']],
+            ['sort_key' => 'company_5c', 'label' => 'Emp. 5C', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_5c', 'align' => 'right']],
+            ['sort_key' => 'company_5d', 'label' => 'Emp. 5D', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_5d', 'align' => 'right']],
+            ['sort_key' => 'company_5e', 'label' => 'Emp. 5E', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'company_5e', 'align' => 'right']],
+            ['sort_key' => 'temporary_employment_company', 'label' => 'Emp. E.T.', 'sortable' => $sortList, 'cell' => ['type' => 'percent_4', 'field' => 'temporary_employment_company', 'align' => 'right']],
+        ];
+    }
+    if ($module === 'maintenance_social_security_base_limits') {
+        return [
+            ['sort_key' => 'contribution_group_id', 'label' => 'Grup. Cot.', 'sortable' => $sortList, 'cell' => ['type' => 'lpad_digits_varchar', 'field' => 'contribution_group_id', 'pad' => MAINTENANCE_SOCIAL_SECURITY_BASE_GROUP_PAD, 'strong' => true]],
+            ['sort_key' => 'contribution_group_description', 'label' => 'Denominació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'contribution_group_description']],
+            ['sort_key' => 'minimum_base', 'label' => 'Base mínima', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'minimum_base', 'align' => 'right']],
+            ['sort_key' => 'maximum_base', 'label' => 'Base màxima', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'maximum_base', 'align' => 'right']],
+            ['sort_key' => 'period_label', 'label' => 'Període', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'period_label']],
+        ];
+    }
     if ($module === 'maintenance_subprograms') {
         $subCompact = 'table-col--maint-sub-compact';
 
@@ -314,6 +472,9 @@ function maintenance_default_sort_key(string $module): string
         'maintenance_organic_level_2' => 'org_unit_level_2_id',
         'maintenance_organic_level_3' => 'org_unit_level_3_id',
         'maintenance_programs' => 'subfunction_id',
+        'maintenance_social_security_companies' => 'company_id',
+        'maintenance_social_security_coefficients' => 'contribution_epigraph_id',
+        'maintenance_social_security_base_limits' => 'contribution_group_id',
         'maintenance_subprograms' => 'subprogram_program_id',
         default => 'id',
     };
@@ -397,6 +558,17 @@ function maintenance_sort_key_legacy_map(string $module): array
             'id' => 'program_code',
             'program_id' => 'program_code',
             'name' => 'program_name',
+        ],
+        'maintenance_social_security_companies' => [
+            'id' => 'company_id',
+            'name' => 'company_description',
+        ],
+        'maintenance_social_security_coefficients' => [
+            'id' => 'contribution_epigraph_id',
+        ],
+        'maintenance_social_security_base_limits' => [
+            'id' => 'contribution_group_id',
+            'name' => 'contribution_group_description',
         ],
         'maintenance_subprograms' => [
             'id' => 'subprogram_code',
@@ -490,6 +662,28 @@ function maintenance_column_cell_html(array $colDef, array $row): string
         }
 
         return '<span title="' . e($s) . '">' . $inner . '</span>';
+    }
+
+    if ($type === 'company_ccc_display') {
+        $s = trim((string) $raw);
+        if ($s === '') {
+            return '';
+        }
+        $shown = maintenance_format_company_ccc_display($s);
+
+        return '<span title="' . e($shown) . '">' . e($shown) . '</span>';
+    }
+
+    if ($type === 'decimal_4') {
+        return e(maintenance_format_decimal_4_display($raw));
+    }
+
+    if ($type === 'percent_4') {
+        return e(maintenance_format_ss_coeff_percent_display($raw));
+    }
+
+    if ($type === 'currency_eur_2') {
+        return e(maintenance_format_currency_eur_2_display($raw));
     }
 
     if ($type === 'program_description') {
@@ -616,6 +810,15 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
             default => 't.' . $field,
         };
     }
+    if ($module === 'maintenance_social_security_companies') {
+        return 't.' . $field;
+    }
+    if ($module === 'maintenance_social_security_coefficients') {
+        return 't.' . $field;
+    }
+    if ($module === 'maintenance_social_security_base_limits') {
+        return 't.' . $field;
+    }
 
     return null;
 }
@@ -627,7 +830,7 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
  */
 function maintenance_search_specs_from_columns(string $module): array
 {
-    if (!in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3'], true)) {
+    if (!in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits'], true)) {
         return [];
     }
     $cols = maintenance_table_columns($module, true);
@@ -810,6 +1013,118 @@ function maintenance_subprograms_list_q_search_clause(string $q): array
 }
 
 /**
+ * Cerca d'empreses de Seguretat Social: codi, denominació i CCC amb/sense espais.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_social_security_companies_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $qDigits = maintenance_company_ccc_digits_only($q);
+    $qDigitsLike = '%' . $qDigits . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+
+    $n = 'mq_' . $i++;
+    $parts[] = '(t.company_id LIKE :' . $n . ')';
+    $params[$n] = $qLike;
+
+    $n = 'mq_' . $i++;
+    $parts[] = '(t.company_description LIKE :' . $n . ')';
+    $params[$n] = $qLike;
+
+    $n = 'mq_' . $i++;
+    $parts[] = '(t.contribution_account_code LIKE :' . $n . ')';
+    $params[$n] = $qLike;
+
+    $n = 'mq_' . $i++;
+    $parts[] = '(REPLACE(t.contribution_account_code, \' \', \'\') LIKE :' . $n . ')';
+    $params[$n] = $qDigits !== '' ? $qDigitsLike : $qLike;
+
+    $n = 'mq_' . $i++;
+    $parts[] = '(CONCAT(LEFT(REPLACE(t.contribution_account_code, \' \', \'\'), 2), \' \', SUBSTRING(REPLACE(t.contribution_account_code, \' \', \'\'), 3, 7), \' \', RIGHT(REPLACE(t.contribution_account_code, \' \', \'\'), 2)) LIKE :' . $n . ')';
+    $params[$n] = $qLike;
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * Cerca de coeficients SS: epígraf real/padded i camps de coeficients.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_social_security_coefficients_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+
+    $n = 'mq_' . $i++;
+    $n2 = 'mq_' . $i++;
+    $parts[] = '(TRIM(t.contribution_epigraph_id) LIKE :' . $n . ' OR LPAD(TRIM(t.contribution_epigraph_id), ' . MAINTENANCE_SOCIAL_SECURITY_EPIGRAPH_PAD . ", '0') LIKE :" . $n2 . ')';
+    $params[$n] = $qLike;
+    $params[$n2] = $qLike;
+
+    foreach (['company_1', 'company_2', 'company_3', 'company_4', 'company_5a', 'company_5b', 'company_5c', 'company_5d', 'company_5e', 'temporary_employment_company'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * Cerca de bases mínimes/màximes SS: codi real/padded, denominació, bases i període.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_social_security_base_limits_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+
+    $n = 'mq_' . $i++;
+    $n2 = 'mq_' . $i++;
+    $parts[] = '(TRIM(t.contribution_group_id) LIKE :' . $n . ' OR LPAD(TRIM(t.contribution_group_id), ' . MAINTENANCE_SOCIAL_SECURITY_BASE_GROUP_PAD . ", '0') LIKE :" . $n2 . ')';
+    $params[$n] = $qLike;
+    $params[$n2] = $qLike;
+
+    foreach (['contribution_group_description', 'minimum_base', 'maximum_base', 'period_label'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
  * Fragment SQL AND (...) per cerca global q, o cadena buida si no aplica.
  * Cada LIKE/LPAD usa un placeholder PDO únic (compatibilitat sense emulació de prepared statements).
  *
@@ -826,6 +1141,15 @@ function maintenance_list_q_search_clause(string $module, string $q): array
     }
     if ($module === 'maintenance_subprograms') {
         return maintenance_subprograms_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_social_security_companies') {
+        return maintenance_social_security_companies_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_social_security_coefficients') {
+        return maintenance_social_security_coefficients_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_social_security_base_limits') {
+        return maintenance_social_security_base_limits_list_q_search_clause($q);
     }
     $specs = maintenance_search_specs_from_columns($module);
     if ($specs === []) {

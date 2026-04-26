@@ -92,7 +92,7 @@ try {
         }
         try {
             $originalIdRaw = (string) ($in['original_id'] ?? '');
-            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
+            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
             maintenance_save(db(), $module, $year, $originalForSave, [
                 'id' => (string) ($in['id'] ?? ''),
                 'name' => (string) ($in['name'] ?? ''),
@@ -125,6 +125,20 @@ try {
                 'objectives' => (string) ($in['objectives'] ?? ''),
                 'activities' => (string) ($in['activities'] ?? ''),
                 'notes' => (string) ($in['notes'] ?? ''),
+                'contribution_account_code' => (string) ($in['contribution_account_code'] ?? ''),
+                'company_1' => (string) ($in['company_1'] ?? ''),
+                'company_2' => (string) ($in['company_2'] ?? ''),
+                'company_3' => (string) ($in['company_3'] ?? ''),
+                'company_4' => (string) ($in['company_4'] ?? ''),
+                'company_5a' => (string) ($in['company_5a'] ?? ''),
+                'company_5b' => (string) ($in['company_5b'] ?? ''),
+                'company_5c' => (string) ($in['company_5c'] ?? ''),
+                'company_5d' => (string) ($in['company_5d'] ?? ''),
+                'company_5e' => (string) ($in['company_5e'] ?? ''),
+                'temporary_employment_company' => (string) ($in['temporary_employment_company'] ?? ''),
+                'minimum_base' => (string) ($in['minimum_base'] ?? ''),
+                'maximum_base' => (string) ($in['maximum_base'] ?? ''),
+                'period_label' => (string) ($in['period_label'] ?? ''),
             ]);
             maintenance_api_json(true, ['message' => $isCreate ? 'Registre creat.' : 'Registre actualitzat.']);
         } catch (Throwable $e) {

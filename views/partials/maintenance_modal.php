@@ -26,7 +26,7 @@ declare(strict_types=1);
                     <div class="alert alert--error" role="alert" data-maintenance-form-error></div>
                 </div>
                 <div class="form-group" data-maintenance-field="id">
-                    <label class="form-label" for="maintenance_id">Codi <span class="users-modal-form__req">*</span></label>
+                    <label class="form-label" for="maintenance_id" data-maintenance-label-id>Codi <span class="users-modal-form__req">*</span></label>
                     <input class="form-input" id="maintenance_id" name="id" type="number" min="1" required data-field="id">
                     <p class="form-error" data-error-for="id" hidden></p>
                 </div>
@@ -103,6 +103,76 @@ declare(strict_types=1);
                     <label class="form-label" for="maintenance_sort_order">Ordre</label>
                     <input class="form-input" id="maintenance_sort_order" name="sort_order" type="number" step="1" data-field="sort_order">
                     <p class="form-error" data-error-for="sort_order" hidden></p>
+                </div>
+                <div class="form-group form-grid__full" data-maintenance-field="contribution_account_code" hidden>
+                    <label class="form-label" for="maintenance_contribution_account_code">CCC núm.</label>
+                    <input class="form-input" id="maintenance_contribution_account_code" name="contribution_account_code" type="text" maxlength="14" inputmode="numeric" autocomplete="off" placeholder="00 0000000 00" data-field="contribution_account_code">
+                    <p class="form-error" data-error-for="contribution_account_code" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_1" hidden>
+                    <label class="form-label" for="maintenance_company_1">Emp. 1</label>
+                    <input class="form-input" id="maintenance_company_1" name="company_1" type="text" inputmode="decimal" autocomplete="off" data-field="company_1">
+                    <p class="form-error" data-error-for="company_1" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_2" hidden>
+                    <label class="form-label" for="maintenance_company_2">Emp. 2</label>
+                    <input class="form-input" id="maintenance_company_2" name="company_2" type="text" inputmode="decimal" autocomplete="off" data-field="company_2">
+                    <p class="form-error" data-error-for="company_2" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_3" hidden>
+                    <label class="form-label" for="maintenance_company_3">Emp. 3</label>
+                    <input class="form-input" id="maintenance_company_3" name="company_3" type="text" inputmode="decimal" autocomplete="off" data-field="company_3">
+                    <p class="form-error" data-error-for="company_3" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_4" hidden>
+                    <label class="form-label" for="maintenance_company_4">Emp. 4</label>
+                    <input class="form-input" id="maintenance_company_4" name="company_4" type="text" inputmode="decimal" autocomplete="off" data-field="company_4">
+                    <p class="form-error" data-error-for="company_4" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_5a" hidden>
+                    <label class="form-label" for="maintenance_company_5a">Emp. 5A</label>
+                    <input class="form-input" id="maintenance_company_5a" name="company_5a" type="text" inputmode="decimal" autocomplete="off" data-field="company_5a">
+                    <p class="form-error" data-error-for="company_5a" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_5b" hidden>
+                    <label class="form-label" for="maintenance_company_5b">Emp. 5B</label>
+                    <input class="form-input" id="maintenance_company_5b" name="company_5b" type="text" inputmode="decimal" autocomplete="off" data-field="company_5b">
+                    <p class="form-error" data-error-for="company_5b" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_5c" hidden>
+                    <label class="form-label" for="maintenance_company_5c">Emp. 5C</label>
+                    <input class="form-input" id="maintenance_company_5c" name="company_5c" type="text" inputmode="decimal" autocomplete="off" data-field="company_5c">
+                    <p class="form-error" data-error-for="company_5c" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_5d" hidden>
+                    <label class="form-label" for="maintenance_company_5d">Emp. 5D</label>
+                    <input class="form-input" id="maintenance_company_5d" name="company_5d" type="text" inputmode="decimal" autocomplete="off" data-field="company_5d">
+                    <p class="form-error" data-error-for="company_5d" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="company_5e" hidden>
+                    <label class="form-label" for="maintenance_company_5e">Emp. 5E</label>
+                    <input class="form-input" id="maintenance_company_5e" name="company_5e" type="text" inputmode="decimal" autocomplete="off" data-field="company_5e">
+                    <p class="form-error" data-error-for="company_5e" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="temporary_employment_company" hidden>
+                    <label class="form-label" for="maintenance_temporary_employment_company">Emp. E.T.</label>
+                    <input class="form-input" id="maintenance_temporary_employment_company" name="temporary_employment_company" type="text" inputmode="decimal" autocomplete="off" data-field="temporary_employment_company">
+                    <p class="form-error" data-error-for="temporary_employment_company" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="minimum_base" hidden>
+                    <label class="form-label" for="maintenance_minimum_base">Base mínima</label>
+                    <input class="form-input" id="maintenance_minimum_base" name="minimum_base" type="text" inputmode="decimal" autocomplete="off" data-field="minimum_base">
+                    <p class="form-error" data-error-for="minimum_base" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="maximum_base" hidden>
+                    <label class="form-label" for="maintenance_maximum_base">Base màxima</label>
+                    <input class="form-input" id="maintenance_maximum_base" name="maximum_base" type="text" inputmode="decimal" autocomplete="off" data-field="maximum_base">
+                    <p class="form-error" data-error-for="maximum_base" hidden></p>
+                </div>
+                <div class="form-group form-grid__full" data-maintenance-field="period_label" hidden>
+                    <label class="form-label" for="maintenance_period_label">Període</label>
+                    <input class="form-input" id="maintenance_period_label" name="period_label" type="text" autocomplete="off" data-field="period_label">
+                    <p class="form-error" data-error-for="period_label" hidden></p>
                 </div>
                 <div class="form-group" data-maintenance-field="subfunction_id" hidden>
                     <label class="form-label" for="maintenance_subfunction_id">Subfunció <span class="users-modal-form__req">*</span></label>

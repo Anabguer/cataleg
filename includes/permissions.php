@@ -134,7 +134,8 @@ function menu_visible_forms(): array
                         WHEN \'system\' THEN 1
                         WHEN \'organization\' THEN 2
                         WHEN \'training_maintenance\' THEN 3
-                        WHEN \'training_management\' THEN 4
+                        WHEN \'social_security_companies\' THEN 4
+                        WHEN \'training_management\' THEN 5
                         ELSE 9
                      END ASC,
                      f.group_sort_order ASC,

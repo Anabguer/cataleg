@@ -29,6 +29,9 @@
         if(mod==='maintenance_organic_level_2') return row && row.org_unit_level_2_id !== undefined ? row.org_unit_level_2_id : '';
         if(mod==='maintenance_organic_level_3') return row && row.org_unit_level_3_id !== undefined ? row.org_unit_level_3_id : '';
         if(mod==='maintenance_programs') return row && row.program_id !== undefined ? row.program_id : '';
+        if(mod==='maintenance_social_security_companies') return row && row.company_id !== undefined ? row.company_id : '';
+        if(mod==='maintenance_social_security_coefficients') return row && row.contribution_epigraph_id !== undefined ? row.contribution_epigraph_id : '';
+        if(mod==='maintenance_social_security_base_limits') return row && row.contribution_group_id !== undefined ? row.contribution_group_id : '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_id !== undefined ? row.subprogram_id : '';
         return row && (row.scale_id || row.subscale_id || row.category_id || '');
     }
@@ -50,6 +53,9 @@
         if(mod==='maintenance_organic_level_2') return row && row.org_unit_level_2_name !== undefined ? row.org_unit_level_2_name : '';
         if(mod==='maintenance_organic_level_3') return row && row.org_unit_level_3_name !== undefined ? row.org_unit_level_3_name : '';
         if(mod==='maintenance_programs') return row && row.program_name !== undefined ? row.program_name : '';
+        if(mod==='maintenance_social_security_companies') return row && row.company_description !== undefined ? row.company_description : '';
+        if(mod==='maintenance_social_security_base_limits') return row && row.contribution_group_description !== undefined ? row.contribution_group_description : '';
+        if(mod==='maintenance_social_security_coefficients') return '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_name !== undefined ? row.subprogram_name : '';
         return row && (row.scale_name || row.subscale_name || row.category_name || '');
     }
@@ -128,24 +134,100 @@
             o.value = '';
         }
     }
+    function formatCompanyCccInput(value) {
+        var digits = String(value || '').replace(/\D+/g, '').slice(0, 11);
+        if (!digits) return '';
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 9) return digits.slice(0, 2) + ' ' + digits.slice(2);
+        return digits.slice(0, 2) + ' ' + digits.slice(2, 9) + ' ' + digits.slice(9, 11);
+    }
+    function normalizeDecimalInput(value) {
+        var s = String(value || '').trim();
+        if (s === '') return '';
+        return s.replace(',', '.');
+    }
+    /** Coeficients SS: entrada com a percentatge visible (mateix criteri que PHP: treu % i espais, coma→punt). */
+    function normalizeSsCoeffVisiblePercentInput(value) {
+        var s = String(value || '').trim();
+        if (s === '') return '';
+        s = s.replace(/%/g, '').replace(/\s+/g, '');
+        return s.replace(',', '.');
+    }
+    /** Converteix decimal BBDD a percentatge visible amb 4 decimals i coma (sense símbol % al camp). */
+    function formatSsCoeffPercentFromDbForInput(v) {
+        if (v === null || v === undefined) return '';
+        var s = String(v).trim();
+        if (s === '') return '';
+        var n = parseFloat(s.replace(',', '.'));
+        if (!isFinite(n)) return '';
+        var pct = Math.round(n * 100 * 10000) / 10000;
+        return pct.toFixed(4).replace('.', ',');
+    }
+    function formatMoneyForInput(value) {
+        if (value === null || value === undefined) return '';
+        var s = String(value).trim();
+        if (s === '') return '';
+        var n = parseFloat(s.replace(',', '.'));
+        if (!isFinite(n)) return '';
+        var fixed = n.toFixed(2);
+        var parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return parts[0] + ',' + parts[1];
+    }
+    function normalizeMoneyInput(value) {
+        var t = String(value || '').trim();
+        if (t === '') return '';
+        t = t.replace(/\u00A0/g, '').replace(/€/g, '').replace(/\s+/g, '');
+        if (t === '') return '';
+        if (/[^0-9.,]/.test(t)) return null;
+        var lastDot = t.lastIndexOf('.');
+        var lastComma = t.lastIndexOf(',');
+        var decSep = '';
+        if (lastDot !== -1 && lastComma !== -1) decSep = lastDot > lastComma ? '.' : ',';
+        else if (lastComma !== -1) decSep = ',';
+        else if (lastDot !== -1) decSep = ((t.length - lastDot - 1) >= 1 && (t.length - lastDot - 1) <= 2) ? '.' : '';
+        var norm = t;
+        if (decSep === ',') {
+            norm = norm.replace(/\./g, '').replace(',', '.');
+        } else if (decSep === '.') {
+            norm = norm.replace(/,/g, '');
+        } else {
+            norm = norm.replace(/[.,]/g, '');
+        }
+        if (!/^\d+(?:\.\d{1,2})?$/.test(norm)) return null;
+        return norm;
+    }
     function setupFields() {
         var mod = module();
         var show = function (name, on) { var el = document.querySelector('[data-maintenance-field="'+name+'"]'); if (el) el.hidden = !on; };
         var idInput = $('#maintenance_id');
+        var idLabel = $('[data-maintenance-label-id]');
         var nameLabel = $('[data-maintenance-label-name]');
+        if (idLabel) {
+            idLabel.innerHTML = (mod === 'maintenance_social_security_coefficients' ? 'Epígraf' : (mod === 'maintenance_social_security_base_limits' ? 'Grup. Cot.' : 'Codi')) + ' <span class="users-modal-form__req">*</span>';
+        }
         if (nameLabel) {
             var lbl = 'Nom';
             if (mod === 'maintenance_programs') lbl = 'Nom programa';
             else if (mod === 'maintenance_subprograms') lbl = 'Nom subprograma';
-            else if (mod === 'maintenance_work_centers' || mod === 'maintenance_administrative_statuses' || mod === 'maintenance_position_classes' || mod === 'maintenance_legal_relationships' || mod === 'maintenance_access_types' || mod === 'maintenance_access_systems' || mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_organic_level_1' || mod === 'maintenance_organic_level_2' || mod === 'maintenance_organic_level_3') lbl = 'Denominació';
+            else if (mod === 'maintenance_work_centers' || mod === 'maintenance_administrative_statuses' || mod === 'maintenance_position_classes' || mod === 'maintenance_legal_relationships' || mod === 'maintenance_access_types' || mod === 'maintenance_access_systems' || mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_organic_level_1' || mod === 'maintenance_organic_level_2' || mod === 'maintenance_organic_level_3' || mod === 'maintenance_social_security_companies' || mod === 'maintenance_social_security_base_limits') lbl = 'Denominació';
             nameLabel.innerHTML = lbl + ' <span class="users-modal-form__req">*</span>';
         }
         if (idInput) {
             if (mod === 'maintenance_programs' || mod === 'maintenance_subprograms') {
                 idInput.type = 'hidden';
-            } else if (mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms') {
+            } else if (mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_social_security_companies' || mod === 'maintenance_social_security_coefficients' || mod === 'maintenance_social_security_base_limits') {
                 idInput.type = 'text';
                 idInput.removeAttribute('min');
+                if (mod === 'maintenance_social_security_coefficients') {
+                    idInput.setAttribute('maxlength', '3');
+                    idInput.setAttribute('inputmode', 'numeric');
+                    idInput.setAttribute('pattern', '[0-9]{1,3}');
+                } else if (mod === 'maintenance_social_security_base_limits') {
+                    idInput.setAttribute('maxlength', '2');
+                    idInput.setAttribute('inputmode', 'numeric');
+                    idInput.setAttribute('pattern', '[0-9]{1,2}');
+                }
             } else {
                 idInput.type = 'number';
                 idInput.setAttribute('min', '1');
@@ -181,6 +263,21 @@
         show('phone', mod === 'maintenance_work_centers');
         show('fax', mod === 'maintenance_work_centers');
         show('sort_order', mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms');
+        show('contribution_account_code', mod === 'maintenance_social_security_companies');
+        show('company_1', mod === 'maintenance_social_security_coefficients');
+        show('company_2', mod === 'maintenance_social_security_coefficients');
+        show('company_3', mod === 'maintenance_social_security_coefficients');
+        show('company_4', mod === 'maintenance_social_security_coefficients');
+        show('company_5a', mod === 'maintenance_social_security_coefficients');
+        show('company_5b', mod === 'maintenance_social_security_coefficients');
+        show('company_5c', mod === 'maintenance_social_security_coefficients');
+        show('company_5d', mod === 'maintenance_social_security_coefficients');
+        show('company_5e', mod === 'maintenance_social_security_coefficients');
+        show('temporary_employment_company', mod === 'maintenance_social_security_coefficients');
+        show('minimum_base', mod === 'maintenance_social_security_base_limits');
+        show('maximum_base', mod === 'maintenance_social_security_base_limits');
+        show('period_label', mod === 'maintenance_social_security_base_limits');
+        show('name', mod !== 'maintenance_social_security_coefficients');
     }
     function fillSelect(sel, items, valKey, txtFn){
         if(!sel) return;
@@ -317,6 +414,40 @@
                 openModal();
                 return;
             }
+            if (module() === 'maintenance_social_security_coefficients') {
+                $('[data-field="original_id"]', f).value = String(r.contribution_epigraph_id != null ? r.contribution_epigraph_id : '');
+                var epi = String(r.contribution_epigraph_id != null ? r.contribution_epigraph_id : '').trim();
+                if (/^\d{1,3}$/.test(epi)) {
+                    epi = ('000' + epi).slice(-3);
+                }
+                $('[data-field="id"]', f).value = epi;
+                $('[data-field="company_1"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_1);
+                $('[data-field="company_2"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_2);
+                $('[data-field="company_3"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_3);
+                $('[data-field="company_4"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_4);
+                $('[data-field="company_5a"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5a);
+                $('[data-field="company_5b"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5b);
+                $('[data-field="company_5c"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5c);
+                $('[data-field="company_5d"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5d);
+                $('[data-field="company_5e"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5e);
+                $('[data-field="temporary_employment_company"]', f).value = formatSsCoeffPercentFromDbForInput(r.temporary_employment_company);
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'maintenance_social_security_base_limits') {
+                $('[data-field="original_id"]', f).value = String(r.contribution_group_id != null ? r.contribution_group_id : '');
+                var gid = String(r.contribution_group_id != null ? r.contribution_group_id : '').trim();
+                if (/^\d{1,2}$/.test(gid)) gid = ('00' + gid).slice(-2);
+                $('[data-field="id"]', f).value = gid;
+                $('[data-field="name"]', f).value = String(r.contribution_group_description || '');
+                $('[data-field="minimum_base"]', f).value = formatMoneyForInput(r.minimum_base);
+                $('[data-field="maximum_base"]', f).value = formatMoneyForInput(r.maximum_base);
+                $('[data-field="period_label"]', f).value = String(r.period_label || '');
+                applyCascades();
+                openModal();
+                return;
+            }
             var idCell = rowIdFromData(r);
             var nameCell = rowNameFromData(r);
             if (Object.prototype.hasOwnProperty.call(r, 'org_unit_level_3_id')) {
@@ -352,6 +483,20 @@
             $('[data-field="phone"]',f).value=String(r.phone||'');
             $('[data-field="fax"]',f).value=String(r.fax||'');
             $('[data-field="sort_order"]',f).value=String(r.sort_order ?? '');
+            $('[data-field="contribution_account_code"]',f).value=String(r.contribution_account_code||'');
+            $('[data-field="company_1"]',f).value=String(r.company_1 ?? '');
+            $('[data-field="company_2"]',f).value=String(r.company_2 ?? '');
+            $('[data-field="company_3"]',f).value=String(r.company_3 ?? '');
+            $('[data-field="company_4"]',f).value=String(r.company_4 ?? '');
+            $('[data-field="company_5a"]',f).value=String(r.company_5a ?? '');
+            $('[data-field="company_5b"]',f).value=String(r.company_5b ?? '');
+            $('[data-field="company_5c"]',f).value=String(r.company_5c ?? '');
+            $('[data-field="company_5d"]',f).value=String(r.company_5d ?? '');
+            $('[data-field="company_5e"]',f).value=String(r.company_5e ?? '');
+            $('[data-field="temporary_employment_company"]',f).value=String(r.temporary_employment_company ?? '');
+            $('[data-field="minimum_base"]',f).value=String(r.minimum_base ?? '');
+            $('[data-field="maximum_base"]',f).value=String(r.maximum_base ?? '');
+            $('[data-field="period_label"]',f).value=String(r.period_label ?? '');
             if(r.scale_id!==undefined) $('[data-field="scale_id"]',f).value=String(r.scale_id||'');
             if(r.subscale_id!==undefined) $('[data-field="subscale_id"]',f).value=String(r.subscale_id||'');
             if(r.class_id!==undefined) $('[data-field="class_id"]',f).value=String(r.class_id||'');
@@ -376,6 +521,75 @@
             }
             if (!/^\d$/.test(pnn)) {
                 showErrors(f, { program_number: 'El número ha de ser exactament un dígit (0-9).' });
+                return;
+            }
+        }
+        if (module() === 'maintenance_social_security_companies') {
+            var ccc = (fd.get('contribution_account_code') || '').toString().trim();
+            if (ccc !== '') {
+                if (!/^[0-9 ]+$/.test(ccc)) {
+                    showErrors(f, { contribution_account_code: 'El CCC només pot contenir dígits i espais.' });
+                    return;
+                }
+                var cccDigits = ccc.replace(/\D+/g, '');
+                if (cccDigits.length !== 11) {
+                    showErrors(f, { contribution_account_code: 'El CCC ha de tenir exactament 11 dígits.' });
+                    return;
+                }
+            }
+        }
+        if (module() === 'maintenance_social_security_coefficients') {
+            var epi = (fd.get('id') || '').toString().trim();
+            if (!/^\d{1,3}$/.test(epi)) {
+                showErrors(f, { id: 'L’epígraf ha de ser numèric i tenir com a màxim 3 dígits.' });
+                return;
+            }
+            var pctFields = ['company_1', 'company_2', 'company_3', 'company_4', 'company_5a', 'company_5b', 'company_5c', 'company_5d', 'company_5e', 'temporary_employment_company'];
+            for (var i = 0; i < pctFields.length; i += 1) {
+                var field = pctFields[i];
+                var val = normalizeSsCoeffVisiblePercentInput((fd.get(field) || '').toString());
+                if (val !== '') {
+                    if (/[^0-9.]/.test(val)) {
+                        var err1 = {};
+                        err1[field] = 'Només es permeten xifres, coma o punt i, opcionalment, el símbol %.';
+                        showErrors(f, err1);
+                        return;
+                    }
+                    if (!/^\d+$/.test(val) && !/^\d+\.\d{1,4}$/.test(val)) {
+                        var err2 = {};
+                        err2[field] = 'Valor numèric invàlid (màxim 4 decimals al percentatge visible).';
+                        showErrors(f, err2);
+                        return;
+                    }
+                    var pctNum = parseFloat(val);
+                    if (!isFinite(pctNum) || pctNum < 0 || pctNum > 100) {
+                        var err3 = {};
+                        err3[field] = 'El percentatge ha d’estar entre 0 i 100.';
+                        showErrors(f, err3);
+                        return;
+                    }
+                }
+            }
+        }
+        if (module() === 'maintenance_social_security_base_limits') {
+            var gid2 = (fd.get('id') || '').toString().trim();
+            var den = (fd.get('name') || '').toString().trim();
+            if (!/^\d{1,2}$/.test(gid2)) {
+                showErrors(f, { id: 'El grup de cotització ha de ser numèric i tenir com a màxim 2 dígits.' });
+                return;
+            }
+            if (den === '') {
+                showErrors(f, { name: 'La denominació és obligatòria.' });
+                return;
+            }
+            var minNorm = normalizeMoneyInput((fd.get('minimum_base') || '').toString());
+            if (minNorm === null) {
+                showErrors(f, { minimum_base: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+            var maxNorm = normalizeMoneyInput((fd.get('maximum_base') || '').toString());
+            if (maxNorm === null) {
+                showErrors(f, { maximum_base: 'Import invàlid (màxim 2 decimals).' });
                 return;
             }
         }
@@ -424,6 +638,20 @@
             objectives:(fd.get('objectives')||'').toString(),
             activities:(fd.get('activities')||'').toString(),
             notes:(fd.get('notes')||'').toString()
+            ,contribution_account_code:(fd.get('contribution_account_code')||'').toString()
+            ,company_1:(fd.get('company_1')||'').toString()
+            ,company_2:(fd.get('company_2')||'').toString()
+            ,company_3:(fd.get('company_3')||'').toString()
+            ,company_4:(fd.get('company_4')||'').toString()
+            ,company_5a:(fd.get('company_5a')||'').toString()
+            ,company_5b:(fd.get('company_5b')||'').toString()
+            ,company_5c:(fd.get('company_5c')||'').toString()
+            ,company_5d:(fd.get('company_5d')||'').toString()
+            ,company_5e:(fd.get('company_5e')||'').toString()
+            ,temporary_employment_company:(fd.get('temporary_employment_company')||'').toString()
+            ,minimum_base:(fd.get('minimum_base')||'').toString()
+            ,maximum_base:(fd.get('maximum_base')||'').toString()
+            ,period_label:(fd.get('period_label')||'').toString()
         };
         fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)})
             .then(function(r){return r.json();})
@@ -458,6 +686,12 @@
                 if(module()==='maintenance_subprograms'){
                     var t2=ev.target;
                     if(t2&&t2.getAttribute&&(t2.getAttribute('data-field')==='subprogram_parent_program'||t2.getAttribute('data-field')==='subprogram_number')) updateSubprogramComputedCode();
+                }
+                if(module()==='maintenance_social_security_companies'){
+                    var t4=ev.target;
+                    if(t4&&t4.getAttribute&&t4.getAttribute('data-field')==='contribution_account_code'){
+                        t4.value = formatCompanyCccInput(t4.value);
+                    }
                 }
             });
             mf.addEventListener('change',function(ev){
