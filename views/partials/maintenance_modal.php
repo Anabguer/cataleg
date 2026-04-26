@@ -16,8 +16,8 @@ declare(strict_types=1);
                     </div>
                 </div>
                 <div class="users-modal-form__header-actions">
-                    <button type="button" class="btn btn--ghost btn--sm" data-maintenance-modal-close>Cancel·lar</button>
-                    <button type="submit" class="btn btn--primary btn--sm" form="maintenance-modal-form">Desar</button>
+                    <button type="button" class="btn btn--ghost btn--sm" data-maintenance-modal-close data-maintenance-modal-cancel>Cancel·lar</button>
+                    <button type="submit" class="btn btn--primary btn--sm" form="maintenance-modal-form" data-maintenance-modal-submit>Desar</button>
                 </div>
             </div>
             <form id="maintenance-modal-form" class="users-modal-form__body form-grid form-grid--modal" novalidate>

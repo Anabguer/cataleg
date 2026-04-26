@@ -1,5 +1,6 @@
 (function () {
     'use strict';
+    var currentModalReadonly = false;
     function cfg() { return window.APP_MAINTENANCE || {}; }
     function $(s, r) { return (r || document).querySelector(s); }
     function overlay() { return document.getElementById('maintenance-modal-overlay'); }
@@ -344,15 +345,58 @@
         }
         applyCascades();
     }
-    function setMode(create){
-        var h=$('[data-maintenance-modal-heading]'), s=$('[data-maintenance-modal-subheading]');
-        if(h) h.textContent=create?'Nou registre':'Actualització';
-        if(s) s.textContent=create?'Introdueix les dades del nou registre':'Modifica la informació del registre';
+    function setReadOnlyMode(readOnly, form) {
+        currentModalReadonly = !!readOnly;
+        var f = form || $('#maintenance-modal-form');
+        var overlay = document.getElementById('maintenance-modal-overlay');
+        var saveBtn = overlay ? overlay.querySelector('[data-maintenance-modal-submit]') : null;
+        var closeBtn = overlay ? overlay.querySelector('[data-maintenance-modal-cancel]') : null;
+        if (saveBtn) {
+            if (currentModalReadonly) {
+                saveBtn.hidden = true;
+                saveBtn.style.display = 'none';
+                saveBtn.setAttribute('aria-hidden', 'true');
+            } else {
+                saveBtn.hidden = false;
+                saveBtn.style.display = '';
+                saveBtn.removeAttribute('aria-hidden');
+            }
+        }
+        if (closeBtn) closeBtn.textContent = currentModalReadonly ? 'Tancar' : 'Cancel·lar';
+        if (!f) return;
+        f.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+            if (!(el instanceof HTMLElement)) return;
+            if (el.matches('[type="hidden"]')) return;
+            if (el.matches('[data-maintenance-modal-close]') || el.matches('[data-maintenance-modal-cancel]') || el.matches('[data-maintenance-modal-submit]')) return;
+            if (el instanceof HTMLSelectElement) {
+                el.disabled = currentModalReadonly;
+                return;
+            }
+            if (el instanceof HTMLTextAreaElement) {
+                el.readOnly = currentModalReadonly;
+                el.disabled = false;
+                return;
+            }
+            if (el instanceof HTMLInputElement) {
+                if (el.type === 'checkbox' || el.type === 'radio') {
+                    el.disabled = currentModalReadonly;
+                } else {
+                    el.readOnly = currentModalReadonly;
+                    el.disabled = false;
+                }
+            }
+        });
     }
-    function openCreate(){ if(!cfg().canCreate || !cfg().implemented) return; var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(true); if(module()==='maintenance_programs') updateProgramComputedCode(); if(module()==='maintenance_subprograms') updateSubprogramComputedCode(); openModal(); }
-    function openEdit(id){
-        if(!cfg().canEdit || !cfg().implemented) return;
-        var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(false);
+    function setMode(create, readOnly){
+        var h=$('[data-maintenance-modal-heading]'), s=$('[data-maintenance-modal-subheading]');
+        if(h) h.textContent=readOnly?'Consultar registre':(create?'Nou registre':'Actualització');
+        if(s) s.textContent=readOnly?'Consulta en mode només lectura':(create?'Introdueix les dades del nou registre':'Modifica la informació del registre');
+    }
+    function openCreate(){ if(!cfg().canCreate || !cfg().implemented) return; var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(true,false); setReadOnlyMode(false,f); if(module()==='maintenance_programs') updateProgramComputedCode(); if(module()==='maintenance_subprograms') updateSubprogramComputedCode(); openModal(); }
+    function openRecord(id, readOnly){
+        if(!cfg().implemented) return;
+        if(readOnly){ if(cfg().canView===false) return; } else { if(!cfg().canEdit) return; }
+        var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(false,!!readOnly); setReadOnlyMode(!!readOnly,f);
         fetch(apiUrl()+'&action=get&id='+encodeURIComponent(String(id)),{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){
             if(!d.ok||!d.row){ if(window.showAlert) window.showAlert('error','Error','No s’ha pogut carregar el registre.'); return; }
             var r=d.row;
@@ -372,6 +416,7 @@
                 var desc = $('[data-field="description"]',f); if(desc) desc.value=String(r.description||'');
                 var rsp = $('[data-field="responsible_person_code"]',f); if(rsp) rsp.value=String(r.responsible_person_code!=null?r.responsible_person_code:'').trim();
                 updateProgramComputedCode();
+                setReadOnlyMode(!!readOnly, f);
                 applyCascades();
                 openModal();
                 return;
@@ -410,6 +455,7 @@
                 var ac = $('[data-field="activities"]', f); if (ac) ac.value = String(r.activities || '');
                 var nt = $('[data-field="notes"]', f); if (nt) nt.value = String(r.notes || '');
                 updateSubprogramComputedCode();
+                setReadOnlyMode(!!readOnly, f);
                 applyCascades();
                 openModal();
                 return;
@@ -431,6 +477,7 @@
                 $('[data-field="company_5d"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5d);
                 $('[data-field="company_5e"]', f).value = formatSsCoeffPercentFromDbForInput(r.company_5e);
                 $('[data-field="temporary_employment_company"]', f).value = formatSsCoeffPercentFromDbForInput(r.temporary_employment_company);
+                setReadOnlyMode(!!readOnly, f);
                 applyCascades();
                 openModal();
                 return;
@@ -444,6 +491,7 @@
                 $('[data-field="minimum_base"]', f).value = formatMoneyForInput(r.minimum_base);
                 $('[data-field="maximum_base"]', f).value = formatMoneyForInput(r.maximum_base);
                 $('[data-field="period_label"]', f).value = String(r.period_label || '');
+                setReadOnlyMode(!!readOnly, f);
                 applyCascades();
                 openModal();
                 return;
@@ -502,12 +550,16 @@
             if(r.class_id!==undefined) $('[data-field="class_id"]',f).value=String(r.class_id||'');
             if(r.org_unit_level_1_id!==undefined) { var o1f=$('[data-field="org_unit_level_1_id"]',f); if(o1f) o1f.value=String(r.org_unit_level_1_id); }
             if(r.org_unit_level_2_id!==undefined) { var o2f=$('[data-field="org_unit_level_2_id"]',f); if(o2f) o2f.value=String(r.org_unit_level_2_id); }
+            setReadOnlyMode(!!readOnly, f);
             applyCascades();
             openModal();
         }).catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.');});
     }
+    function openEdit(id){ openRecord(id, false); }
+    function openView(id){ openRecord(id, true); }
     function submit(ev){
         ev.preventDefault();
+        if (currentModalReadonly) { return; }
         var f=$('#maintenance-modal-form'); if(!f) return;
         clearErrors(f);
         var csrf=cfg().csrfToken||'';
@@ -671,6 +723,7 @@
         if(sub) sub.addEventListener('change', applyCascades);
         document.body.addEventListener('click',function(e){
             if(e.target.closest('[data-maintenance-open-create]')){ e.preventDefault(); openCreate(); }
+            if(e.target.closest('[data-maintenance-view]')){ e.preventDefault(); var vid=(e.target.closest('[data-maintenance-view]').getAttribute('data-maintenance-view')||'').toString().trim(); if(vid!=='') openView(vid); }
             if(e.target.closest('[data-maintenance-edit]')){ e.preventDefault(); var id=(e.target.closest('[data-maintenance-edit]').getAttribute('data-maintenance-edit')||'').toString().trim(); if(id!=='') openEdit(id); }
             if(e.target.closest('[data-maintenance-delete]')){ e.preventDefault(); var idd=(e.target.closest('[data-maintenance-delete]').getAttribute('data-maintenance-delete')||'').toString().trim(); if(idd!=='') confirmDelete(idd); }
             if(e.target.closest('[data-maintenance-modal-close]')){ e.preventDefault(); closeModal(); }

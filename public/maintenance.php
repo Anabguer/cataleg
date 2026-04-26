@@ -64,6 +64,7 @@ $maintenancePageInlineConfig = [
     'module' => $module,
     'year' => $year,
     'implemented' => (bool) ($config['implemented'] ?? false),
+    'canView' => can_view_form($module),
     'canCreate' => can_create_form($module),
     'canEdit' => can_edit_form($module),
     'canDelete' => can_delete_form($module),

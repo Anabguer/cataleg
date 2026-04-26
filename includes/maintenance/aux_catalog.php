@@ -6,10 +6,10 @@ require_once __DIR__ . '/maintenance_columns.php';
 function maintenance_modules_config(): array
 {
     return [
-        'maintenance_scales' => ['title' => 'Escales', 'table' => 'civil_service_scales', 'implemented' => true],
-        'maintenance_subscales' => ['title' => 'Subescales', 'table' => 'civil_service_subscales', 'implemented' => true],
-        'maintenance_classes' => ['title' => 'Classes', 'table' => 'civil_service_classes', 'implemented' => true],
-        'maintenance_categories' => ['title' => 'Categories', 'table' => 'civil_service_categories', 'implemented' => true],
+        'maintenance_scales' => ['title' => 'Escales funcionaris', 'table' => 'civil_service_scales', 'implemented' => true],
+        'maintenance_subscales' => ['title' => 'Subescales funcionaris', 'table' => 'civil_service_subscales', 'implemented' => true],
+        'maintenance_classes' => ['title' => 'Classes funcionaris', 'table' => 'civil_service_classes', 'implemented' => true],
+        'maintenance_categories' => ['title' => 'Categories funcionaris', 'table' => 'civil_service_categories', 'implemented' => true],
         'maintenance_legal_relationships' => ['title' => 'Relacions jurídiques', 'table' => 'legal_relations', 'implemented' => true],
         'maintenance_administrative_statuses' => ['title' => 'Situacions administratives funcionaris', 'table' => 'administrative_statuses', 'implemented' => true],
         'maintenance_position_classes' => ['title' => 'Classes de plaça', 'table' => 'position_classes', 'implemented' => true],

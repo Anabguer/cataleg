@@ -162,11 +162,14 @@ ob_start();
             ?>
             <td class="data-table__actions table__actions-cell<?= $module === 'maintenance_subprograms' ? ' table__actions-cell--maint-sub' : '' ?>">
                 <div class="row-actions">
+                    <?php if ($implemented && can_view_form($module)): ?>
+                        <button type="button" class="btn btn--sm btn--icon-edit js-maintenance-view" data-action="view" data-maintenance-view="<?= $rid ?>" title="Visualitzar" aria-label="Visualitzar registre"><?= ui_icon('eye') ?></button>
+                    <?php endif; ?>
                     <?php if ($implemented && can_edit_form($module)): ?>
-                        <button type="button" class="btn btn--sm btn--icon-edit" data-maintenance-edit="<?= $rid ?>"><?= ui_icon('pencil-square') ?></button>
+                        <button type="button" class="btn btn--sm btn--icon-edit" data-maintenance-edit="<?= $rid ?>" title="Editar" aria-label="Editar registre"><?= ui_icon('pencil-square') ?></button>
                     <?php endif; ?>
                     <?php if ($implemented && can_delete_form($module)): ?>
-                        <button type="button" class="btn btn--sm btn--icon-del" data-maintenance-delete="<?= $rid ?>"><?= ui_icon('trash') ?></button>
+                        <button type="button" class="btn btn--sm btn--icon-del" data-maintenance-delete="<?= $rid ?>" title="Eliminar" aria-label="Eliminar registre"><?= ui_icon('trash') ?></button>
                     <?php endif; ?>
                 </div>
             </td>
