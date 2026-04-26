@@ -1,0 +1,27 @@
+Canviar entre LOCALHOST i HOSTALIA sense tocar el codi
+=======================================================
+
+1) Copia config/env.example.php a config/env.php (si encara no existeix).
+
+2) Edita només config/env.php amb les dades de l’entorn actiu:
+
+   - APP_ENV: "development" en local; "production" a Hostalia.
+   - APP_DEBUG: true en local; false en producció (recomanat).
+   - DB_HOST, DB_NAME, DB_USER, DB_PASS: les del panell MySQL de Hostalia.
+   - SITE_BASE_URL: URL arrel del projecte sense barra final incorrecta.
+     Exemple local XAMPP:
+       http://localhost/formacio_molins_rei/
+     Exemple Hostalia:
+       https://el-teu-domini.cat/
+   - BASE_URL es construeix sol com SITE_BASE_URL + "public/" (veure env.example.php).
+
+3) Estructura FTP habitual: pujar tota la carpeta del projecte de manera que
+   existisquin /public, /assets, /config, etc. El navegador ha de poder obrir:
+   SITE_BASE_URL + public/login.php
+
+4) Si el teu hosting fa servir el domini directament sobre /public (document root),
+   ajusta SITE_BASE_URL i BASE_URL en env.php perquè coincideixin amb com el
+   proveïdor serveix els fitxers (per exemple BASE_URL = SITE_BASE_URL si tot
+   està dins public_html).
+
+5) No cal Node ni compilació en producció: només PHP, MySQL i fitxers estàtics.

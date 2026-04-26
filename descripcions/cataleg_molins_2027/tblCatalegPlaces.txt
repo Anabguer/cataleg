@@ -1,0 +1,333 @@
+﻿IDPlaça	NomPlaça	IDClassePlaça	IDEscala	IDSubEscala	IDClasse	IDCategoria	CategoriaLaboral	GrupClassificacio	IDTipusAcces	IDSistemaAcces	Pressupostat	Ofertable	OPO_Any	Amortitzar	PromocioInterna	DataCreacio	ExpedientCreacio	DataConvocatoria	DataSupressio	ExpedientSupressio	Observacions
+1	Secretari/a	1	1	101	10100	1010001		A1	1	13	1	Falso		Falso	Falso						
+2	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						
+3	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						
+4	Graduat/da social	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						
+6	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+8	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+9	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+10	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						Secretaria Alcalde
+11	Ciències de la informació	1	3	301	30101	3010101		A1	1	13	1	Falso		Falso	Falso						
+12	Diplomat/da en educació infantil	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						
+14	Puericultor/a	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+15	Puericultor/a	1	3	302	30203	3020300		C1	1	13	0	Falso		Falso	Falso						
+16	Puericultor/a	2	0	0	0	0		C1	1	13	1	Verdadero	2008	Falso	Falso						
+18	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+19	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+20	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+21	Tècnic/a mitjà/na de gestió	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						Aquesta plaça era aux administratiu de l'adm general i es tranforma en una plaça de tècnic mitjà de gestió A2 per assignarlo a lloc de tècnic 1era acollida i mediació(3280.04).
+22	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+23	Ajudant de serveis	1	3	302	30203	3020300		C2	1	13	1	Falso		Falso	Falso						Pressupost 2026: Es modifica plaça 23 d'aux administratiu funcionari a Ajudant de serveis (TAE) i s'adscriu al lloc 4010.11 edifici SIT
+24	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						01-01-2025 es requalifica plaça d'A2 i TAE a A1 i TAG 01-01-2024 es requalifica plaça i passa d'auxiliar administratiu(C2) d'administració general a tècnic mitjà de gestió TAE del grup A2 A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+25	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+26	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+28	Arquitecte	2	0	0	0	0		A1	1	13	1	Falso		Falso	Falso						
+30	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Verdadero	2008	Falso	Falso						
+31	Tècnic/a en ciències ambientals	1	3	301	30101	3010101		A1	1	13	1	Falso		Falso	Falso						
+32	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+33	Inspector/a	1	3	302	30203	3010301		C1	1	13	1	Falso		Falso	Falso						Pressupost 2024 es requalifia de deliniant a inspector/a i a subescala serveis especials i classe comeses especials
+34	Oficial de cementiri	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+35	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+37	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						
+38	Tècnic/a mitjà/ana de gestió	1	2	202	20100	2010000		A2	1	13	1	Falso		Falso	Falso						
+39	Encarregat/da de brigada	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+40	Arquitecte	1	3	301	30101	3010101		A1	1	13	1	Falso		Falso	Falso						01-01-2025 es funcionaritza aquesta plaça que era de Joan Lunell però s'ha jubilat el 14/11/2024
+41	Tècnic/a d'administració especial	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						Es requalifica plaça d'auxiliar administratiu a tècnic d'administració especial(A2) pel lloc 4300.01 coordinador/a àmbit espai públic
+42	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+43	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+44	Sergent	1	3	302	30201	3020106		C1	1	13	1	Falso		Falso	Falso						
+45	Sergent	1	3	302	30201	3020106		C1	1	13	1	Falso		Falso	Falso						
+46	Caporal	1	3	302	30201	3020107		C2	1	13	1	Falso		Falso	Falso						
+47	Caporal	1	3	302	30201	3020107		C2	1	13	1	Falso		Falso	Falso						
+48	Caporal	1	3	302	30201	3020107		C2	1	13	1	Verdadero	2008	Falso	Falso						
+49	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						Pressupost 2025 es modifica grup de C2 a C1 perquè ha quedat vacant per prom interna Elias Martin
+50	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+51	Agent	1	3	302	30201	3020108		C2	1	13	1	Verdadero	2010	Falso	Falso						
+52	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+53	Caporal	1	3	302	30201	3020107		C2	2	13	1	Verdadero	2008	Falso	Falso						
+54	Caporal	1	3	302	30201	3020107		C1	2	13	1	Verdadero	2008	Falso	Falso						Pressupost 2026 plaça 54 caporal queda vacant per excedència Sandra Ortigosa i es modifica grup de C2 a C1.
+55	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						Pressupost 2025 esmodifica el grup de C2 a C1 perquè ha quedat vacant
+56	Agent	1	3	302	30201	3020108		C2	1	13	1	Verdadero	2008	Falso	Falso						
+57	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+58	Agent	1	3	302	30201	3020108		C2	1	13	1	Verdadero	2008	Falso	Falso						
+59	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+60	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						
+61	Agent	1	3	302	30201	3020108		C2	1	13	1	Verdadero	2008	Falso	Falso						
+62	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+63	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+64	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+65	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+66	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+67	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+68	Inspector/a	1	3	302	30201	3020104		A2	1	13	1	Falso		Falso	Falso						
+69	Agent	1	3	302	30201	3020108		C2	1	13	1	Verdadero	2010	Falso	Falso						
+70	Sergent	1	3	302	30201	3020106		C1	1	13	1	Falso		Falso	Falso						
+71	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						
+72	Treballador/a familiar	2	0	0	0	0		C2	0	13	0	Falso	0	Falso	Falso						
+73	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+74	Interventor/a	1	1	102	10200	1020002		A1	1	13	1	Falso		Falso	Falso						
+75	Subaltern/a	2	0	0	0	0		E	1	13	1	Verdadero	2025	Falso	Falso						Es modifica la plaça era d'auxiliar administratiu/va peò es modifica a subaltern/a per contracte relleu Jordi Calpe
+76	Administratiu/va	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+77	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	1	13	1	Verdadero	2008	Falso	Falso						A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+78	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						01-01-2025 funcionarització plaça
+79	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+80	Diplomat/da administratiu/va	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+81	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						Pressupost 2026 es modifica plaça 81 d'aux administratiu laboral  a agent GU grup C1 per adscriura-la al lloc 2210.08. A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+82	Tècnic/a auxiliar d'informàtic/a	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+83	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						Pressupost 2026 es modifica plaça 83 d'aux administratiu laboral  a agent GU grup C1 per adscriura-la al lloc 2210.08 A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+84	Arquitecte-enginyer/a tècnic/a	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						Pressupost 2026 es modifica plaça 84 aux administratiu laboral a arquitecte tècnic funcionari (TAE) per preveure nova incorporació amb jubilació Anna Ribé
+86	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						Pressupost 2026 es transforma plaça d'aux administrativa a administrativa que es reserva a persona discapacitada., adscrita al lloc 2056.09 especialista OAC A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+87	Tècnic/a de l'emissora	2	0	0	0	0		C2	2	13	1	Falso		Falso	Falso						
+88	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+89	Zelador/a d'obres	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+91	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+92	Tècnic/a de l'emissora	2	0	0	0	0		C2	2	13	1	Falso		Falso	Falso						A amortitzar quan es resolgui la promoció interna a plaça Tècnic auxiliar C1.
+93	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						- Reservada 00087 Expósito Mateo, Joaquim.
+94	Arquitecte-enginyer/a tècnic/a	1	3	301	30102	3010201		A2	2	13	1	Verdadero	2008	Falso	Falso						
+95	Animador/a sociocultural	2	0	0	0	0		C1	2	13	1	Verdadero	2008	Falso	Falso						
+96	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						01/01/2022 Es modifica plaça que abans era un TAE A2 Diplomat/da en treball social i passa a ser A1 Tècnic/a de l'administració general
+97	Ciències econòmiques	2	0	0	0	0		A1	1	13	1	Falso		Falso	Falso						
+99	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Verdadero	2008	Falso	Falso						
+101	Educador/a social	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						01-01-2026 es modifica plaça aux administratiu laboral a plaça educador social funcionari i s'adscriu al lloc 414003 tècnic/a social habitatge A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+102	Monitor/a d'esports	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+103	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	13	1	Falso		Falso	Falso						Ple 26-05-2025 es modifica plaça d'auxiliar administratiu(C2) a tècnic administració general(A2)
+105	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	13	1	Falso		Falso	Falso						Es transforma plaça 105 aux administratiu laboral amb plaça tècnica A2 per tècnic/a governació
+106	Tècnic/a d'administració especial	1	3	301	30101	3010101		A1	1	13	1	Falso		Falso	Falso						Pressupost 2024 es requalifica la plaça 106 d'auxiliar administratiu a Tècnic/a d'administració especial del grup A1
+107	Agent	1	3	302	30201	3020108		C2	1	13	1	Falso		Falso	Falso						
+108	Arquitecte-enginyer/a tècnic/a	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+109	Arquitecte-enginyer/a tècnic/a	1	3	301	30102	3010201		A2	2	13	1	Falso		Falso	Falso						
+111	Metge/essa	2	0	0	0	0		A1	1	13	1	Falso		Falso	Falso						
+112	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+114	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+115	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+116	Integrador/a social	1	3	301	30103	3010301		C1	1	13	1	Verdadero		Falso	Falso						P-2026 es modifica la plaça vacant que ocupava Imma Buscà de treballadora familiar(C2) a integradora social(C1)
+117	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+118	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+119	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso	0	Falso	Falso						Plaça recuperada estava com a Laboral i es transforma com a Funcionari
+120	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso	0	Falso	Falso						
+121	Enginyer/a informàtic	1	3	301	30101	3010101		A1	1	12	1	Falso		Falso	Falso						
+122	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						
+123	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso						Ple 26-09-2024 es modifica i passa a ser del subgrup A1 per ocupar lloc 1000.12 tècnic/a de transparència, govern obert i protecció de dades A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+124	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+125	Tècnic/a de l'administració general	1	2	201	20200	2020000		A1	1	13	1	Falso		Falso	Falso						01-01-2025 Funcionarització plaça 125 que ocupa lloc 5600.01 Cap PEC
+126	Operari/ària	2	0	0	0	0		E	2	12	1	Verdadero	2010	Falso	Falso	29/03/2006					
+127	Caporal	1	3	302	30201	3020107		C2	2	13	1	Falso		Falso	Falso						
+128	Administratiu/va	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+129	Oficial de construcció	2	0	0	0	0		C2	1	12	1	Verdadero	2008	Falso	Falso						
+130	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+131	Caporal	1	3	302	30201	3020107		C2	2	13	1	Falso		Falso	Falso						
+132	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	13	1	Falso		Falso	Falso						26-05-2025 Modificació plaça ple 26/05/2025 da'ux adm a tècnic A2 A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+133	Puericultor/a	2	0	0	0	0		C1	2	13	1	Verdadero	2008	Falso	Falso						
+134	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+135	Tècnic/a mitjà/ana de gestió	1	3	301	30102	3010201		A2	1	13	1	Verdadero	2008	Falso	Falso						
+136	Tècnic/a mitjà/ana de gestió	1	2	201	20100	2010000		A2	1	13	1	Falso		Falso	Falso						Plaça que ocupava Gemma Casanovas,era TAE i ara el 01/01/2024 es modifica a TAG
+137	Encarregat/da d'obres	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+138	Subaltern/a	2	0	0	0	0		E	2	12	1	Falso		Falso	Falso						
+139	Tècnic/a mitjà/ana de formació	1	3	302	30203	3020300		A2	1	13	1	Verdadero		Falso	Falso	10/10/2006					26/05/2025 Ple aprova la modificació d'aquesta plaça que passa d'aux adm (C2) a tècnica (A2)
+140	Oficial de fusteria	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+141	Oficial de construcció	2	0	0	0	0		C2	1	12	1	Falso		Falso	Falso						
+142	Oficial de construcció	2	0	0	0	0		C2	1	12	1	Verdadero	2008	Falso	Falso						
+143	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso	0	Falso	Falso						
+145	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	13	1	Verdadero	2008	Falso	Falso						Pressupost 2026: Es modifica plaça 145 Tècnic/a mitjà/ana de serveis personals laboral A2 per convertir-la en Tècnic/a mitjà/ana de gestió funcionari/a i adscriure-la al 1000.09  coordinador/a Alcaldia que ha de ser A2.
+146	Monitor/a d'esports	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+147	Tècnic/a auxiliar d'informàtic/a	1	3	302	30203	3020300		C1	1	13	1	Falso		Falso	Falso						Pressupost 2026 es modifica plaça 147 d'aux administratiu laboral a Tècnic/a auxiliar d'informàtic/a funcionari adscrita al lloc 2054.06 com funcionari
+148	Administratiu/va	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+149	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+150	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	13	1	Falso		Falso	Falso						Pressupost 2026 es modifica plaça 150 d'auxiliar d'installacions (C2) laboral a tècnic/a mitjà/ana de gestió funcionari i s'adscriu al lloc 3100.02
+152	Monitor/a d'esports	2	0	0	0	0		C1	1	13	0	Falso		Falso	Falso						
+153	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+154	Zelador/a auxiliar	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+155	Diplomat/da en treball social	1	3	301	30102	3010201		A2	1	13	1	Verdadero	2010	Falso	Falso						
+156	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+158	Administratiu/va	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						
+159	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+160	Tècnic de protocol i comunicació	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						Pressupost 2026 es modifica plaça 160 d'aux administratiu laboral a tècnic de protocol i comunicació TAE per adscriura-la al lloc 1020.08 A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+162	Professor/a de música	2	0	0	0	0		A2	1	13	1	Verdadero	2010	Falso	Falso						
+163	Professor/a de música	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+164	Professor/a de música	2	0	0	0	0		A2	1	13	1	Verdadero	2010	Falso	Falso						
+165	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+166	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+167	Professor/a de música	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+168	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+169	Professor/a de música	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+170	Professor/a de música	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+171	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+172	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+173	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+174	Professor/a de música	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+175	Tècnic/a auxiliar de biblioteca	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						01-01-2025 es modifica denominació d'Auxiliar tècnic/a de biblioteca a Tècnic/a auxiliar de biblioteca
+176	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Verdadero	2008	Falso	Falso						
+177	Oficial de pintura	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+178	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+179	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso		Falso	Falso						
+181	Operari/ària	2	0	0	0	0		E	1	13	1	Verdadero	2008	Falso	Falso						
+182	Tècnic/a de mobilitat	2	0	0	0	0		A2	2	13	1	Verdadero	2008	Verdadero	Falso						
+183	Arquitecte-enginyer/a tècnic/a	1	3	301	30102	3010201		A2	2	13	1	Verdadero	2008	Falso	Falso						
+184	Tècnic/a mitjà/ana de formació	1	3	302	30203	3020300		A2	1	13	1	Falso		Falso	Falso						26/05/2025 Ple aprova la modificació d'aquesta plaça que passa d'aux adm (C2) a tècnica (A2) A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+185	Delineant	1	3	301	30103	3010301		C1	1	13	1	Falso		Falso	Falso						
+188	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+190	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+191	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	9	31	1	Falso		Falso	Falso						
+192	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	9	31	1	Falso		Falso	Falso						
+193	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Verdadero	2008	Falso	Falso						
+194	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Verdadero	2008	Falso	Falso						
+196	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	1	13	1	Falso		Falso	Falso						
+197	Tècnic/a mitjà/ana de serveis personals	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						Aquesta plaça era d'administrativa i en pressupost 2022 es modifica i passa a reconvertir-se en plaça de tècnic En pressupost 2023 es requalifica com a plaça tècnica funcionària
+198	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+199	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+200	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						
+203	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	2008	Falso	Falso						A amortitzar quan es doti la plaça d'Ajudant de Serveis
+204	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+205	Tècnic/a mitjà/ana de gestió	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso						
+206	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Verdadero	2008	Falso	Falso						
+208	Agent	1	3	302	30201	3020108		C2	2	13	1	Verdadero	2008	Falso	Falso						
+209	Agent	1	3	302	30201	3020108		C2	2	13	1	Falso		Falso	Falso						
+210	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+211	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Verdadero	2008	Falso	Falso						
+212	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+213	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						
+214	Treballador/a familiar	2	0	0	0	0		C2	1	13	1	Falso		Falso	Falso						A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+215	Animador/a sociocultural	2	0	0	0	0		C1	2	13	1	Verdadero	2008	Falso	Falso						
+216	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	12	1	Falso		Falso	Falso						01-01-2025 Funcionaritzem plaça que ha quedat vacant amb jubilació de Paqui Santana el dia 9/12/2024
+217	Tècnic/a mitjà/ana de promoció econòmica	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso						
+221	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+222	Tècnic/a auxiliar de biblioteca	2	0	0	0	0		C1	1	13	1	Falso		Falso	Falso						01-01-2025 es modifica denominació d'Auxiliar tècnic/a de biblioteca a Tècnic/a auxiliar de biblioteca
+223	Administratiu/va	1	2	203	20300	2030000		C1	1	13	1	Falso		Falso	Falso						
+224	Sotsinspector/a	1	3	302	30201	3020105		C1	1	13	1	Verdadero		Falso	Falso						Abans era plaça d'inspector a partir dde 01/01/2022 es modifica per passar a ser sots inspector
+225	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+226	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso		Falso	Falso						
+227	Tècnic/a de comunicació	3	0	0	0	0		A2	9	31	0	Falso	0	Verdadero	Falso						
+228	Diplomat/da administratiu/va	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+229	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	1	13	1	Falso		Falso	Falso						A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+231	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	2	13	1	Falso		Falso	Falso						
+232	Agent	1	3	302	30201	3020108		C2	2	13	1	Falso		Falso	Falso						
+233	Agent	1	3	302	30201	3020108		C2	2	13	1	Falso		Falso	Falso						
+234	Agent	1	3	302	30201	3020108		C1	1	13	1	Falso		Falso	Falso						
+235	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	2	13	1	Falso		Falso	Falso						
+236	Tècnic/a de gestió documental i arxiu	1	3	301	30101	3010101		A1	2	0	0	Falso		Falso	Falso						
+237	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso		Falso	Falso						
+239	Educador/a	2	0	0	0	0		C1	2	13	1	Verdadero	2008	Falso	Falso	30/07/2008					Laboralització de la plaça al Ple de juliol 2008
+249	Tècnic/a auxiliar	2	0	0	0	0		C1	2	13	1	Verdadero	2008	Falso	Falso						
+251	Sergent	1	3	302	30201	3020106		C1	2	13	1	Falso		Falso	Falso						
+266	Auxiliar tècnic/a	1	3	302	30203	3020300		C2	2	13	1	Verdadero	2008	Falso	Falso						
+267	Ciències de la informació	1	3	301	30101	3010101		A1	0	0	0	Falso		Falso	Falso						
+268	Tècnic/a mitjà/ana de fira, comerç i turisme	2	0	0	0	0		A2	2	13	1	Verdadero	2008	Falso	Falso						
+269	Administratiu/va	1	2	203	20300	2030000		C1	2	13	1	Verdadero	2008	Falso	Falso						
+272	Tècnic/a auxiliar	2	0	0	0	0		C1	0	0	0	Falso		Falso	Falso						
+273	Administratiu/va	1	2	203	20300	2030000		C1	2	13	1	Verdadero	2008	Falso	Falso						
+275	Diplomat/da en treball social	1	3	301	30102	3010201		A2	2	13	1	Verdadero	2008	Falso	Falso						
+276	Administratiu/va	1	2	203	20300	2030000		C1	2	13	1	Verdadero	2008	Falso	Falso						
+277	Administratiu/va	1	2	203	20300	2030000		C1	2	13	1	Verdadero	2008	Falso	Falso						
+279	Administratiu/va	1	2	203	20300	2030000		C1	2	13	1	Falso		Falso	Falso						
+280	Tècnic/a auxiliar	2	0	0	0	0		C1	2	13	1	Verdadero	2008	Falso	Falso						
+281	Agent	1	3	302	30201	3020108		C2	2	13	1	Falso		Falso	Falso						
+282	Agent	1	3	302	30201	3020108		C2	2	13	1	Falso		Falso	Falso						
+283	Agent	1	3	302	30201	3020108		C2	2	13	1	Falso		Falso	Falso						
+284	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	2	13	1	Falso		Falso	Falso	01/01/2008					Creació per amortització lloc personal eventual (Tèc. Habitatge)
+286	Treballador/a familiar	2	0	0	0	0		C2	2	13	1	Verdadero	2008	Falso	Falso						
+289	Tècnic/a de l'emissora	2	0	0	0	0		C2	2	13	1	Falso		Falso	Falso						A amortitzar quan es resolgui la promoció interna a plaça Tècni auxiliar C1.
+300	Arquitecte-enginyer/a tècnic/a	1	3	301	30102	3010201		A2	2	13	1	Verdadero	2008	Falso	Falso	01/01/2006					
+301	Administratiu/va	2	0	0	0	0		C1	2	13	1	Falso		Falso	Falso	01/01/2006					Plaça creada per a promoció interna a l'ASP. S'utilitza per la promoció interna a l'OMI, no es fa definir cap plaça de personal laboral i era necessari fins que no s'executi el procés de funcionarització. Caldrà laboralitzar plaça administratiu/va funcionari prevista a l'OMI.
+302	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	2	13	0,75	Falso		Falso	Falso	01/03/2006					
+303	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	2	13	1	Falso		Verdadero	Falso	17/03/2006					A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+304	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	2	13	1	Verdadero	2008	Falso	Falso	17/03/2006					A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+305	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	2	13	1	Verdadero	2008	Falso	Falso	17/03/2006					
+306	Tècnic/a de control i avaluació	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Falso	17/03/2006					Ple juny 2025 es modifica aquesta plaça pel nou lloc creat 300002 tècnic/a de control i avaluació de l'activitat de l'ASP A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+307	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Verdadero	2008	Falso	Falso	26/10/2006	Ple Pressupost 2007				01-01-2026 Modifiquem la plaça d'aux administratiu a subaltern A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+308	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	2	13	1	Verdadero	2008	Falso	Falso	26/10/2006	Ple Pressupost 2007				
+309	Ajudant de serveis	2	0	0	0	0		C2	2	13	1	Falso		Falso	Falso	23/01/2007					
+310	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	9	31	0	Falso		Falso	Falso	27/06/2007					
+311	Administratiu/va	1	2	203	20300	2030000		C1	2	13	1	Verdadero	2008	Falso	Falso	01/01/2008					Creació per provisió per mobilitat horitzontal del lloc d'Administratiu gerència, i posterior generació de vacant imprescindible.
+313	Auxiliar administratiu/va	1	2	204	20400	2040000		C2	1	13	1	Verdadero	2008	Falso	Falso	01/01/2008					Creació motivada per consolidar servei administratiu a Governació.
+314	Tècnic/a mitjà/ana de gestió	1	2	202	20100	2010000		A2	1	13	1	Verdadero	2008	Falso	Falso	01/01/2008					Creació per nova configuració unitat administrativa governació
+316	Diplomat/da en treball social	1	3	301	30102	3010201		A2	2	13	1	Verdadero	2008	Falso	Falso	01/01/2008					Creació per finalització darrera prórroga CS de Treballadora Social de DIBA.
+318	Tècnic/a mitjà/na de gestió	1	3	301	30102	3010201		A2	1	13	1	Verdadero	2025	Falso	Falso	01/01/2008					09-04-24 era una pl.aux administratiu que es transforma amb tènica TAE A2 per lloc tècnic/a de salut A amortitzar quan es resolgui la promoció interna a plaça Administrativa.
+319	Tècnic/a mitjà/ana de gestió	2	0	0	0	0		A2	2	13	1	Falso		Falso	Falso	01/01/2008					Creació per nova configuració Àrea DIPEL, àmbit mercat i per la finalització AODL sense prórroga Encarnación Lombardia.
+320	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso	2008	Falso	Falso	01/01/2008					Creació per posada en fucionament remodelació mercat amb més horari de servei.
+321	Ajudant de serveis	1	3	302	30203	3020300		C2	2	13	1	Verdadero	2008	Falso	Falso	23/01/2007					
+323	Tècnic/a mitjà/ana de gestió	1	3	301	30102	3010201		A2	2	13	0	Verdadero		Falso	Falso	03/04/2008					Titulacions: Diplomatura universitària de l'àrea econòmico-financera.
+324	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	2008	Falso	Falso	03/04/2008					
+325	Tècnic mitjà/na en gestió econòmica	1	3	301	30102	3010201		A2	2	13	0	Verdadero	2008	Falso	Falso	25/06/2008	Ple de juny				
+327	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	2008	Falso	Falso	25/06/2008					Creació de la plaça per acord de promocions internes fruit de la VLT de 2007.
+328	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	2008	Falso	Falso	25/06/2008					Creació de la plaça per acord de promocions internes fruit de la VLT de 2007.
+329	Tècnic/a auxiliar d'emissora	2	0	0	0	0		C1	1	13	0	Verdadero	2008	Falso	Falso	25/06/2008					Creació de la plaça per acord de promocions internes fruit de la VLT de 2007.
+330	Tècnic/a auxiliar d'emissora	2	0	0	0	0		C1	1	13	0	Verdadero	2008	Falso	Falso	25/06/2008					Creació de la plaça per acord de promocions internes fruit de la VLT de 2007.
+331	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+332	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	0	Verdadero	2008	Falso	Falso	25/06/2008					
+334	Arquitecte	1	3	301	30101	3010101		A1	1	13	1	Falso		Falso	Verdadero	01/01/2010					
+335	Diplomat/da en educació infantil	1	3	301	30102	3010201		A2	1	13	0	Falso		Falso	Falso	01/01/2010					
+336	Diplomat/da en treball social	1	3	301	30102	3010201		A2	1	13	1	Verdadero	2010	Falso	Falso	01/01/2010					
+337	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Verdadero	2010	Falso	Falso	01/01/2010					
+338	Tècnic d'administració general	1	2	201	20100	2010000		A1	2	13	1	Verdadero		Falso	Falso	01/01/2011					01/01/2023 reclassificació de plaça de TAE a TAG
+339	Tècnic/a auxiliar de gestió	2	0	0	0	0		C1	2	13	0	Verdadero		Falso	Falso	31/12/2010					Substitueix anterior plaça 0331 Administrativa funcionari per modificació organigrama Educació.
+340	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+341	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+342	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+343	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+344	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+345	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+346	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+347	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+349	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+350	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	31/12/2010					
+353	Operari/ària	2	0	0	0	0		E	2	12	1	Verdadero		Falso	Falso	01/10/2011					
+354	Operari/ària	2	0	0	0	0		E	2	12	1	Verdadero		Falso	Falso	01/10/2011					
+355	Tècnic/a de l'administració especial	1	3	301	30101	3010101		A1	9	31	0	Falso	0	Falso	Falso	07/07/2011					
+356	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	0	Falso	0	Falso	Falso	01/01/2012					
+357	Educador/a social	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Falso	01/01/2012					
+358	Educador/a social	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Falso	01/01/2012					
+359	Educador/a social	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Falso	01/01/2012					
+360	Tècnic/a de l'emissora	2	0	0	0	0		C2	2	13	0	Falso	0	Falso	Falso	01/01/2012					
+362	Educador/a	2	0	0	0	0		C1	2	13	0	Falso	0	Falso	Falso	01/01/2012					
+363	Tècnic/a mitjà/ana de gestió	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Falso	01/01/2012					
+364	Tècnic/a mitjà/ana de gestió	1	3	301	30102	3010201		A2	1	13	0	Falso		Falso	Falso	01/01/2012					
+367	Tècnic/a de comunicació	1	3	301	30102	3010201		A2	2	13	0	Falso	0	Falso	Falso						
+368	Agent	1	3	302	30201	3020108		C2	1	13	0	Falso	0	Falso	Falso						
+369	Agent	1	3	302	30201	3020108		C2	1	13	0	Falso	0	Falso	Falso						
+370	Tresorer/a	1	1	103	10300	1030000		A1	1	13	0	Falso	0	Falso	Falso	01/01/2013					
+371	Subaltern/a	1	2	205	20500	2050000		E	2	13	1	Falso	0	Falso	Falso						
+372	Subaltern/a	2	0	0	0	0		E	2	13	1	Falso	0	Falso	Falso						
+373	Educador/a	2	0	0	0	0		C1	1	13	0	Falso	0	Falso	Falso	01/01/2014					
+374	Auxiliar Tècnic/a	1	3	301	30103	3010302		C2	1	13	0	Verdadero	0	Falso	Falso	01/01/2015					Ple de març 2023 es requalifica plaça de L a F (2/2023/PLANT)
+375	Subaltern/a	1	2	205	20500	2050000		E	1	13	1	Falso	0	Falso	Falso	01/01/2015					
+376	Subaltern/a	1	2	205	20500	2050000		E	1	13	1	Falso	0	Falso	Falso						2023 es modifica plaça d'aux adm a subaltern per fer mobilitat
+377	Tècnic/a informàtic/a	1	3	301	0	0		A1	1	13	1	Falso	0	Falso	Falso	27/09/2017					
+378	Administratiu/va	1	2	203	20400	0		C2	1	13	0	Falso	0	Falso	Falso	27/09/2017					
+379	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Falso	27/09/2017					Pel 2023 es transforma d'auxiliar administratiu a administratiu
+380	Administratiu/va	1	2	203	20400	0		C1	1	13	0	Falso	0	Falso	Falso	27/09/2017					
+381	Tècnic/a auxiliar de biblioteca	2	0	0	0	0		C1	1	13	1	Falso	0	Falso	Falso	01/01/2019					01-01-2025 es modifica denominació d'Auxiliar tècnic/a de biblioteca a Tècnic/a auxiliar de biblioteca
+382	Tècnic/a auxiliar de biblioteca	2	0	0	0	0		C1	1	13	0	Falso	0	Falso	Falso						01-01-2025 es modifica denominació d'Auxiliar tècnic/a de biblioteca a Tècnic/a auxiliar de biblioteca
+383	Tècnic/a auxiliar de biblioteca	2	0	0	0	0		C1	1	13	0	Falso	0	Falso	Falso						01-01-2025 es modifica denominació d'Auxiliar tècnic/a de biblioteca a Tècnic/a auxiliar de biblioteca
+384	Tècnic/a mitjà/ana de serveis personals	2	0	0	0	0		A2	1	13	1	Falso	0	Falso	Falso						
+385	Tècnic/a mitjà/ana de gestió	1	2	202	20100	2010000		A2	1	13	1	Falso	0	Falso	Falso						01/01/2022 es modifica la plaça que passa a ser de TAG A1 a A2 amb denominació Tècnic/a mitjà/ana de gestió per poder permetre promoció interna des de C1
+390	Diplomat/da en treball social	1	3	301	30102	3010201		A2	1	13	1	Verdadero	0	Falso	Falso	01/01/2019					
+392	Assessor/a	3	0	0	0	0		A1	9	31	1	Falso	0	Falso	Falso	01/01/2020					
+393	Diplomat/a en treball social	1	3	301	30102	3010201		A2	1	13	1	Verdadero	0	Falso	Falso	01/01/2022	Pressupost 2022				
+394	Administratiu/va	1	2	203	20300	0		C1	1	13	1	Verdadero	0	Falso	Falso	01/01/2022	Pressupost 2022				plaça administrativa OME
+395	Tècnic/a superior d'administració especial	1	3	302	30203	0		A1	1	13	1	Falso	0	Falso	Falso		01/01/2022				Plaça del tècnic de protecció civil
+396	Tècnic/a mitjà/ana de gestió	1	2	202	20200	2020000		A2	1	13	1	Falso	0	Falso	Falso	01/01/2022					01-01-2025 es funcionaritza, de laboral a funcionari Nova plaça tècnic DEV per fer promoció interna
+397	Tècnic/a de l'administració general	1	2	201	20100	2010000		A1	1	13	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creacio plaça pla estabilització per TAG contratació
+398	Tècnic/a de Cultura	2	0	0	0	0		A2	1	13	1	Verdadero		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+399	Professor/a SEFED	2	0	0	0	0		A1	1	13	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+400	Monitor/a SEFED	2	0	0	0	0		A2	1	12	1	Verdadero		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+401	Tècnic/a auxiliar d'arxiu	2	0	0	0	0		C1	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+402	Tècnic/a desenvolupament econòmic local	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+403	Tècnic/a desenvolupament econòmic local	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+404	Tècnic/a desenvolupament econòmic local	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+405	Tècnic/a desenvolupament econòmic local	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+406	Agent d'ocupació	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+407	Monitor/a ESO SEFED	2	0	0	0	0		A2	1	12	1	Falso		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+408	Monitor/a SEFED	2	0	0	0	0		A2	1	12	1	Verdadero		Falso	Falso	10/05/2022	1/2022/PLANT				10/05/2022 Creació plaça pla estabilització
+409	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Verdadero	0	Falso	Falso	27/09/2022	3/2022/PLANT				plaça creada després d'amortitzar plaça 78 administratiu laboral de l'Anna Campmajo
+410	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+411	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+412	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+413	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+414	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+415	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+416	Administratiu/va	1	2	203	20300	2030000		C1	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					Plaça creada per prom interna i eliminar assignacions funcions 01/12/2024
+417	Tècnic/a mitjà/na de gestió	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					01-01-2025 Plaça creada per prom interna tècnic/a esports des de C1
+418	Tècnic/a mitjà/na de gestió	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					01-01-2025 Plaça creada per prom interna tècnic/a esports des de C1
+419	Tècnic/a mitjà/na de gestió	1	3	301	30102	3010201		A2	1	13	0	Falso	0	Falso	Verdadero	01/01/2025					01-01-2025 Plaça creada per prom interna tècnic/a esports des de C1
+420	Tècnic/a d'Educació	1	3	301	30102	3010201		A2	1	13	1	Falso		Falso	Verdadero	01/01/2026					01/01/2026 creació plaça A2 per poder cobrir cap educació que és A1/A2.
+421	Enginyer/a tècnic/a	1	3	301	30102	3010201		A2	2	13	1	Verdadero	2026	Falso	Falso	01/01/2026					Alta plaça 421 per ocupar lloc 434001 enginyer residus, neteja i cicle aigua

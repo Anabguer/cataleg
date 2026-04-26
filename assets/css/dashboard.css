@@ -1,0 +1,397 @@
+/* Tauler: calendari anual d’accions formatives */
+
+.dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-alert {
+    margin-bottom: var(--space-4);
+}
+
+.dashboard__calendar-block {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+}
+
+.dashboard__year-toolbar {
+    margin-bottom: var(--space-4);
+}
+
+.dashboard__year-toolbar-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    justify-content: center;
+}
+
+.dashboard__year-label {
+    font-size: var(--text-small);
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.dashboard__year-input {
+    width: 6.5rem;
+    text-align: center;
+}
+
+.dashboard__year-hint {
+    text-align: center;
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-small);
+}
+
+.dashboard__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4) var(--space-6);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius);
+}
+
+.dashboard__filters-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.dashboard__filter-label {
+    font-size: var(--text-small);
+    font-weight: 600;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+/* Select «Estat»: més compacte que el .form-select global */
+.dashboard__filters .dashboard__filter-select {
+    width: auto;
+    min-width: 11rem;
+    max-width: 100%;
+    height: 32px;
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+}
+
+.dashboard__checkbox-label {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--text-small);
+    cursor: pointer;
+    max-width: 22rem;
+    line-height: 1.35;
+}
+
+.dashboard__filters .dashboard__checkbox-label {
+    align-items: center;
+}
+
+.dashboard__checkbox {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+.dashboard__filters .dashboard__checkbox {
+    margin-top: 0;
+}
+
+.dashboard__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    justify-content: center;
+    margin-bottom: var(--space-4);
+    font-size: var(--text-small);
+    color: var(--color-muted);
+}
+
+.dashboard__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.dashboard__legend-swatch {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.dashboard__legend-swatch--planned {
+    background: var(--color-info-bg);
+    border: 1px solid var(--color-info);
+}
+
+.dashboard__legend-swatch--realized {
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success);
+}
+
+.dashboard__legend-swatch--mixed {
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning);
+}
+
+.dashboard__legend-swatch--cancelled {
+    background: var(--color-error-bg);
+    border: 1px solid var(--color-error);
+}
+
+.dashboard__loading {
+    text-align: center;
+    margin: var(--space-4) 0;
+}
+
+.dashboard__year-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-5);
+}
+
+.dashboard__month {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+    background: var(--color-surface-muted);
+    min-width: 0;
+}
+
+.dashboard__month-title {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-small);
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text);
+    text-transform: capitalize;
+}
+
+.dashboard__dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: var(--space-2);
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    text-align: center;
+}
+
+.dashboard__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.dashboard__day {
+    aspect-ratio: 1;
+    max-height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    color: var(--color-text);
+    background: var(--color-surface);
+}
+
+.dashboard__day--muted {
+    color: var(--color-muted);
+    opacity: 0.45;
+    background: transparent;
+}
+
+.dashboard__day--today {
+    outline: 1px solid var(--color-primary);
+    outline-offset: -1px;
+}
+
+.dashboard__day--planned {
+    background: var(--color-info-bg);
+    border-color: rgba(37, 99, 168, 0.35);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.dashboard__day--realized {
+    background: var(--color-success-bg);
+    border-color: rgba(45, 122, 77, 0.4);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.dashboard__day--mixed {
+    background: var(--color-warning-bg);
+    border-color: rgba(161, 92, 7, 0.45);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.dashboard__day--cancelled {
+    background: var(--color-error-bg);
+    border-color: rgba(180, 35, 24, 0.45);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.dashboard__day--planned:hover,
+.dashboard__day--realized:hover,
+.dashboard__day--mixed:hover,
+.dashboard__day--cancelled:hover {
+    filter: brightness(0.97);
+}
+
+.dashboard__day:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Modal dia */
+.dashboard-day-modal {
+    z-index: 1250;
+}
+
+.dashboard-day-modal__dialog {
+    max-width: 520px;
+    width: 100%;
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    max-height: min(85vh, 720px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin: var(--space-4) auto 0;
+}
+
+.dashboard-day-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.dashboard-day-modal__title {
+    margin: 0;
+    font-size: var(--text-body);
+    font-weight: 600;
+}
+
+.dashboard-day-modal__close {
+    flex-shrink: 0;
+}
+
+.dashboard-day-modal__body {
+    padding: var(--space-4);
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.dashboard-day-modal__action {
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.dashboard-day-modal__action:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.dashboard-day-modal__code {
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.dashboard-day-modal__name {
+    margin: var(--space-1) 0;
+    font-weight: 600;
+}
+
+.dashboard-day-modal__meta {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--color-muted);
+}
+
+.dashboard-day-modal__dates-label {
+    display: block;
+    margin-top: var(--space-2);
+    font-size: var(--text-small);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.dashboard-day-modal__dates-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dashboard-day-modal__date-chip {
+    font-size: var(--text-small);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-bg-muted);
+    border: 1px solid var(--color-border);
+}
+
+.dashboard-day-modal__action-footer {
+    margin-top: var(--space-3);
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Footer tauler */
+.app-footer--dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-3);
+    justify-content: center;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-small);
+    color: var(--color-muted);
+    text-align: left;
+}
+
+.app-footer__brand {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.app-footer__sep {
+    opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+    .dashboard__calendar-block {
+        padding: var(--space-3);
+    }
+
+    .dashboard__year-grid {
+        grid-template-columns: 1fr;
+    }
+}

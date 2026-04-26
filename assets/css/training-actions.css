@@ -1,0 +1,245 @@
+/**
+ * Accions formatives — detalls específics (assistents, etc.).
+ * La pàgina continua dins de .module-users; es carrega després de module-users.css.
+ */
+
+/*
+ * Els modals d’accions formatives viuen dins de .module-users, que redefineix --color-primary
+ * al taronja del mòdul. Això feia que interruptors, Desar i botons d’ícona semblessin el tema
+ * «de permisos/usuaris». Mateixa paleta que app.css / formularis com Àrees de coneixement.
+ */
+.training-actions-ui-standard {
+    --color-primary: #3d7ea8;
+    --color-primary-hover: #2f6488;
+    --color-primary-alpha-08: rgba(61, 126, 168, 0.08);
+    --color-focus-ring: rgba(61, 126, 168, 0.28);
+}
+
+.module-users .training-actions-ui-standard .btn--icon-edit,
+.module-users .training-actions-ui-standard .ta-attendee-cert-open {
+    background: var(--color-primary-alpha-08);
+    color: var(--color-primary);
+    border: 1px solid #b8d4e8;
+}
+
+.module-users .training-actions-assist {
+    margin-top: var(--space-1);
+}
+
+.module-users .ta-assist-toolbar {
+    margin-bottom: var(--space-3);
+}
+
+.module-users .ta-attendees-locked {
+    padding: var(--space-3);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #fafbfc;
+}
+
+.module-users .ta-attendees-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.module-users .modal__dialog--training-actions .ta-attendees-table.data-table--compact thead th {
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.module-users .modal__dialog--training-actions .ta-attendees-table.data-table--compact tbody td {
+    font-size: 0.85rem;
+}
+
+.module-users .ta-attendees-ic {
+    text-align: center;
+    white-space: nowrap;
+    width: 2.75rem;
+}
+
+.module-users .ta-attendee-cert-link {
+    font-size: var(--text-small);
+    word-break: break-word;
+}
+
+.module-users .ta-attendee-person-select {
+    max-width: 100%;
+    width: 100%;
+}
+
+.module-users .training-actions-grid--attendee-flags {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+@media (max-width: 520px) {
+    .module-users .training-actions-grid--attendee-flags {
+        grid-template-columns: 1fr;
+    }
+}
+
+.module-users .ta-attendee-cert-block .ta-attendee-cert-name {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-small);
+    font-weight: 600;
+}
+
+.module-users .ta-attendee-cert-linked-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.module-users .ta-attendee-cert-linked-row .ta-attendee-cert-name {
+    margin: 0;
+    font-weight: 500;
+}
+
+.module-users .ta-attendee-cert-upload {
+    margin-top: var(--space-2);
+}
+
+.module-users .ta-attendees-table .ta-attendee-cert-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+.module-users .ta-attendees-table .ta-attendee-cert-open .ui-icon {
+    flex-shrink: 0;
+}
+
+.module-users .training-actions-docs {
+    margin-top: var(--space-1);
+}
+
+.module-users .ta-docs-toolbar {
+    margin-bottom: var(--space-3);
+}
+
+.module-users .ta-docs-locked {
+    padding: var(--space-3);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    background: #fafbfc;
+}
+
+.module-users .ta-docs-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.module-users .modal__dialog--training-actions .ta-docs-table.data-table--compact thead th {
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.module-users .modal__dialog--training-actions .ta-docs-table.data-table--compact tbody td {
+    font-size: 0.85rem;
+}
+
+.module-users .ta-docs-table .ta-docs-orig {
+    font-size: var(--text-small);
+    word-break: break-word;
+}
+
+.module-users .ta-docs-table .ta-attendee-cert-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    vertical-align: middle;
+}
+
+/* Estat d’execució al llistat: el .badge global usa text-transform:uppercase; aquí cal el text canònic en català. */
+.module-users .badge.ta-badge-exec-status {
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 600;
+}
+
+.module-users .ta-eval-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.module-users .ta-eval-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-3);
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+}
+
+.module-users .ta-eval-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    max-width: 100%;
+}
+
+.module-users .ta-eval-table .ta-eval-q {
+    text-align: center;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.module-users .modal__dialog--training-actions .ta-eval-table.data-table--compact thead th {
+    font-size: 0.72rem;
+}
+
+.module-users .ta-attendee-qcell {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.module-users .ta-attendee-q-sent {
+    margin-bottom: 0.25rem;
+    min-height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.module-users .ta-attendee-q-send {
+    display: flex;
+    justify-content: center;
+}
+
+.module-users .ta-attendee-q-dash {
+    font-size: 0.85rem;
+}
+
+/* Detall avaluació: cos amb scroll (la regla global només aplica a form.users-modal-form__body) */
+#training-actions-evaluation-detail-overlay.modal--form-overlay .users-modal-form > .users-modal-form__body.ta-eval-detail-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Capçaleres ordenables (botó, no enllaç): mateix aspecte que data-table__sort-link */
+.module-users .ta-eval-table .ta-eval-sort-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    max-width: 100%;
+}

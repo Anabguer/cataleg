@@ -1,0 +1,7 @@
+﻿Grup	SouBase	SouBasePagues	SouBase_Nou	SouBasePagues_Nou
+A1	1387,24	856,05		
+A2	1199,52	874,83		
+B	1048,55	906,26		
+C1	900,63	778,42		
+C2	749,58	742,75		
+E	686,07	686,07		

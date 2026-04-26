@@ -1,0 +1,4 @@
+﻿IDTipusAcces	NomTipusAcces
+1	Definitiu
+2	Interí
+9	Altres

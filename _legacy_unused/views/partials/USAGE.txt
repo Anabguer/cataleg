@@ -1,0 +1,30 @@
+Parcials reutilitzables (incloure des de qualsevol vista sota /views)
+=====================================================================
+
+layouts/admin_page.php
+  Encadena page_header, action_bar, filter_card (si $filterCardInner no buit),
+  data_table (si $dataTableInner no buit) i després imprimeix $pageContentExtra.
+  Veure comentaris al fitxer per la llista de variables.
+
+page_header.php
+  Variable: $pageHeader amb claus opcionals:
+    title (obligatori), subtitle, icon (clau per ui_icon), back_url, back_label,
+    help_url, help_label
+
+action_bar.php
+  Variable: $actionBarInner — HTML dels botons (grups amb .action-bar__group).
+  Si està buit, el parcial no renderitza res.
+
+filter_card.php
+  Variables: $filterCardInner, $filterExpanded (bool), $filterSummaryLabel,
+    $filterShowClear (bool)
+
+data_table.php
+  Variables: $dataTableInner (HTML de la <table>), $dataTableToolbar (text opcional),
+    $dataTableCaption (aria-label opcional)
+
+Icones: includes/ui_icons.php — funció ui_icon('chart'|'users'|...)
+
+Estils: assets/css/app.css (base) + assets/css/components.css (aquest sistema)
+
+JS: assets/js/app.js — showAlert, showConfirm (veure capçalera del fitxer)

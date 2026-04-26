@@ -1,0 +1,30 @@
+(function () {
+    'use strict';
+    function cfg() { return window.APP_AREAS || {}; }
+    function $(s, r) { return (r || document).querySelector(s); }
+    function overlay() { return document.getElementById('areas-modal-overlay'); }
+    function lock() { if (typeof window.lockModalBodyScroll === 'function') window.lockModalBodyScroll(); }
+    function unlock() { if (typeof window.unlockModalBodyScroll === 'function') window.unlockModalBodyScroll(); }
+    function openModal() { var el = overlay(); if (!el) return; el.removeAttribute('hidden'); el.setAttribute('aria-hidden', 'false'); requestAnimationFrame(function(){ el.classList.add('is-visible'); }); lock(); var f = el.querySelector('input:not([type="hidden"])'); if (f) f.focus(); }
+    function closeModal() { var el = overlay(); if (!el) return; var ae = document.activeElement; if (ae && el.contains(ae) && ae.blur) ae.blur(); setTimeout(function(){ el.classList.remove('is-visible'); el.setAttribute('hidden','hidden'); el.setAttribute('aria-hidden','true'); unlock(); },0); }
+    function clearErrors(form) { form.querySelectorAll('[data-error-for]').forEach(function(p){ p.hidden = true; p.textContent=''; }); var w=form.querySelector('.js-areas-msg'); if(w) w.hidden=true; var g=form.querySelector('[data-areas-form-error]'); if(g) g.textContent=''; }
+    function showErrors(form, errors) { clearErrors(form); Object.keys(errors || {}).forEach(function(k){ if(k==='_general'){ var w=form.querySelector('.js-areas-msg'); var g=form.querySelector('[data-areas-form-error]'); if(w&&g){ w.hidden=false; g.textContent=errors[k]; } return; } var p=form.querySelector('[data-error-for="'+k+'"]'); if(p){ p.hidden=false; p.textContent=errors[k]; } }); }
+    function setMode(create){ var h=$('[data-areas-modal-heading]'), s=$('[data-areas-modal-subheading]'); if(h) h.textContent=create?'Nova àrea':'Actualització'; if(s) s.textContent=create?'Introdueix les dades de la nova àrea':'Modifica la informació de l’àrea'; }
+    function reset(form){ form.reset(); var id=$('[data-field="id"]',form); if(id) id.value=''; $('#areas_is_active').checked=true; clearErrors(form); }
+    function openCreate(){ if(!cfg().canCreate) return; var f=$('#areas-modal-form'); if(!f) return; reset(f); setMode(true); openModal(); }
+    function openEdit(id){ if(!cfg().canEdit) return; var f=$('#areas-modal-form'); if(!f) return; reset(f); setMode(false); fetch((cfg().apiUrl||'')+'?action=get&id='+encodeURIComponent(String(id)),{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){ if(!d.ok||!d.area){ if(window.showAlert) window.showAlert('error','Error','No s’ha pogut carregar l’àrea.'); return; } var a=d.area; $('[data-field="id"]',f).value=String(a.id); $('[data-field="area_code"]',f).value=String(a.area_code||''); $('[data-field="alias"]',f).value=a.alias||''; $('[data-field="name"]',f).value=a.name||''; $('#areas_is_active').checked=!!a.is_active; openModal(); }).catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.'); }); }
+    function submit(ev){ ev.preventDefault(); var f=$('#areas-modal-form'); if(!f) return; clearErrors(f); var c=cfg(), csrf=c.csrfToken||''; var fd=new FormData(f); var id=(fd.get('id')||'').toString().trim(); var payload={action:'save',csrf_token:csrf,area_code:(fd.get('area_code')||'').toString(),name:(fd.get('name')||'').toString(),alias:(fd.get('alias')||'').toString(),is_active:$('#areas_is_active').checked?'1':'0'}; if(id!=='') payload.id=parseInt(id,10);
+        fetch(c.apiUrl||'',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)}).then(function(r){return r.json().then(function(j){return{status:r.status,body:j};});}).then(function(res){ if(res.body.ok){ closeModal(); if(window.showAlert){ window.showAlert('success','Èxit',res.body.message||'Desat.'); setTimeout(function(){ window.location.reload(); },650);} else {window.location.reload();} return;} if(res.body.errors){ showErrors(f,res.body.errors);} else if(window.showAlert){ window.showAlert('error','Error','No s’ha pogut desar.');}}).catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.');});
+    }
+    function confirmDelete(id){ if(!cfg().canDelete||!window.showConfirm) return; var csrf=cfg().csrfToken||''; window.showConfirm('Registre actiu','Desitja eliminar aquesta àrea?',function(){ fetch(cfg().apiUrl||'',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({action:'delete',id:id,csrf_token:csrf})}).then(function(r){return r.json();}).then(function(d){ if(d.ok){ if(window.showAlert){ window.showAlert('success','Èxit',d.message||'Eliminat.'); setTimeout(function(){window.location.reload();},650);} else {window.location.reload();} } else if(d.errors&&d.errors._general&&window.showAlert){ window.showAlert('error','Error',d.errors._general);} }).catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.');}); },{confirmLabel:'Si',cancelLabel:'No'}); }
+    document.addEventListener('DOMContentLoaded',function(){
+        document.body.addEventListener('click',function(e){
+            if(e.target.closest('[data-areas-open-create]')){ e.preventDefault(); openCreate(); }
+            if(e.target.closest('[data-areas-edit]')){ e.preventDefault(); var id=parseInt(e.target.closest('[data-areas-edit]').getAttribute('data-areas-edit'),10); if(id>0) openEdit(id); }
+            if(e.target.closest('[data-areas-delete]')){ e.preventDefault(); var idd=parseInt(e.target.closest('[data-areas-delete]').getAttribute('data-areas-delete'),10); if(idd>0) confirmDelete(idd); }
+            if(e.target.closest('[data-areas-modal-close]')){ e.preventDefault(); closeModal(); }
+        });
+        var f=$('#areas-modal-form'); if(f) f.addEventListener('submit',submit);
+    });
+    window.areasFormModalIsOpen = function(){ var el=overlay(); return !!(el && !el.hasAttribute('hidden')); };
+})();

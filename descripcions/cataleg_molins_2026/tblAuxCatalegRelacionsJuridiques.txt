@@ -1,0 +1,15 @@
+﻿IDRelacioJuridica	NomRelacioJuridica
+11	Funcionari/a de carrera
+12	Funcionari/a interí/na
+13	Funcionari/a interí/na per programa temporal
+21	Personal laboral indefinit
+31	Personal laboral temporal per suplències
+32	Personal laboral temporal per interinatge
+33	Personal laboral temporal per reforç
+34	Personal laboral no permanent
+41	Escola taller - Taller ocupacional
+51	Personal directiu
+52	Personal eventual
+61	Membre de la corporació amb dedicació completa
+62	Membre de la corporació amb dedicació parcial
+63	Membre de la corporació sense dedicació

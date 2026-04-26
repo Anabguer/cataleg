@@ -1,0 +1,22 @@
+﻿IDCentreTreball	NomCentreTreball	Domicili	CodiPostal	Poblacio	Telefon	Fax
+1	Casa Consistorial	Plaça de Catalunya, 1	08750	Molins de Rei	936803340	936803362
+2	Ca n'Ametller					
+3	Sostenibilitat i Territori					
+4	Guàrdia Urbana					
+5	Biblioteca Municipal					
+6	Llar d'Infants "El Rodó"					
+7	Llar d'Avis "Dr. Josep Mestre"					
+8	Poliesportiu Municipal					
+9	Escola Municipal de Música					
+10	Promoció econòmica					
+11	Direcció DIPEL i FCCT					
+12	Mercat Municipal					
+13	CEIP					
+14	Centre Cívic El Àngel					
+15	Punt Informació Juvenil					
+16	Oficina Habitatge					
+17	Brigada municipal manteniment					
+18	Cementiri					
+19	CAP					
+20	Ràdio Molins de Rei					
+21	Punt Informació Juvenil					

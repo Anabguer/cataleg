@@ -1,0 +1,6 @@
+﻿IDComplementEspecificEsp	NomComplementEspecificEsp
+1	Perllongació de jornada GU i Llar Avis
+2	Direcció Escola Municipal Música
+3	Cap d'Estudis Escola Municipal Música
+4	Perllongació de jornada 1 i 2 GU bàsica
+5	Perllongació de jornada 1 i 2 GU superior

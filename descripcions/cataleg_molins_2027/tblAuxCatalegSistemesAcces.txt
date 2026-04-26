@@ -1,0 +1,7 @@
+﻿IDSistemaAcces	NomSistemaAcces
+11	Oposició
+12	Concurs
+13	Concurs-oposició
+21	Urgència
+31	Lliure nomenament
+91	Altres

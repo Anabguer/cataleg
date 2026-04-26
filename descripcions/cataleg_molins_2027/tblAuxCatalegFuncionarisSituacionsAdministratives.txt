@@ -1,0 +1,14 @@
+﻿IDSituacioAdministrativa	NomSituacioAdministrativa
+11	Servei actiu
+12	Comissió de serveis
+21	Serveis especials
+31	Servei en comunitats autònomes
+41	Expectativa de destinació
+51	Excedència forçosa
+61	Excedència per a la cura de fills
+71	Excedència voluntària per serveis en el sector públic
+72	Excedència voluntària per interès particular
+73	Excedència voluntària per agrupació familiar
+74	Excedència voluntària incentivada
+81	Suspensió de funcions
+91	Serveis en altres administracions

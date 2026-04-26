@@ -1,0 +1,6 @@
+﻿IDComplementEspecificEsp	ImportComplementEspecificEsp	ImportComplementEspecificEsp_Nou
+1	385,88	
+2	311,46	
+3	171,63	
+4	579,37	
+5	631,84	

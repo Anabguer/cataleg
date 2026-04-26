@@ -1,0 +1,14 @@
+﻿IDEmpresa	EmpresaDescripcio	CCCnum
+1	Funcionaris de carrera integrats	08 1024528 40
+2	Funcionaris de carrera de nou ingrés	08 1026358 27
+3	Funcionaris interins de nou ingrés	08 1024530 42
+4	Funcionaris interins integrats	08 1024529 41
+5A	Personal laboral - Contractes indefinits (inclosos els d'interinitat)	08 0131129 07
+5B	Personal laboral - Contractes temporals a temps complet	08 0131129 07
+5C	Personal laboral - Contractes temporals a temps parcial	08 0131129 07
+5D	Personal laboral - Contractes temporals a temps complet inferiors a 7 dies	08 0131129 07
+5E	Personal laboral - Contractes temporals a temps parcial inferios a 7 dies	08 0131129 07
+6	Membres corporació amb atur	08 1362326 84
+7	Membres corporació sense atur	08 1408970 71
+8	Personal amb contractes de formació	08 1098528 29
+ET	Escoles Taller	

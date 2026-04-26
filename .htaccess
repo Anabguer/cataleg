@@ -1,0 +1,60 @@
+# =============================================================================
+# Hostalia — arrel del domini (opció C)
+# -----------------------------------------------------------------------------
+# On posar-lo: renombra aquest fitxer a «.htaccess» i col·loca’l a l’ARREL del
+# projecte al servidor (mateix nivell que public/, assets/, config/, vendor/…).
+# No el posis dins de public/.
+# -----------------------------------------------------------------------------
+# Requisit: Apache amb mod_rewrite activat (normal a Hostalia).
+# =============================================================================
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# -----------------------------------------------------------------------------
+# 0) Subdirectori del domini (només si cal)
+# Si l’aplicació no està a l’arrel de l’URL (ex.: https://domini.cat/app/formacio/)
+# descomenta i ajusta la línia següent al camí URL de l’arrel del projecte:
+# RewriteBase /app/formacio/
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# 1) Redirigir al navegador les URLs que encara portin «/public/»
+# THE_REQUEST és la línia original de la petició; així no es redirigeixen les
+# reescriptures internes cap a public/ (evita bucles).
+# -----------------------------------------------------------------------------
+RewriteCond %{THE_REQUEST} \s/public/ [NC]
+RewriteRule ^public/(.*)$ /$1 [R=301,L,QSA]
+
+# -----------------------------------------------------------------------------
+# 2) Blocar accés web a carpetes i fitxers sensibles
+# «uploads/» no es bloqueja: pot contenir fitxers servits per URL; els .php
+# d’allà ja es rebutgen amb uploads/.htaccess del projecte.
+# -----------------------------------------------------------------------------
+RewriteRule ^(?:\.git|\.svn|\.hg)(?:/|$) - [F,L]
+RewriteRule ^\.env(?:\..*)?$ - [F,L]
+RewriteRule ^(?:config|includes|vendor|views|sql|deploy|descripcion_tablas|docs|vendor_old|modules)(?:/|$) - [F,L]
+RewriteRule ^composer\.(?:json|lock)$ - [F,L]
+
+# -----------------------------------------------------------------------------
+# 3) Pàgina inicial «/» → index de l’aplicació (sota public/)
+# -----------------------------------------------------------------------------
+RewriteRule ^$ public/index.php [L]
+
+# -----------------------------------------------------------------------------
+# 4) Entrades PHP de l’app (login.php, dashboard.php, APIs…)
+# Només si NO existeix ja un fitxer o directori amb aquest camí a l’arrel del
+# disc (aquest projecte no en té: tot el PHP d’entrada és a public/).
+# Els fitxers estàtics existents (p. ex. /assets/...) es serveixen sense tocar-los.
+# QSA conserva la query string (p. ex. ?id=1).
+# -----------------------------------------------------------------------------
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+\.php)$ public/$1 [L,QSA]
+
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 5) Evitar llistat de directoris (si el servidor ho permet en .htaccess)
+# -----------------------------------------------------------------------------
+Options -Indexes

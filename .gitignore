@@ -1,0 +1,52 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# Node (si hubiera en algún momento)
+node_modules/
+
+# Logs
+*.log
+
+# XAMPP / entorno local
+xampp/
+tmp/
+temp/
+
+# Configuración sensible
+.env
+.env.*
+config.local.php
+config.dev.php
+# Fitxers d’entorn amb credencials (el carregador env.php i els *.example sí es versionen)
+config/env.local.php
+config/env.production.php
+
+# Archivos de credenciales
+*config*secret*
+*credentials*
+*password*
+# Excepción: pantalles legítimes de canvi de contrasenya (no són secrets)
+!**/change_password.php
+
+# Subidas / archivos generados
+uploads/
+storage/
+cache/
+
+# Composer (si se usa)
+vendor/
+
+# Archivos de backup o temporales
+*.bak
+*.old
+*.tmp
+
+# Archivos SQL locales sensibles
+*.sql
+descripcions/*.sql

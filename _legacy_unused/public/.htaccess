@@ -1,0 +1,6 @@
+# Opcional: reescriptura només si el servidor ho permet (molts hostings ja apunten a /public)
+# RewriteEngine On
+# RewriteBase /formacio_molins_rei/public/
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^ index.php [L]

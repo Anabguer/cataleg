@@ -1,0 +1,6 @@
+﻿Grup	ImportTrienni	ImportTrienniPagues	ImportTrienni_Nou	ImportTrienniPagues_Nou
+A1	53,39	32,96		
+A2	43,54	31,74		
+C1	32,96	28,45		
+C2	22,44	22,2		
+E	16,9	16,9		

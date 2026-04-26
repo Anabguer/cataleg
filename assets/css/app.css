@@ -1,0 +1,354 @@
+/**
+ * App — tokens globals (colors, tipografia, espaiat, ombres).
+ * Per ajustar el look & feel: edita sobretot :root aquí.
+ * Components (templates UI): components.css
+ */
+
+:root {
+    /* --- Marca i estats --- */
+    --color-primary: #3d7ea8;
+    --color-primary-hover: #2f6488;
+    --color-secondary: #8b98a6;
+    --color-secondary-hover: #6f7a86;
+    --color-success: #2d7a4d;
+    --color-success-bg: #e8f5ec;
+    --color-error: #b42318;
+    --color-error-bg: #fdecea;
+    --color-warning: #a15c07;
+    --color-warning-bg: #fff4e0;
+    --color-warning-fg: #7a5200;
+    --color-warning-text: #5c3d00;
+    --color-info: #2563a8;
+    --color-info-bg: #e8f1f8;
+
+    /* --- Fons, superfícies, text, vores --- */
+    --color-bg: #ebedf2;
+    --color-surface: #ffffff;
+    --color-text: #1a1d21;
+    --color-muted: #5c6570;
+    --color-border: #d1d9e4;
+    --color-border-subtle: #eef1f4;
+    --color-bg-muted: #f0f2f5;
+    --color-surface-muted: #f8fafc;
+    --color-surface-raised: #fafbfc;
+    --color-table-header-bg: #f4f6f9;
+    --color-table-row-hover: #fafcfe;
+    --color-neutral-fill: #eef1f4;
+    --color-backdrop: rgba(12, 18, 28, 0.52);
+    --color-focus-ring: rgba(61, 126, 168, 0.22);
+    --color-primary-alpha-08: rgba(61, 126, 168, 0.08);
+    --color-overlay-hover: rgba(0, 0, 0, 0.05);
+
+    /* Vores suaus per a capsaleres de modal / alertes */
+    --color-line-success: #c5e6d1;
+    --color-line-error: #f5c4c0;
+    --color-line-warning: #f0d9a8;
+    --color-line-info: #c5d9eb;
+    --color-surface-confirm: #f8f9fb;
+
+    /* --- Capçalera app (barra superior fosca) --- */
+    --app-header-bg: #1e2a3a;
+    --app-header-border: #2d3d52;
+    --app-header-text: #e8ecf1;
+    --app-header-muted: #9aabbc;
+    /* Fallback: app.js assigna l’alçada mesurada de .app-header a :root (documentElement) en runtime */
+    --app-header-height: 72px;
+
+    /* Jerarquia z-index: navbar > capçalera de pàgina (.page-header) > barres internes (taules, toolbars) */
+    --z-sticky-app: 900;
+    --z-sticky-page: 800;
+    --z-sticky-table: 750;
+
+    /* --- Ombres i radi --- */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.12);
+    --radius: 10px;
+    --radius-sm: 5px;
+
+    /* --- Espaiat --- */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+
+    /* --- Tipografia: família i escala --- */
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --text-page-title: 1.5rem;
+    --text-section-title: 1.15rem;
+    --text-modal-title: 1.2rem;
+    --text-body: 1rem;
+    --text-small: 0.875rem;
+    --text-caption: 0.78rem;
+    --text-label: 0.9rem;
+
+    --transition: 0.18s ease;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 100%;
+}
+
+body/* Bloqueig de scroll quan hi ha modals oberts (app.js lockModalBodyScroll) */
+body.modal-open,
+html.modal-open {
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+.app-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    color: var(--color-text);
+    background: var(--color-bg);
+    line-height: 1.5;
+}
+
+code {
+    font-size: var(--text-small);
+    background: var(--color-neutral-fill);
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+}
+
+.muted {
+    color: var(--color-muted);
+    font-size: var(--text-small);
+}
+
+/* --- Shell + capçalera fosca --- */
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-5);
+    background: var(--app-header-bg);
+    border-bottom: 1px solid var(--app-header-border);
+    box-shadow: var(--shadow-sm);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-sticky-app);
+    isolation: isolate;
+}
+
+.app-header__brand {
+    flex-shrink: 0;
+}
+
+.app-header__logo {
+    font-weight: 700;
+    color: var(--app-header-text);
+    text-decoration: none;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+}
+
+.app-header__logo:hover {
+    color: #fff;
+}
+
+.app-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    flex: 1;
+    justify-content: center;
+}
+
+.app-nav__link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--app-header-muted);
+    text-decoration: none;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    transition: background var(--transition), color var(--transition);
+}
+
+.app-nav__link:hover {
+    color: var(--app-header-text);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.app-nav__link.is-active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 600;
+}
+
+.app-nav__dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.app-nav__link--button {
+    border: 0;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.app-nav__dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 220px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+    padding: var(--space-2);
+    display: none;
+    z-index: 60;
+}
+
+.app-nav__dropdown:hover .app-nav__dropdown-menu,
+.app-nav__dropdown:focus-within .app-nav__dropdown-menu {
+    display: block;
+}
+
+.app-nav__dropdown-label {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: var(--space-1) var(--space-2);
+}
+
+.app-nav__dropdown-link {
+    display: block;
+    text-decoration: none;
+    color: var(--color-text);
+    border-radius: 8px;
+    padding: var(--space-2) var(--space-2);
+    font-size: 0.9rem;
+}
+
+.app-nav__dropdown-link:hover {
+    background: #f8fafc;
+}
+
+.app-nav__dropdown-link.is-active {
+    background: #fff2e8;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.app-header__user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-left: auto;
+}
+
+.app-header__name {
+    font-size: var(--text-small);
+    color: var(--app-header-muted);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-main {
+    flex: 1;
+    padding: var(--space-6);
+    padding-top: calc(var(--space-6) + var(--app-header-height));
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+
+.app-footer {
+    padding: var(--space-4);
+    text-align: center;
+    font-size: var(--text-small);
+    color: var(--color-muted);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+/* --- Botons base (variants a components.css) --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.btn--sm {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-small);
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.btn--secondary {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+
+.app-header .btn--secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--app-header-text);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.app-header .btn--secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.btn--danger {
+    background: var(--color-error);
+    color: #fff;
+}
+
+.btn--danger:hover:not(:disabled) {
+    filter: brightness(0.92);
+}

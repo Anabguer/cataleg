@@ -1,0 +1,129 @@
+Option Compare Database
+Option Explicit
+
+Public Sub ExportAllCatalogTablesToCsv_UTF8()
+    Dim exportFolder As String
+    Dim tempFolder As String
+    Dim tables As Variant
+    Dim i As Long
+    Dim tableName As String
+    Dim ansiPath As String
+    Dim utf8Path As String
+    
+    exportFolder = "C:\xampp\htdocs\cataleg_molins\descripcions\cataleg_molins_2027\"
+    tempFolder = exportFolder & "tmp\"
+    
+    If Right(exportFolder, 1) <> "\" Then exportFolder = exportFolder & "\"
+    If Right(tempFolder, 1) <> "\" Then tempFolder = tempFolder & "\"
+    
+    EnsureFolderExists exportFolder
+    EnsureFolderExists tempFolder
+    
+    tables = Array( _
+        "tblAuxCatalegFuncionaris01Escales", _
+        "tblAuxCatalegFuncionaris02SubEscales", _
+        "tblAuxCatalegFuncionaris03Classes", _
+        "tblAuxCatalegFuncionaris04Categories", _
+        "tblAuxCatalegFuncionarisSituacionsAdministratives", _
+        "tblAuxCatalegPlacesClasses", _
+        "tblAuxCatalegRelacionsJuridiques", _
+        "tblAuxCatalegSistemesAcces", _
+        "tblAuxCatalegTipusAcces", _
+        "tblAuxCentresTreball", _
+        "tblAuxComplementEspecificEsp", _
+        "tblAuxComplementEspecificEsp_Preus", _
+        "tblAuxComplementEspecificGral", _
+        "tblAuxComplementEspecificGral_copia", _
+        "tblAuxLlocsDisponibilitat", _
+        "tblAuxLlocsFormesProvisio", _
+        "tblAuxOrganics1", _
+        "tblAuxOrganics2", _
+        "tblAuxOrganics3", _
+        "tblAuxRetribucionsComplementDestinacio", _
+        "tblAuxRetribucionsSous", _
+        "tblAuxRetribucionsTriennis", _
+        "tblCatalegLlocsTreball", _
+        "tblCatalegPersones", _
+        "tblCatalegPlaces", _
+        "tblCatalegSSBasesMinMax", _
+        "tblCatalegSSCoeficients", _
+        "tblCatalegSSEmpreses", _
+        "tblPRGProgramas_antes_Cambio_Subprograma", _
+        "tblPRGProgrames", _
+        "tblPRGSubprogramas_antes_Cambio_Subprograma", _
+        "tblPRGSubprogramasPersones_antes_Cambio_Subprograma", _
+        "tblPRGSubProgrames", _
+        "tblPRGSubProgramesPersones" _
+    )
+    
+    On Error GoTo EH
+    
+    For i = LBound(tables) To UBound(tables)
+        tableName = CStr(tables(i))
+        ansiPath = tempFolder & tableName & ".csv"
+        utf8Path = exportFolder & tableName & ".csv"
+        
+        If TableExists(tableName) Then
+            DoCmd.TransferText acExportDelim, "", tableName, ansiPath, True
+            ConvertFileToUtf8 ansiPath, utf8Path
+            Debug.Print "OK UTF8 -> " & tableName
+        Else
+            Debug.Print "NO EXISTE -> " & tableName
+        End If
+    Next i
+    
+    MsgBox "Exportación UTF-8 terminada." & vbCrLf & vbCrLf & _
+           "Carpeta: " & exportFolder, vbInformation
+    Exit Sub
+
+EH:
+    MsgBox "Error exportando la tabla: " & tableName & vbCrLf & _
+           "Detalle: " & Err.Number & " - " & Err.Description, vbCritical
+End Sub
+
+Private Sub ConvertFileToUtf8(ByVal sourcePath As String, ByVal targetPath As String)
+    Dim stmIn As Object
+    Dim stmOut As Object
+    Dim txt As String
+    
+    Set stmIn = CreateObject("ADODB.Stream")
+    stmIn.Type = 2
+    stmIn.Charset = "windows-1252"
+    stmIn.Open
+    stmIn.LoadFromFile sourcePath
+    txt = stmIn.ReadText
+    stmIn.Close
+    
+    Set stmOut = CreateObject("ADODB.Stream")
+    stmOut.Type = 2
+    stmOut.Charset = "utf-8"
+    stmOut.Open
+    stmOut.WriteText txt
+    stmOut.SaveToFile targetPath, 2
+    stmOut.Close
+    
+    Set stmIn = Nothing
+    Set stmOut = Nothing
+End Sub
+
+Private Function TableExists(ByVal tableName As String) As Boolean
+    Dim tdf As DAO.TableDef
+    
+    TableExists = False
+    For Each tdf In CurrentDb.TableDefs
+        If tdf.Name = tableName Then
+            TableExists = True
+            Exit Function
+        End If
+    Next tdf
+End Function
+
+Private Sub EnsureFolderExists(ByVal folderPath As String)
+    Dim fso As Object
+    
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(folderPath) Then
+        fso.CreateFolder folderPath
+    End If
+    Set fso = Nothing
+End Sub

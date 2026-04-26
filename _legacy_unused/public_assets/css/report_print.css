@@ -1,0 +1,1633 @@
+/* Informes: vista pantalla + impressió (window.print / PDF futur) */
+
+.report-body {
+    margin: 0;
+    background: var(--color-bg-muted, #f2f4f7);
+    font-family: inherit;
+    color: var(--color-text, #101828);
+}
+
+.report-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    justify-content: flex-end;
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-surface, #fff);
+    border-bottom: 1px solid var(--color-border, #d0d5dd);
+}
+
+.report-sheet {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-4);
+}
+
+/* Taula contenidora: el thead es repeteix a cada pàgina en imprimir (Chrome/Edge/Firefox) */
+.report-print-shell {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.report-print-shell__head {
+    display: table-header-group;
+}
+
+.report-print-shell__head-cell {
+    border: none;
+    padding: 0 0 0.35rem 0;
+    vertical-align: top;
+    width: 100%;
+    /* Permet que la capçalera (flex) ocupi tota l’amplada com en pantalla */
+    min-width: 0;
+}
+
+.report-print-shell tbody td.report-print-shell__body {
+    border: none;
+    padding: 0;
+    vertical-align: top;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .report-body {
+        background: #fff;
+    }
+
+    .report-sheet {
+        max-width: none;
+        padding: 0;
+    }
+
+    /*
+     * Numeració «Pàgina X» (sense total): a Chromium/Blink, counter(page) dins d’un <thead> repetit
+     * (table-header-group) sovint es resol com 0 o valor incorrecte en pseudo-elements (::before),
+     * perquè el fragment pintat per cada pàgina no comparteix el mateix àmbit de comptador de pàgina
+     * que les caixes de marge @page. El comptador integrat page sí és fiable a @top-right.
+     * S’amaga la línia .report-header__pages a impressió per no duplicar «Pàgina» ni deixar el número buit.
+     */
+    @page {
+        size: A4 landscape;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    .report-header__pages {
+        display: none !important;
+    }
+
+    .report-summary {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Capçalera: reforç per motors PDF (mides explícites, sense dependre de flex) */
+    .report-header__layout {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .report-header__logo {
+        width: 80px;
+        height: auto;
+        max-width: 80px;
+        max-height: 80px;
+    }
+
+    .report-header__meta-stack {
+        display: block;
+        text-align: right;
+    }
+
+    .report-header__meta-stack > .report-header__pages {
+        position: static;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* Salt de pàgina només entre subprograma i subprograma (no entre àrees) */
+@media print {
+    .report-block--subprogram ~ .report-block--subprogram {
+        break-before: page;
+        page-break-before: always;
+    }
+}
+
+/*
+ * Capçalera: taula interna (3 columnes). Mateixa estructura pantalla + impressió/PDF.
+ * Flex/grid dins del <td> del shell repetit sovint es degrada al «Guardar com a PDF»;
+ * les taules nested són el layout més estable als motors d’impressió.
+ */
+.report-header {
+    width: 100%;
+    box-sizing: border-box;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border, #d0d5dd);
+}
+
+.report-header__layout {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+.report-header__cell {
+    padding: 0;
+    vertical-align: top;
+    border: none;
+}
+
+.report-header__cell--logo {
+    width: 96px;
+    padding-right: 0.5rem;
+}
+
+.report-header__cell--center {
+    text-align: center;
+    padding: 0 0.5rem;
+    min-width: 0;
+}
+
+.report-header__cell--meta {
+    width: 26%;
+    min-width: 10.5rem;
+    text-align: right;
+    white-space: normal;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    color: var(--color-text-muted, #475467);
+}
+
+/* Apilat explícit: codi → data → pàgina (mateix ordre en impressió/PDF; sense margin-top col·lapsat estrany) */
+.report-header__meta-stack {
+    display: block;
+    width: 100%;
+    text-align: right;
+}
+
+.report-header__meta-stack > .report-header__code {
+    display: block;
+    margin: 0 0 0.15rem;
+}
+
+.report-header__meta-stack > .report-header__date {
+    display: block;
+    margin: 0 0 0.15rem;
+}
+
+.report-header__meta-stack > .report-header__pages {
+    display: block;
+    margin: 0;
+    padding: 0;
+    line-height: 1.35;
+}
+
+/*
+ * Vista prèvia a pantalla: número fix (no hi ha paginació real).
+ * Cal envoltar amb @media screen: si aquesta regla aplica també a print, per cascada
+ * (mateixa especificitat, més avall al fitxer) anul·la counter(page) de @media print.
+ */
+@media screen {
+    .report-header__page-num::before {
+        content: '1';
+    }
+}
+
+.report-header__logo {
+    display: block;
+    width: 80px;
+    height: auto;
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: contain;
+}
+
+.report-header__exercici {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+    line-height: 1.2;
+}
+
+.report-header__exercici-label {
+    margin-right: 0.25rem;
+}
+
+.report-header__exercici-value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-header__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.25;
+    max-width: 38rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.report-header__code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--color-text, #101828);
+}
+
+/* Blocs jeràrquics */
+.report-heading {
+    margin: 0 0 var(--space-3);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.report-heading--subprogram {
+    font-size: 1.05rem;
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border-subtle, #eaecf0);
+}
+
+.report-heading--area {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text, #101828);
+}
+
+.report-heading--total {
+    font-size: 1rem;
+    margin-top: var(--space-4);
+}
+
+.report-heading__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted, #475467);
+    margin-bottom: 0.15rem;
+}
+
+.report-heading__text {
+    font-weight: 700;
+}
+
+.report-block--subprogram {
+    margin-bottom: var(--space-5);
+}
+
+.report-block--area {
+    margin: var(--space-4) 0 var(--space-4);
+    padding-left: var(--space-3);
+    border-left: 3px solid var(--color-border-subtle, #eaecf0);
+}
+
+.report-block--total {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 2px solid var(--color-border, #d0d5dd);
+}
+
+.report-empty {
+    margin: var(--space-4) 0;
+    color: var(--color-text-muted, #475467);
+}
+
+/* Bloc final comú: explicació (training_reports.report_explanation) — pàgina de tancament pròpia, sense JS */
+.report-explanation-final {
+    margin-top: var(--space-6, 1.5rem);
+}
+
+.report-explanation-box {
+    margin-top: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-surface-muted, #f9fafb);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    clear: both;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.report-explanation-box__label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--color-text-muted, #475467);
+    margin-bottom: var(--space-2);
+}
+
+.report-explanation-box__label::before {
+    content: "ℹ️";
+    margin-right: 0.35em;
+    font-style: normal;
+    font-weight: normal;
+}
+
+.report-explanation-box__body {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text, #101828);
+}
+
+@media print {
+    /*
+     * Context @page del cos: el mateix que el contingut de l’informe (retrat on aplica),
+     * perquè .report-explanation-final és dins .report-print-shell__body.
+     * RPAFC-02 és especial (calendari horitzontal + llistat vertical): el tancament ha d’usar la pàgina del llistat.
+     */
+    .report-body.report-code--rpafc-04 .report-print-shell__body {
+        page: rpa_fc_04;
+    }
+
+    .report-body.report-code--reefc-01 .report-print-shell__body {
+        page: ree_fc_01;
+    }
+
+    .report-body.report-code--rpefc-01 .report-print-shell__body {
+        page: rpe_fc_01;
+    }
+
+    .report-body.report-code--rpefc-02 .report-print-shell__body,
+    .report-body.report-code--rpefc-03 .report-print-shell__body,
+    .report-body.report-code--rpefc-04 .report-print-shell__body {
+        page: rpe_fc_02;
+    }
+
+    .report-body.report-code--rpefc-05 .report-print-shell__body {
+        page: rpe_fc_05;
+    }
+
+    .report-body.report-code--rpafc-02 .report-explanation-final {
+        page: rpa_fc_02_list;
+    }
+
+    .report-explanation-final {
+        break-before: page;
+        page-break-before: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-top: 0;
+    }
+
+    .report-explanation-box {
+        margin-top: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /*
+     * Impressió/PDF: el pictograma color (ℹ️) pot fallar; U+2139 (ℹ) és més estable al vectoritzar.
+     */
+    .report-explanation-box__label::before {
+        content: "\2139";
+    }
+}
+
+/* ——— RPEFC-05 — informe simple retrat (bloc Codi/Nom estret i centrat) ——— */
+/*
+ * Abans: .report-rpe-fc-05__wrap tenia width:100% + max-width; dins flex column
+ * el fill encara «tirava» d’amplada completa i la taula (.report-table { width:100% })
+ * ocupava tot el que deixava el contenidor — massa similar a full width.
+ * Ara: bloc explícit amb min(70%, 28rem) + margin auto (sense width:100% al wrap).
+ */
+
+.report-body--rpe-fc-05 .report-sheet {
+    max-width: 52rem;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+}
+
+.report-rpe-fc-05 {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.report-rpe-fc-05__container {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.report-rpe-fc-05__empty {
+    width: min(70%, 28rem);
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+/* Contenidor de la taula: estret i centrat (no full width) */
+.report-body--rpe-fc-05 .report-table-wrap.report-rpe-fc-05__wrap {
+    width: min(70%, 28rem);
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+.report-rpe-fc-05__table.report-table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+}
+
+.report-rpe-fc-05__table thead th {
+    text-align: left;
+}
+
+.report-rpe-fc-05__table tbody td.report-rpe-fc-05__cell-code {
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.report-rpe-fc-05__col-code {
+    width: 18%;
+}
+
+.report-rpe-fc-05__col-name {
+    width: 82%;
+}
+
+/* Taula */
+.report-table-wrap {
+    overflow-x: auto;
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-radius: var(--radius-sm, 6px);
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.report-table th,
+.report-table td {
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    padding: 0.4rem 0.5rem;
+    vertical-align: top;
+    text-align: left;
+}
+
+.report-table thead th {
+    background: var(--color-surface-muted, #f9fafb);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.report-table__code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    white-space: nowrap;
+}
+
+/* Codi i nom de l’acció formativa (fila principal): destacats respecte a dates, durada, etc. */
+.report-table__row-main .report-table__code,
+.report-table__row-main .report-table__action-name {
+    font-weight: 700;
+}
+
+.report-table__num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.report-table__long {
+    max-width: 14rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Resums */
+.report-summary {
+    margin: var(--space-3) 0 var(--space-4);
+    padding: var(--space-3);
+    background: var(--color-surface-muted, #f9fafb);
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-radius: var(--radius-sm, 6px);
+}
+
+.report-summary__title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.report-summary__list {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.report-summary__label {
+    color: var(--color-text-muted, #475467);
+}
+
+.report-summary__value {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-summary__footnote {
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-block--initial-totals {
+    margin-bottom: var(--space-5);
+}
+
+/* RPAFC-03: totals i grups dins de la mateixa taula (sense targetes) */
+.report-table--rpa-fc-03 .report-table__th-num {
+    text-align: right;
+}
+
+.report-table--rpa-fc-03 .report-table__num,
+.report-table--rpa-fc-03 td.report-table__total-fund {
+    text-align: right;
+}
+
+.report-table--rpa-fc-03 thead .report-table__cost-group-row th {
+    padding: 0.25rem 0.5rem 0.15rem;
+    vertical-align: bottom;
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-bottom: none;
+    background: var(--color-surface-muted, #f9fafb);
+}
+
+.report-table--rpa-fc-03 thead .report-table__cost-group-spacer {
+    border-bottom: 1px solid var(--color-border-subtle, #eaecf0);
+}
+
+.report-table--rpa-fc-03 .report-table__cost-group-label {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted, #475467);
+    border-bottom: 2px solid var(--color-border, #d0d5dd);
+}
+
+.report-table--rpa-fc-03 .report-table__total-label {
+    font-weight: 700;
+    text-align: left;
+}
+
+.report-table--rpa-fc-03 .report-total-row td {
+    font-variant-numeric: tabular-nums;
+    border-top: 1px solid var(--color-border, #d0d5dd);
+}
+
+.report-table--rpa-fc-03 .report-total-row .report-table__code {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.report-table--rpa-fc-03 .report-total-row--global-init td,
+.report-table--rpa-fc-03 .report-total-row--global-final td {
+    background: var(--color-surface-muted-strong, #e2e8f0);
+    font-weight: 600;
+}
+
+.report-table--rpa-fc-03 .report-total-row--global-init .report-table__code,
+.report-table--rpa-fc-03 .report-total-row--global-final .report-table__code {
+    color: var(--color-text-muted, #475467);
+}
+
+/* Subprograma / àrea: mateixa fila que el text identificatiu (abans del detall) */
+.report-table--rpa-fc-03 .report-heading-total-row td {
+    font-variant-numeric: tabular-nums;
+    border-top: 1px solid var(--color-border-subtle, #eaecf0);
+}
+
+.report-table--rpa-fc-03 .report-heading-total-row--subprogram td {
+    background: var(--color-surface-muted, #f1f5f9);
+    font-weight: 600;
+}
+
+.report-table--rpa-fc-03 .report-heading-total-row--area td {
+    background: var(--color-surface-muted-alt, #f8fafc);
+    font-weight: 600;
+}
+
+.report-table--rpa-fc-03 .report-table__heading-total-label {
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--color-text, #101828);
+    vertical-align: middle;
+}
+
+.report-table--rpa-fc-03 .report-heading-total-row--area .report-table__heading-total-label {
+    padding-left: var(--space-4);
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.report-table--rpa-fc-03 .report-table__total-fund {
+    text-align: center;
+    color: var(--color-text-muted, #475467);
+    font-weight: 600;
+}
+
+.report-rpa-fc-03-footnote {
+    margin: var(--space-3) 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-rpa-fc-01-footnote {
+    margin: var(--space-2) 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-rpa-fc-01-footnote:first-of-type {
+    margin-top: var(--space-4);
+}
+
+@media print {
+    .report-table--rpa-fc-03 .report-heading-total-row td,
+    .report-table--rpa-fc-03 .report-total-row td {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* Fila de context (només impressió): es repeteix amb el thead de la taula d’àrea */
+@media screen {
+    .report-table__context-row {
+        display: none;
+    }
+}
+
+@media print {
+    .report-table__context-row {
+        display: table-row;
+    }
+}
+
+.report-table__context-cell {
+    padding: 0.2rem 0.35rem 0.35rem !important;
+    border-bottom: 1px solid var(--color-border-subtle, #eaecf0) !important;
+    background: var(--color-surface-muted, #f9fafb);
+}
+
+.report-continue-context {
+    font-size: 0.62rem;
+    line-height: 1.35;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-continue-context__line {
+    display: block;
+}
+
+.report-continue-context__line + .report-continue-context__line {
+    margin-top: 0.12rem;
+}
+
+.report-continue-context__tag {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-right: 0.35rem;
+}
+
+.report-continue-context__val {
+    font-weight: 500;
+}
+
+/* Línies addicionals (destinataris, objectius, persones): mateixa jerarquia visual */
+.report-table__row-dest td,
+.report-table__row-objectives td,
+.report-table__row-persones td {
+    border-top: 1px solid var(--color-border-subtle, #eaecf0) !important;
+    padding: 0.35rem 0.5rem !important;
+    vertical-align: top;
+}
+
+.report-table__row-objectives--action-end td {
+    border-bottom: 2px solid var(--color-border-subtle, #eaecf0) !important;
+}
+
+.report-table__cell-extra {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--color-text, #101828);
+    background: transparent;
+}
+
+.report-table__field-label {
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.report-table__field-text {
+    font-weight: 400;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.report-table__field-more {
+    font-weight: 600;
+    color: var(--color-text-muted, #475467);
+    white-space: nowrap;
+}
+
+/* ——— RPAFC-02 Calendari previst ——— */
+
+.report-rpa-fc-02-part-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text, #101828);
+}
+
+.report-rpa-fc-02-calendar-legend {
+    font-size: 0.72rem;
+    color: var(--color-text-muted, #475467);
+    margin: 0 0 0.65rem 0;
+}
+
+/* 12 mesos: 3 columnes × 4 files — cada bloc mensual més gran i llegible */
+.report-rpa-fc-02-months-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(0, auto);
+    gap: 0.65rem 0.55rem;
+}
+
+.report-rpa-fc-02-month {
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-radius: 4px;
+    padding: 0.4rem 0.35rem 0.45rem;
+    background: var(--color-surface, #fff);
+    min-width: 0;
+}
+
+.report-rpa-fc-02-month-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.3rem;
+    color: var(--color-text-muted, #475467);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.report-rpa-fc-02-month-cal {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    table-layout: fixed;
+}
+
+.report-rpa-fc-02-month-cal__wd {
+    font-weight: 600;
+    color: var(--color-text-muted, #475467);
+    padding: 0.08rem 0;
+    text-align: center;
+}
+
+.report-rpa-fc-02-day {
+    border: 1px solid var(--color-border-subtle, #f2f4f7);
+    text-align: center;
+    vertical-align: middle;
+    min-height: 1.4rem;
+    height: 1.4rem;
+    padding: 0;
+}
+
+.report-rpa-fc-02-day--empty {
+    border-color: transparent;
+    background: transparent;
+}
+
+.report-rpa-fc-02-day-num {
+    display: inline-block;
+    line-height: 1.2;
+    font-size: 1.05em;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Dies amb formació: contrast alt (impressió/PDF); no depèn del blau pastel */
+.report-rpa-fc-02-day--has {
+    background: #cbd5e1;
+    color: #0f172a;
+    font-weight: 800;
+    border: 2px solid #475467;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.report-rpa-fc-02-day--has .report-rpa-fc-02-day-num {
+    font-weight: 800;
+}
+
+.report-rpa-fc-02-calendar-section {
+    margin-bottom: 1rem;
+}
+
+.report-rpa-fc-02-list-section {
+    margin-top: 0.5rem;
+}
+
+.report-rpa-fc-02-table-wrap {
+    overflow-x: auto;
+}
+
+.report-rpa-fc-02-matrix {
+    font-size: 0.72rem;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.report-rpa-fc-02-matrix thead .report-rpa-fc-02-matrix__group-row th {
+    padding: 0.25rem 0.5rem 0.15rem;
+    vertical-align: bottom;
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-bottom: none;
+    background: var(--color-surface-muted, #f9fafb);
+}
+
+.report-rpa-fc-02-matrix thead .report-rpa-fc-02-matrix__group-spacer {
+    border-bottom: 1px solid var(--color-border-subtle, #eaecf0);
+}
+
+.report-rpa-fc-02-matrix .report-rpa-fc-02-matrix__mes-group {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted, #475467);
+    border-bottom: 2px solid var(--color-border, #d0d5dd);
+}
+
+.report-rpa-fc-02-matrix th,
+.report-rpa-fc-02-matrix td {
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    padding: 0.25rem 0.2rem;
+    vertical-align: top;
+}
+
+.report-rpa-fc-02-matrix__accio {
+    min-width: 11rem;
+    max-width: 22rem;
+}
+
+.report-rpa-fc-02-matrix__code {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.report-rpa-fc-02-matrix__name {
+    font-weight: 400;
+}
+
+.report-rpa-fc-02-matrix__prog {
+    text-align: center;
+    white-space: nowrap;
+    width: 4.5rem;
+}
+
+.report-rpa-fc-02-matrix__mes {
+    text-align: center;
+    min-width: 1.85rem;
+    width: 1.95rem;
+    padding-left: 0.15rem !important;
+    padding-right: 0.15rem !important;
+}
+
+.report-rpa-fc-02-matrix__cell {
+    text-align: center;
+    color: var(--color-text-muted, #98a2b3);
+    vertical-align: middle;
+}
+
+.report-rpa-fc-02-matrix__cell--on {
+    background: var(--color-primary-soft, #e0efff);
+    color: var(--color-text, #101828);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.1;
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+}
+
+.report-rpa-fc-02-footnotes {
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border-subtle, #eaecf0);
+    font-size: 0.68rem;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-rpa-fc-02-foot {
+    margin: 0.2rem 0;
+}
+
+/* ——— RPAFC-04 Preinscripcions (formació programada) ——— */
+
+.report-rpa-fc-04__table {
+    font-size: 0.78rem;
+}
+
+.report-rpa-fc-04__col-accio {
+    min-width: 14rem;
+    text-align: left;
+}
+
+.report-rpa-fc-04__col-persones {
+    min-width: 11rem;
+}
+
+.report-rpa-fc-04__code {
+    font-weight: 700;
+    white-space: nowrap;
+    margin-right: 0.35rem;
+}
+
+.report-rpa-fc-04__name {
+    font-weight: 500;
+}
+
+.report-rpa-fc-04__row-person .report-rpa-fc-04__persones--name {
+    padding-left: 0.75rem;
+    font-size: 0.76rem;
+    color: var(--color-text, #101828);
+}
+
+.report-rpa-fc-04__subtotal th,
+.report-rpa-fc-04__subtotal td {
+    background: var(--color-surface-muted, #f9fafb);
+    font-weight: 700;
+    border-top: 2px solid var(--color-border, #d0d5dd);
+}
+
+.report-rpa-fc-04__subtotal-persones-cell {
+    font-size: 0.68rem;
+    color: var(--color-text-muted, #475467);
+    background: var(--color-surface-muted, #f9fafb);
+    border-top: none;
+    padding-top: 0.2rem !important;
+    padding-bottom: 0.35rem !important;
+}
+
+.report-rpa-fc-04__totals {
+    margin-top: 1rem;
+}
+
+.report-rpa-fc-04-foot {
+    margin: 0.25rem 0;
+    font-size: 0.68rem;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-rpa-fc-04-foot--muted {
+    font-size: 0.62rem;
+}
+
+/* ——— REEFC-01 Estat execució (una sola taula, capçalera única) ——— */
+
+.report-ree-fc-01__legend {
+    margin: 0 0 0.65rem;
+    font-size: 0.72rem;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-ree-fc-01__table-wrap {
+    margin-bottom: var(--space-3);
+}
+
+.report-ree-fc-01__table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 0.78rem;
+}
+
+/* Amplades compartides per totes les files (evita descàlcul entre «primera» i «segona» àrea) */
+.report-ree-fc-01__table col.report-ree-fc-01__col-tree {
+    width: 40%;
+}
+
+.report-ree-fc-01__table col.report-ree-fc-01__col-stat {
+    width: 14%;
+}
+
+.report-ree-fc-01__table col.report-ree-fc-01__col-num {
+    width: 11.5%;
+}
+
+/* Especificitat > .report-table th/td { text-align: left } */
+.report-table.report-ree-fc-01__table thead th.report-ree-fc-01__head-tree {
+    text-align: left;
+    vertical-align: middle;
+}
+
+.report-table.report-ree-fc-01__table thead th.report-ree-fc-01__head-group {
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 700;
+}
+
+.report-table.report-ree-fc-01__table thead th.report-ree-fc-01__head-stat {
+    text-align: left;
+    vertical-align: middle;
+}
+
+.report-table.report-ree-fc-01__table thead th.report-ree-fc-01__head-num {
+    text-align: right;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.report-ree-fc-01__banner-cell {
+    background: var(--color-surface-muted, #f9fafb);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.45rem 0.55rem !important;
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+}
+
+.report-ree-fc-01__banner-cell--area {
+    background: var(--color-primary-soft, #e0efff);
+    font-size: 0.78rem;
+}
+
+.report-ree-fc-01__banner-label {
+    display: inline-block;
+    margin-right: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted, #475467);
+}
+
+.report-ree-fc-01__banner-text {
+    font-weight: 700;
+    color: var(--color-text, #101828);
+}
+
+.report-ree-fc-01__tree .report-ree-fc-01__code {
+    font-weight: 700;
+    white-space: nowrap;
+    margin-right: 0.35rem;
+}
+
+.report-ree-fc-01__tree .report-ree-fc-01__name {
+    font-weight: 500;
+}
+
+.report-table.report-ree-fc-01__table tbody td.report-ree-fc-01__tree {
+    text-align: left;
+}
+
+.report-table.report-ree-fc-01__table tbody td.report-ree-fc-01__cell-stat {
+    text-align: left;
+}
+
+.report-table.report-ree-fc-01__table td.report-ree-fc-01__num,
+.report-table.report-ree-fc-01__table th.report-ree-fc-01__num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.report-ree-fc-01__subtotal th,
+.report-ree-fc-01__subtotal td {
+    background: var(--color-surface-muted, #f9fafb);
+    font-weight: 700;
+    border-top: 2px solid var(--color-border, #d0d5dd);
+}
+
+.report-ree-fc-01__subtotal--subprogram th,
+.report-ree-fc-01__subtotal--subprogram td {
+    background: var(--color-surface, #fff);
+}
+
+.report-ree-fc-01__subtotal-label {
+    text-align: left;
+}
+
+.report-ree-fc-01__subtotal-dash {
+    text-align: center;
+    color: var(--color-text-muted, #475467);
+    font-weight: 600;
+}
+
+.report-ree-fc-01__subtotal--global th,
+.report-ree-fc-01__subtotal--global td {
+    border-top-width: 3px;
+    border-top-color: var(--color-border, #d0d5dd);
+}
+
+.report-ree-fc-01__kpi {
+    margin-top: 0.85rem;
+}
+
+.report-ree-fc-01__kpi-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.report-ree-fc-01__kpi-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 0.2rem 0;
+}
+
+.report-summary.report-ree-fc-01__kpi .report-ree-fc-01__kpi-value {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 5.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-ree-fc-01-foot {
+    margin: 0.35rem 0 0;
+    font-size: 0.68rem;
+    color: var(--color-text-muted, #475467);
+}
+
+/* ——— RPEFC-01 Formació realitzada per persones ——— */
+
+.report-rpe-fc-01__person {
+    margin-bottom: 1.5rem;
+}
+
+.report-rpe-fc-01__person-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.55rem;
+    margin-bottom: 0.75rem;
+    padding: 0.55rem 0.65rem;
+    background: var(--color-surface-muted, #f2f4f7);
+    border: 1px solid var(--color-border-subtle, #eaecf0);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.95rem;
+    line-height: 1.35;
+}
+
+.report-rpe-fc-01__person-tag {
+    font-weight: 700;
+    color: var(--color-text-muted, #475467);
+    text-transform: none;
+}
+
+.report-rpe-fc-01__person-code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text, #101828);
+}
+
+.report-rpe-fc-01__person-name {
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--color-text, #101828);
+    flex: 1 1 auto;
+    min-width: 8rem;
+}
+
+.report-rpe-fc-01__subprogram {
+    margin-top: 0.75rem;
+}
+
+.report-rpe-fc-01__subprogram-heading {
+    margin-bottom: 0.35rem;
+}
+
+.report-rpe-fc-01__table-wrap {
+    margin-top: 0.25rem;
+}
+
+.report-rpe-fc-01__actions-table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+.report-rpe-fc-01__actions-table col.report-rpe-fc-01__col-action {
+    width: 46%;
+}
+
+.report-rpe-fc-01__actions-table col.report-rpe-fc-01__col-dates {
+    width: 34%;
+}
+
+.report-rpe-fc-01__actions-table col.report-rpe-fc-01__col-duration {
+    width: 20%;
+}
+
+.report-rpe-fc-01__actions-table thead th {
+    font-size: 0.72rem;
+    vertical-align: bottom;
+}
+
+.report-table.report-rpe-fc-01__actions-table thead th:last-child {
+    text-align: right;
+}
+
+.report-rpe-fc-01__cell-action {
+    vertical-align: top;
+}
+
+.report-rpe-fc-01__cell-action .report-rpe-fc-01__action-code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-weight: 700;
+    display: inline;
+    margin-right: 0.45rem;
+    white-space: nowrap;
+}
+
+.report-rpe-fc-01__cell-action .report-rpe-fc-01__action-name {
+    font-weight: 500;
+}
+
+.report-rpe-fc-01__cell-dates {
+    vertical-align: top;
+    color: var(--color-text, #101828);
+    line-height: 1.4;
+}
+
+.report-table.report-rpe-fc-01__actions-table tbody td.report-rpe-fc-01__cell-duration {
+    vertical-align: top;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ——— RPEFC-02 Accions formatives (any) ——— */
+
+.report-rpe-fc-02__wrap {
+    margin-top: 0.35rem;
+}
+
+.report-rpe-fc-02__grid {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+.report-rpe-fc-02__grid col.report-rpe-fc-02__col-main {
+    width: 80%;
+}
+
+.report-rpe-fc-02__grid col.report-rpe-fc-02__col-dur {
+    width: 20%;
+}
+
+.report-rpe-fc-02__grid thead th {
+    font-size: 0.72rem;
+    vertical-align: bottom;
+}
+
+/* Especificitat > .report-table th, td { text-align: left } */
+.report-table.report-rpe-fc-02__grid thead th.report-rpe-fc-02__th-dur {
+    text-align: right;
+}
+
+.report-table.report-rpe-fc-02__grid tbody td.report-rpe-fc-02__cell-dur:not(.report-rpe-fc-02__cell-dur--split) {
+    text-align: right;
+}
+
+.report-table.report-rpe-fc-02__grid tbody td.report-rpe-fc-02__cell-dur--split {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.report-rpe-fc-02__cell-main {
+    vertical-align: top;
+    text-align: left;
+}
+
+.report-rpe-fc-02__action-code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-weight: 700;
+    margin-right: 0.45rem;
+    white-space: nowrap;
+}
+
+.report-rpe-fc-02__cell-attendee {
+    vertical-align: top;
+    text-align: left;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+}
+
+.report-rpe-fc-02__attendee-inner {
+    padding-left: 2cm;
+    margin: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--color-text, #101828);
+}
+
+.report-rpe-fc-02__cell-dur {
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+    white-space: normal;
+}
+
+.report-rpe-fc-02__dur-line {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 0.76rem;
+}
+
+.report-rpe-fc-02__dur-expr {
+    flex: 0 0 auto;
+    text-align: left;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-rpe-fc-02__dur-result {
+    flex: 0 0 auto;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-rpe-fc-02__cell-dur--empty {
+    border-left: 0;
+}
+
+.report-rpe-fc-02__sep-row td {
+    padding: 0.2rem 0;
+    border: none;
+    vertical-align: middle;
+}
+
+.report-rpe-fc-02__sep-line {
+    height: 0;
+    border: 0;
+    border-top: 1px solid var(--color-border-strong, #98a2b3);
+    margin: 0;
+}
+
+.report-rpe-fc-02__total-row th,
+.report-rpe-fc-02__total-row td {
+    padding-top: 0.55rem;
+    font-weight: 700;
+    border-top: 2px solid var(--color-border-strong, #98a2b3);
+    vertical-align: top;
+}
+
+.report-table.report-rpe-fc-02__grid tbody tr.report-rpe-fc-02__total-row .report-rpe-fc-02__cell-total-label {
+    text-align: left;
+}
+
+.report-table.report-rpe-fc-02__grid tbody tr.report-rpe-fc-02__total-row .report-rpe-fc-02__cell-total-val {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+@media print {
+    /*
+     * Primera zona: calendari (preferiblement horitzontal).
+     * Següent zona: llistat vertical (retrat).
+     * Els navegadors no garanteixen canvis d’orientació dins de la mateixa impressió;
+     * pàgines amb nom funcionen en alguns motors (Chrome/Edge/Firefox recents).
+     */
+    .report-rpa-fc-02-calendar-section {
+        page: rpa_fc_02_cal;
+        page-break-after: always;
+        break-after: page;
+    }
+
+    @page rpa_fc_02_cal {
+        size: A4 landscape;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    .report-rpa-fc-02-list-section {
+        page: rpa_fc_02_list;
+    }
+
+    @page rpa_fc_02_list {
+        size: A4 portrait;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    .report-rpa-fc-02-footnotes {
+        page: rpa_fc_02_list;
+        break-inside: avoid;
+    }
+
+    .report-rpa-fc-02-months-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.55rem 0.45rem;
+    }
+
+    .report-rpa-fc-02-month-cal {
+        font-size: 0.8rem;
+    }
+
+    .report-rpa-fc-02-day {
+        min-height: 1.35rem;
+        height: 1.35rem;
+    }
+
+    .report-rpa-fc-02-day--has {
+        background: #94a3b8;
+        color: #0f172a;
+        border: 2px solid #1e293b;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* RPAFC-04 — informe en vertical (retrat) */
+    .report-rpa-fc-04 {
+        page: rpa_fc_04;
+    }
+
+    @page rpa_fc_04 {
+        size: A4 portrait;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    /* REEFC-01 — retrat (com RPAFC-04) */
+    .report-ree-fc-01 {
+        page: ree_fc_01;
+    }
+
+    @page ree_fc_01 {
+        size: A4 portrait;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    .report-ree-fc-01__banner--pagebreak {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    /* RPEFC-01 — retrat, una persona per pàgina (a partir de la 2a) */
+    .report-rpe-fc-01 {
+        page: rpe_fc_01;
+    }
+
+    @page rpe_fc_01 {
+        size: A4 portrait;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    .report-rpe-fc-01__person--pagebreak {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    .report-rpe-fc-01__person {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .report-rpe-fc-01__subprogram {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* RPEFC-02 — retrat */
+    .report-rpe-fc-02 {
+        page: rpe_fc_02;
+    }
+
+    @page rpe_fc_02 {
+        size: A4 portrait;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+
+    /* RPEFC-05 — retrat, taula simple (Codi / Nom) */
+    .report-body--rpe-fc-05 .report-sheet {
+        max-width: none;
+        padding: 0;
+    }
+
+    .report-body--rpe-fc-05 .report-table-wrap.report-rpe-fc-05__wrap {
+        width: min(70%, 28rem);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .report-rpe-fc-05__empty {
+        width: min(70%, 28rem);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .report-rpe-fc-05 {
+        page: rpe_fc_05;
+    }
+
+    @page rpe_fc_05 {
+        size: A4 portrait;
+        margin: 12mm 10mm 14mm 10mm;
+        @top-right {
+            content: "Pàgina " counter(page);
+            font-size: 7pt;
+            line-height: 1.35;
+            color: #475467;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    }
+}

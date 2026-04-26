@@ -1,0 +1,12 @@
+﻿IDEscala	IDSubEscala	NomSubEscala	BreuSubEscala
+1	101	Secretaria	SEC
+1	102	Intervenció-Tresoreria	INT
+1	103	Intervenció-Tresoreria	TRE
+1	104	Secretaria-Intervenció	SI
+2	201	Tècnica	TEC
+2	202	Gestió	GES
+2	203	Administrativa	ADM
+2	204	Auxiliar	AUX
+2	205	Subalterna	SUB
+3	301	Tècnica	TEC
+3	302	Serveis especials	SE
