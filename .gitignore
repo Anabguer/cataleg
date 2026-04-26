@@ -51,3 +51,5 @@ vendor/
 *.sql
 descripcions/*.sql
 descripcions/
+legacy_unused/
+_legacy_unused/
