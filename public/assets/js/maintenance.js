@@ -33,6 +33,11 @@
         if(mod==='maintenance_social_security_companies') return row && row.company_id !== undefined ? row.company_id : '';
         if(mod==='maintenance_social_security_coefficients') return row && row.contribution_epigraph_id !== undefined ? row.contribution_epigraph_id : '';
         if(mod==='maintenance_social_security_base_limits') return row && row.contribution_group_id !== undefined ? row.contribution_group_id : '';
+        if(mod==='maintenance_salary_base_by_group') return row && row.classification_group !== undefined ? row.classification_group : '';
+        if(mod==='maintenance_destination_allowances') return row && row.organic_level !== undefined ? row.organic_level : '';
+        if(mod==='maintenance_seniority_pay_by_group') return row && row.classification_group !== undefined ? row.classification_group : '';
+        if(mod==='maintenance_specific_compensation_special_prices') return row && row.special_specific_compensation_id != null ? String(row.special_specific_compensation_id) : '';
+        if(mod==='maintenance_specific_compensation_general') return row && row.general_specific_compensation_id !== undefined ? row.general_specific_compensation_id : '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_id !== undefined ? row.subprogram_id : '';
         return row && (row.scale_id || row.subscale_id || row.category_id || '');
     }
@@ -56,6 +61,11 @@
         if(mod==='maintenance_programs') return row && row.program_name !== undefined ? row.program_name : '';
         if(mod==='maintenance_social_security_companies') return row && row.company_description !== undefined ? row.company_description : '';
         if(mod==='maintenance_social_security_base_limits') return row && row.contribution_group_description !== undefined ? row.contribution_group_description : '';
+        if(mod==='maintenance_salary_base_by_group') return row && row.classification_group !== undefined ? row.classification_group : '';
+        if(mod==='maintenance_destination_allowances') return row && row.organic_level !== undefined ? row.organic_level : '';
+        if(mod==='maintenance_seniority_pay_by_group') return row && row.classification_group !== undefined ? row.classification_group : '';
+        if(mod==='maintenance_specific_compensation_special_prices') return row && row.special_specific_compensation_name !== undefined ? row.special_specific_compensation_name : '';
+        if(mod==='maintenance_specific_compensation_general') return row && row.general_specific_compensation_name !== undefined ? row.general_specific_compensation_name : '';
         if(mod==='maintenance_social_security_coefficients') return '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_name !== undefined ? row.subprogram_name : '';
         return row && (row.scale_name || row.subscale_name || row.category_name || '');
@@ -202,10 +212,11 @@
         var mod = module();
         var show = function (name, on) { var el = document.querySelector('[data-maintenance-field="'+name+'"]'); if (el) el.hidden = !on; };
         var idInput = $('#maintenance_id');
+        var nameInput = $('#maintenance_name');
         var idLabel = $('[data-maintenance-label-id]');
         var nameLabel = $('[data-maintenance-label-name]');
         if (idLabel) {
-            idLabel.innerHTML = (mod === 'maintenance_social_security_coefficients' ? 'Epígraf' : (mod === 'maintenance_social_security_base_limits' ? 'Grup. Cot.' : 'Codi')) + ' <span class="users-modal-form__req">*</span>';
+            idLabel.innerHTML = (mod === 'maintenance_social_security_coefficients' ? 'Epígraf' : (mod === 'maintenance_social_security_base_limits' ? 'Grup. Cot.' : ((mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_seniority_pay_by_group') ? 'Grup classificació' : (mod === 'maintenance_destination_allowances' ? 'Nivell orgànic' : 'Codi')))) + ' <span class="users-modal-form__req">*</span>';
         }
         if (nameLabel) {
             var lbl = 'Nom';
@@ -217,7 +228,7 @@
         if (idInput) {
             if (mod === 'maintenance_programs' || mod === 'maintenance_subprograms') {
                 idInput.type = 'hidden';
-            } else if (mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_social_security_companies' || mod === 'maintenance_social_security_coefficients' || mod === 'maintenance_social_security_base_limits') {
+            } else if (mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_social_security_companies' || mod === 'maintenance_social_security_coefficients' || mod === 'maintenance_social_security_base_limits' || mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general') {
                 idInput.type = 'text';
                 idInput.removeAttribute('min');
                 if (mod === 'maintenance_social_security_coefficients') {
@@ -228,6 +239,26 @@
                     idInput.setAttribute('maxlength', '2');
                     idInput.setAttribute('inputmode', 'numeric');
                     idInput.setAttribute('pattern', '[0-9]{1,2}');
+                } else if (mod === 'maintenance_salary_base_by_group') {
+                    idInput.setAttribute('maxlength', '20');
+                    idInput.removeAttribute('pattern');
+                    idInput.setAttribute('inputmode', 'text');
+                } else if (mod === 'maintenance_destination_allowances') {
+                    idInput.setAttribute('maxlength', '20');
+                    idInput.removeAttribute('pattern');
+                    idInput.setAttribute('inputmode', 'text');
+                } else if (mod === 'maintenance_seniority_pay_by_group') {
+                    idInput.setAttribute('maxlength', '20');
+                    idInput.removeAttribute('pattern');
+                    idInput.setAttribute('inputmode', 'text');
+                } else if (mod === 'maintenance_specific_compensation_special_prices') {
+                    idInput.setAttribute('maxlength', '10');
+                    idInput.setAttribute('inputmode', 'numeric');
+                    idInput.setAttribute('pattern', '[0-9]+');
+                } else if (mod === 'maintenance_specific_compensation_general') {
+                    idInput.setAttribute('maxlength', '10');
+                    idInput.setAttribute('inputmode', 'numeric');
+                    idInput.setAttribute('pattern', '[0-9]+');
                 }
             } else {
                 idInput.type = 'number';
@@ -278,7 +309,27 @@
         show('minimum_base', mod === 'maintenance_social_security_base_limits');
         show('maximum_base', mod === 'maintenance_social_security_base_limits');
         show('period_label', mod === 'maintenance_social_security_base_limits');
-        show('name', mod !== 'maintenance_social_security_coefficients');
+        show('base_salary', mod === 'maintenance_salary_base_by_group');
+        show('base_salary_extra_pay', mod === 'maintenance_salary_base_by_group');
+        show('base_salary_new', mod === 'maintenance_salary_base_by_group');
+        show('base_salary_extra_pay_new', mod === 'maintenance_salary_base_by_group');
+        show('destination_allowance', mod === 'maintenance_destination_allowances');
+        show('destination_allowance_new', mod === 'maintenance_destination_allowances');
+        show('seniority_amount', mod === 'maintenance_seniority_pay_by_group');
+        show('seniority_extra_pay_amount', mod === 'maintenance_seniority_pay_by_group');
+        show('seniority_amount_new', mod === 'maintenance_seniority_pay_by_group');
+        show('seniority_extra_pay_amount_new', mod === 'maintenance_seniority_pay_by_group');
+        show('special_specific_compensation_name', mod === 'maintenance_specific_compensation_special_prices');
+        show('amount', mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general');
+        show('amount_new', mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general');
+        show('general_specific_compensation_name', mod === 'maintenance_specific_compensation_general');
+        show('decrease_amount', mod === 'maintenance_specific_compensation_general');
+        show('decrease_amount_new', mod === 'maintenance_specific_compensation_general');
+        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general');
+        if (nameInput) {
+            if (mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general') nameInput.removeAttribute('required');
+            else nameInput.setAttribute('required', 'required');
+        }
     }
     function fillSelect(sel, items, valKey, txtFn){
         if(!sel) return;
@@ -496,6 +547,95 @@
                 openModal();
                 return;
             }
+            if (module() === 'maintenance_salary_base_by_group') {
+                $('[data-field="original_id"]', f).value = String(r.classification_group != null ? r.classification_group : '');
+                $('[data-field="id"]', f).value = String(r.classification_group || '');
+                $('[data-field="base_salary"]', f).value = formatMoneyForInput(r.base_salary);
+                $('[data-field="base_salary_extra_pay"]', f).value = formatMoneyForInput(r.base_salary_extra_pay);
+                $('[data-field="base_salary_new"]', f).value = formatMoneyForInput(r.base_salary_new);
+                $('[data-field="base_salary_extra_pay_new"]', f).value = formatMoneyForInput(r.base_salary_extra_pay_new);
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'maintenance_destination_allowances') {
+                $('[data-field="original_id"]', f).value = String(r.organic_level != null ? r.organic_level : '');
+                $('[data-field="id"]', f).value = String(r.organic_level || '');
+                $('[data-field="destination_allowance"]', f).value = formatMoneyForInput(r.destination_allowance);
+                $('[data-field="destination_allowance_new"]', f).value = formatMoneyForInput(r.destination_allowance_new);
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'maintenance_seniority_pay_by_group') {
+                $('[data-field="original_id"]', f).value = String(r.classification_group != null ? r.classification_group : '');
+                $('[data-field="id"]', f).value = String(r.classification_group || '');
+                $('[data-field="seniority_amount"]', f).value = formatMoneyForInput(r.seniority_amount);
+                $('[data-field="seniority_extra_pay_amount"]', f).value = formatMoneyForInput(r.seniority_extra_pay_amount);
+                $('[data-field="seniority_amount_new"]', f).value = formatMoneyForInput(r.seniority_amount_new);
+                $('[data-field="seniority_extra_pay_amount_new"]', f).value = formatMoneyForInput(r.seniority_extra_pay_amount_new);
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'maintenance_specific_compensation_special_prices') {
+                $('[data-field="original_id"]', f).value = String(r.special_specific_compensation_id != null ? r.special_specific_compensation_id : '');
+                $('[data-field="id"]', f).value = String(r.special_specific_compensation_id ?? '');
+                $('[data-field="special_specific_compensation_name"]', f).value = String(r.special_specific_compensation_name ?? '');
+                $('[data-field="amount"]', f).value = formatMoneyForInput(r.amount);
+                $('[data-field="amount_new"]', f).value = formatMoneyForInput(r.amount_new);
+                setReadOnlyMode(!!readOnly, f);
+                var idEl = $('[data-field="id"]', f);
+                if (idEl && !readOnly) {
+                    idEl.readOnly = String($('[data-field="original_id"]', f).value || '').trim() !== '';
+                }
+                if (!readOnly && String($('[data-field="original_id"]', f).value || '').trim() === '0') {
+                    var ov0 = document.getElementById('maintenance-modal-overlay');
+                    var sb0 = ov0 ? ov0.querySelector('[data-maintenance-modal-submit]') : null;
+                    if (sb0) {
+                        sb0.hidden = true;
+                        sb0.style.display = 'none';
+                        sb0.setAttribute('aria-hidden', 'true');
+                    }
+                    f.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (el) {
+                        if (!(el instanceof HTMLElement)) return;
+                        if (el instanceof HTMLSelectElement) {
+                            el.disabled = true;
+                            return;
+                        }
+                        if (el instanceof HTMLTextAreaElement) {
+                            el.readOnly = true;
+                            return;
+                        }
+                        if (el instanceof HTMLInputElement) {
+                            if (el.type !== 'checkbox' && el.type !== 'radio') {
+                                el.readOnly = true;
+                            } else {
+                                el.disabled = true;
+                            }
+                        }
+                    });
+                }
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'maintenance_specific_compensation_general') {
+                $('[data-field="original_id"]', f).value = String(r.general_specific_compensation_id != null ? r.general_specific_compensation_id : '');
+                $('[data-field="id"]', f).value = String(r.general_specific_compensation_id || '');
+                $('[data-field="general_specific_compensation_name"]', f).value = String(r.general_specific_compensation_name || '');
+                $('[data-field="amount"]', f).value = formatMoneyForInput(r.amount);
+                $('[data-field="decrease_amount"]', f).value = formatMoneyForInput(r.decrease_amount);
+                $('[data-field="amount_new"]', f).value = formatMoneyForInput(r.amount_new);
+                $('[data-field="decrease_amount_new"]', f).value = formatMoneyForInput(r.decrease_amount_new);
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
             var idCell = rowIdFromData(r);
             var nameCell = rowNameFromData(r);
             if (Object.prototype.hasOwnProperty.call(r, 'org_unit_level_3_id')) {
@@ -545,6 +685,24 @@
             $('[data-field="minimum_base"]',f).value=String(r.minimum_base ?? '');
             $('[data-field="maximum_base"]',f).value=String(r.maximum_base ?? '');
             $('[data-field="period_label"]',f).value=String(r.period_label ?? '');
+            $('[data-field="base_salary"]',f).value=String(r.base_salary ?? '');
+            $('[data-field="base_salary_extra_pay"]',f).value=String(r.base_salary_extra_pay ?? '');
+            $('[data-field="base_salary_new"]',f).value=String(r.base_salary_new ?? '');
+            $('[data-field="base_salary_extra_pay_new"]',f).value=String(r.base_salary_extra_pay_new ?? '');
+            $('[data-field="destination_allowance"]',f).value=String(r.destination_allowance ?? '');
+            $('[data-field="destination_allowance_new"]',f).value=String(r.destination_allowance_new ?? '');
+            $('[data-field="seniority_amount"]',f).value=String(r.seniority_amount ?? '');
+            $('[data-field="seniority_extra_pay_amount"]',f).value=String(r.seniority_extra_pay_amount ?? '');
+            $('[data-field="seniority_amount_new"]',f).value=String(r.seniority_amount_new ?? '');
+            $('[data-field="seniority_extra_pay_amount_new"]',f).value=String(r.seniority_extra_pay_amount_new ?? '');
+            $('[data-field="amount"]',f).value=String(r.amount ?? '');
+            $('[data-field="amount_new"]',f).value=String(r.amount_new ?? '');
+            $('[data-field="general_specific_compensation_name"]',f).value=String(r.general_specific_compensation_name ?? '');
+            $('[data-field="decrease_amount"]',f).value=String(r.decrease_amount ?? '');
+            $('[data-field="decrease_amount_new"]',f).value=String(r.decrease_amount_new ?? '');
+            if(r.special_specific_compensation_id!==undefined) { var sid=$('[data-field="id"]',f); if(sid) sid.value=String(r.special_specific_compensation_id ?? ''); }
+            $('[data-field="special_specific_compensation_name"]',f).value=String(r.special_specific_compensation_name ?? '');
+            if(r.general_specific_compensation_id!==undefined) { var gci=$('[data-field="id"]',f); if(gci) gci.value=String(r.general_specific_compensation_id||''); }
             if(r.scale_id!==undefined) $('[data-field="scale_id"]',f).value=String(r.scale_id||'');
             if(r.subscale_id!==undefined) $('[data-field="subscale_id"]',f).value=String(r.subscale_id||'');
             if(r.class_id!==undefined) $('[data-field="class_id"]',f).value=String(r.class_id||'');
@@ -645,6 +803,146 @@
                 return;
             }
         }
+        if (module() === 'maintenance_salary_base_by_group') {
+            var grp = (fd.get('id') || '').toString().trim();
+            if (grp === '') {
+                showErrors(f, { id: 'El grup de classificació és obligatori.' });
+                return;
+            }
+            var baseNorm = normalizeMoneyInput((fd.get('base_salary') || '').toString());
+            if (baseNorm === null || baseNorm === '') {
+                showErrors(f, { base_salary: baseNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'El sou base és obligatori.' });
+                return;
+            }
+            var baseExtraNorm = normalizeMoneyInput((fd.get('base_salary_extra_pay') || '').toString());
+            if (baseExtraNorm === null || baseExtraNorm === '') {
+                showErrors(f, { base_salary_extra_pay: baseExtraNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'El sou base afectació pagues és obligatori.' });
+                return;
+            }
+            var baseNewNorm = normalizeMoneyInput((fd.get('base_salary_new') || '').toString());
+            if (baseNewNorm === null) {
+                showErrors(f, { base_salary_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+            var baseExtraNewNorm = normalizeMoneyInput((fd.get('base_salary_extra_pay_new') || '').toString());
+            if (baseExtraNewNorm === null) {
+                showErrors(f, { base_salary_extra_pay_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+        }
+        if (module() === 'maintenance_destination_allowances') {
+            var lvl = (fd.get('id') || '').toString().trim();
+            if (lvl === '') {
+                showErrors(f, { id: 'El nivell orgànic és obligatori.' });
+                return;
+            }
+            var destNorm = normalizeMoneyInput((fd.get('destination_allowance') || '').toString());
+            if (destNorm === null || destNorm === '') {
+                showErrors(f, { destination_allowance: destNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'El complement destinació és obligatori.' });
+                return;
+            }
+            var destNewNorm = normalizeMoneyInput((fd.get('destination_allowance_new') || '').toString());
+            if (destNewNorm === null) {
+                showErrors(f, { destination_allowance_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+        }
+        if (module() === 'maintenance_seniority_pay_by_group') {
+            var grp2 = (fd.get('id') || '').toString().trim();
+            if (grp2 === '') {
+                showErrors(f, { id: 'El grup de classificació és obligatori.' });
+                return;
+            }
+            var sNorm = normalizeMoneyInput((fd.get('seniority_amount') || '').toString());
+            if (sNorm === null || sNorm === '') {
+                showErrors(f, { seniority_amount: sNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'El trienni és obligatori.' });
+                return;
+            }
+            var seNorm = normalizeMoneyInput((fd.get('seniority_extra_pay_amount') || '').toString());
+            if (seNorm === null || seNorm === '') {
+                showErrors(f, { seniority_extra_pay_amount: seNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'El trienni afectació pagues és obligatori.' });
+                return;
+            }
+            var snNorm = normalizeMoneyInput((fd.get('seniority_amount_new') || '').toString());
+            if (snNorm === null) {
+                showErrors(f, { seniority_amount_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+            var senNorm = normalizeMoneyInput((fd.get('seniority_extra_pay_amount_new') || '').toString());
+            if (senNorm === null) {
+                showErrors(f, { seniority_extra_pay_amount_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+        }
+        if (module() === 'maintenance_specific_compensation_special_prices') {
+            var sid = (fd.get('id') || '').toString().trim();
+            if (sid === '') {
+                showErrors(f, { id: 'El codi és obligatori.' });
+                return;
+            }
+            if (!/^\d+$/.test(sid)) {
+                showErrors(f, { id: 'El codi ha de ser numèric.' });
+                return;
+            }
+            if (sid === '0') {
+                showErrors(f, { id: 'El codi 0 està reservat i no es pot donar d\'alta des d\'aquest formulari.' });
+                return;
+            }
+            var origSp = (fd.get('original_id') || '').toString().trim();
+            if (origSp === '0') {
+                showErrors(f, { _general: 'El codi 0 està reservat i no es pot modificar des d\'aquest formulari.' });
+                return;
+            }
+            var sname = (fd.get('special_specific_compensation_name') || '').toString().trim();
+            if (sname === '') {
+                showErrors(f, { special_specific_compensation_name: 'La denominació és obligatòria.' });
+                return;
+            }
+            var amountNorm = normalizeMoneyInput((fd.get('amount') || '').toString());
+            if (amountNorm === null || amountNorm === '') {
+                showErrors(f, { amount: amountNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'El complement específic especial és obligatori.' });
+                return;
+            }
+            var amountNewNorm = normalizeMoneyInput((fd.get('amount_new') || '').toString());
+            if (amountNewNorm === null) {
+                showErrors(f, { amount_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+            fd.set('special_specific_compensation_id', sid);
+        }
+        if (module() === 'maintenance_specific_compensation_general') {
+            var gid = (fd.get('id') || '').toString().trim();
+            if (!/^\d+$/.test(gid)) {
+                showErrors(f, { id: gid === '' ? 'El codi és obligatori.' : 'El codi ha de ser numèric.' });
+                return;
+            }
+            var gname = (fd.get('general_specific_compensation_name') || '').toString().trim();
+            if (gname === '') {
+                showErrors(f, { general_specific_compensation_name: 'La descripció del complement és obligatòria.' });
+                return;
+            }
+            var amountNorm2 = normalizeMoneyInput((fd.get('amount') || '').toString());
+            if (amountNorm2 === null || amountNorm2 === '') {
+                showErrors(f, { amount: amountNorm2 === null ? 'Import invàlid (màxim 2 decimals).' : 'L’import complement és obligatori.' });
+                return;
+            }
+            var decreaseNorm = normalizeMoneyInput((fd.get('decrease_amount') || '').toString());
+            if (decreaseNorm === null || decreaseNorm === '') {
+                showErrors(f, { decrease_amount: decreaseNorm === null ? 'Import invàlid (màxim 2 decimals).' : 'L’import de la disminució és obligatori.' });
+                return;
+            }
+            var amountNewNorm2 = normalizeMoneyInput((fd.get('amount_new') || '').toString());
+            if (amountNewNorm2 === null) {
+                showErrors(f, { amount_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+            var decreaseNewNorm = normalizeMoneyInput((fd.get('decrease_amount_new') || '').toString());
+            if (decreaseNewNorm === null) {
+                showErrors(f, { decrease_amount_new: 'Import invàlid (màxim 2 decimals).' });
+                return;
+            }
+            fd.set('general_specific_compensation_id', gid);
+        }
         if (module() === 'maintenance_subprograms') {
             var pid = (fd.get('program_id') || '').toString().trim();
             var snn = (fd.get('subprogram_number') || '').toString().trim();
@@ -704,6 +1002,24 @@
             ,minimum_base:(fd.get('minimum_base')||'').toString()
             ,maximum_base:(fd.get('maximum_base')||'').toString()
             ,period_label:(fd.get('period_label')||'').toString()
+            ,base_salary:(fd.get('base_salary')||'').toString()
+            ,base_salary_extra_pay:(fd.get('base_salary_extra_pay')||'').toString()
+            ,base_salary_new:(fd.get('base_salary_new')||'').toString()
+            ,base_salary_extra_pay_new:(fd.get('base_salary_extra_pay_new')||'').toString()
+            ,destination_allowance:(fd.get('destination_allowance')||'').toString()
+            ,destination_allowance_new:(fd.get('destination_allowance_new')||'').toString()
+            ,seniority_amount:(fd.get('seniority_amount')||'').toString()
+            ,seniority_extra_pay_amount:(fd.get('seniority_extra_pay_amount')||'').toString()
+            ,seniority_amount_new:(fd.get('seniority_amount_new')||'').toString()
+            ,seniority_extra_pay_amount_new:(fd.get('seniority_extra_pay_amount_new')||'').toString()
+            ,special_specific_compensation_id:(fd.get('special_specific_compensation_id')||'').toString()
+            ,special_specific_compensation_name:(fd.get('special_specific_compensation_name')||'').toString()
+            ,amount:(fd.get('amount')||'').toString()
+            ,amount_new:(fd.get('amount_new')||'').toString()
+            ,general_specific_compensation_id:(fd.get('general_specific_compensation_id')||'').toString()
+            ,general_specific_compensation_name:(fd.get('general_specific_compensation_name')||'').toString()
+            ,decrease_amount:(fd.get('decrease_amount')||'').toString()
+            ,decrease_amount_new:(fd.get('decrease_amount_new')||'').toString()
         };
         fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)})
             .then(function(r){return r.json();})
@@ -716,8 +1032,228 @@
         var go=function(){ fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({action:'delete',module:module(),id:id,csrf_token:csrf})}).then(function(r){return r.json();}).then(function(d){ if(d.ok){ if(window.showAlert){ window.showAlert('success','Èxit',d.message||'Eliminat.'); setTimeout(function(){window.location.reload();},650);} else {window.location.reload();} } else if(d.errors&&d.errors._general&&window.showAlert){ window.showAlert('error','Error',d.errors._general);} }); };
         if(window.showConfirm){ window.showConfirm('Registre actiu','Desitja eliminar aquest registre?',go,{confirmLabel:'Si',cancelLabel:'No'}); } else { if(confirm('Vols eliminar aquest registre?')) go(); }
     }
+    function salaryBulkAction(action, payload, successMsg){
+        if (module() !== 'maintenance_salary_base_by_group' && module() !== 'maintenance_destination_allowances' && module() !== 'maintenance_seniority_pay_by_group' && module() !== 'maintenance_specific_compensation_special_prices' && module() !== 'maintenance_specific_compensation_general' && module() !== 'maintenance_personal_transitory_bonus') return;
+        if (!cfg().canEdit || !cfg().implemented) return;
+        var csrf = cfg().csrfToken || '';
+        var body = Object.assign({ action: action, module: module(), csrf_token: csrf }, payload || {});
+        fetch(apiUrl(), { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body: JSON.stringify(body)})
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (d.ok) {
+                    if (window.showAlert) {
+                        window.showAlert('success','Èxit', successMsg || d.message || 'Operació completada.');
+                        setTimeout(function(){ window.location.reload(); }, 650);
+                    } else {
+                        window.location.reload();
+                    }
+                    return;
+                }
+                if (window.showAlert) {
+                    var msg = (d.errors && d.errors._general) ? d.errors._general : 'No s’ha pogut completar l’operació.';
+                    window.showAlert('error','Error', msg);
+                }
+            })
+            .catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.'); });
+    }
+    function askIncrementPercent(onApply){
+        if (typeof window.showActionModal !== 'function') {
+            if (window.showAlert) window.showAlert('error', 'Error', 'No s’ha pogut obrir la finestra d’increment.');
+            return;
+        }
+        window.showActionModal({
+            title: 'INCREMENT IMPORTS',
+            message: "Introdueix el percentatge d'increment",
+            type: 'confirm',
+            size: 'md',
+            contentHtml:
+                '<div class="form-group" style="margin-top:8px;">' +
+                    '<input class="form-input" id="maintenance_inline_percent" type="text" inputmode="decimal" autocomplete="off" placeholder="p. ex. 2,5">' +
+                    '<p class="form-error" id="maintenance_inline_percent_error" hidden></p>' +
+                '</div>',
+            onOpen: function (el) {
+                var inputEl = el.querySelector('#maintenance_inline_percent');
+                if (inputEl) inputEl.focus();
+            },
+            buttons: [
+                { label: 'Cancel·lar', className: 'modal__btn--no', dataClose: true, autofocus: false },
+                {
+                    label: 'Aplicar increment',
+                    className: 'modal__btn--si',
+                    closeOnClick: false,
+                    autofocus: true,
+                    onClick: function (close, btn) {
+                        var root = btn && btn.closest('.js-app-modal');
+                        var inp = root ? root.querySelector('#maintenance_inline_percent') : null;
+                        var err = root ? root.querySelector('#maintenance_inline_percent_error') : null;
+                        var raw = String(inp && inp.value ? inp.value : '').trim();
+                        var norm = raw.replace(',', '.');
+                        var valid = /^\d+(?:\.\d+)?$/.test(norm);
+                        if (!valid) {
+                            if (err) {
+                                err.hidden = false;
+                                err.textContent = raw === '' ? 'Cal indicar un percentatge.' : 'El percentatge indicat no és vàlid.';
+                            }
+                            return;
+                        }
+                        close();
+                        if (typeof onApply === 'function') onApply(raw);
+                    }
+                }
+            ]
+        });
+    }
+    function askSeniorityScope(onSelect){
+        if (typeof window.showActionModal !== 'function') {
+            if (window.showAlert) window.showAlert('error', 'Error', 'No s’ha pogut obrir la finestra de selecció.');
+            return;
+        }
+        window.showActionModal({
+            title: 'ACTUALITZAR TRIENNIS PERSONA',
+            message: 'Vols actualitzar només les persones actives o totes les persones?',
+            type: 'confirm',
+            size: 'md',
+            buttons: [
+                { label: 'Cancel·lar', className: 'modal__btn--no', dataClose: true },
+                { label: 'Totes', className: 'modal__btn--classic', onClick: function(){ if (typeof onSelect === 'function') onSelect('all'); } },
+                { label: 'Només actives', className: 'modal__btn--si', onClick: function(){ if (typeof onSelect === 'function') onSelect('active'); }, autofocus: true }
+            ]
+        });
+    }
+    function updatePeopleSeniority(scope){
+        if (module() !== 'maintenance_seniority_pay_by_group') return;
+        if (!cfg().canEdit || !cfg().implemented) return;
+        var csrf = cfg().csrfToken || '';
+        fetch(apiUrl(), {
+            method:'POST',
+            credentials:'same-origin',
+            headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},
+            body: JSON.stringify({ action: 'update_people_seniority', module: module(), csrf_token: csrf, scope: scope })
+        })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (d.ok) {
+                    if (window.showAlert) window.showAlert('success','Èxit', d.message || 'Operació completada.');
+                    return;
+                }
+                if (window.showAlert) {
+                    var msg = (d.errors && d.errors._general) ? d.errors._general : 'No s’ha pogut completar l’operació.';
+                    window.showAlert('error','Error', msg);
+                }
+            })
+            .catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.'); });
+    }
+    function showPtbHint(input, msg, kind) {
+        var cell = input && input.closest ? input.closest('.maintenance-ptb-new__cell') : null;
+        var h = cell ? cell.querySelector('.maintenance-ptb-new__hint') : null;
+        if (!h) return;
+        if (!msg) {
+            h.hidden = true;
+            h.textContent = '';
+            h.classList.remove('maintenance-ptb-new__hint--ok', 'maintenance-ptb-new__hint--err');
+            return;
+        }
+        h.hidden = false;
+        h.textContent = msg;
+        h.classList.remove('maintenance-ptb-new__hint--ok', 'maintenance-ptb-new__hint--err');
+        h.classList.add(kind === 'ok' ? 'maintenance-ptb-new__hint--ok' : 'maintenance-ptb-new__hint--err');
+        if (kind === 'ok') {
+            var msgCopy = msg;
+            setTimeout(function () {
+                if (h.textContent === msgCopy) {
+                    showPtbHint(input, '', '');
+                }
+            }, 2000);
+        }
+    }
+    function parsePtbClientInput(raw) {
+        var t = String(raw || '').trim().replace(/\u00A0/g, '').replace(/€/g, '').replace(/\s+/g, '').trim();
+        if (t === '') return { kind: 'empty' };
+        var norm = normalizeMoneyInput(String(raw || '').trim());
+        if (norm === null) return { kind: 'invalid' };
+        if (norm === '') return { kind: 'empty' };
+        return { kind: 'amount', norm: norm };
+    }
+    function commitPtbInput(inp) {
+        if (!inp || inp.getAttribute('data-ptb-saving') === '1') return;
+        var snap = inp.getAttribute('data-ptb-snapshot');
+        if (snap === null || snap === void 0) snap = '';
+        var rawTrim = String(inp.value || '').trim();
+        if (rawTrim === String(snap).trim()) {
+            showPtbHint(inp, '', '');
+            return;
+        }
+        var parsed = parsePtbClientInput(inp.value);
+        if (parsed.kind === 'invalid') {
+            showPtbHint(inp, 'Import no vàlid.', 'err');
+            inp.value = snap;
+            return;
+        }
+        inp.setAttribute('data-ptb-saving', '1');
+        var csrf = cfg().csrfToken || '';
+        var pid = parseInt(inp.getAttribute('data-person-id') || '0', 10);
+        fetch(apiUrl(), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            body: JSON.stringify({
+                action: 'update_personal_transitory_bonus_new',
+                module: module(),
+                csrf_token: csrf,
+                person_id: pid,
+                value: inp.value
+            })
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                inp.removeAttribute('data-ptb-saving');
+                if (d.ok) {
+                    var vi = d.value_for_input !== undefined && d.value_for_input !== null ? String(d.value_for_input) : '';
+                    inp.value = vi;
+                    inp.setAttribute('data-ptb-snapshot', vi);
+                    showPtbHint(inp, 'Desat.', 'ok');
+                    return;
+                }
+                var msg = (d.errors && d.errors._general) ? d.errors._general : 'Error en desar.';
+                showPtbHint(inp, msg, 'err');
+                inp.value = snap;
+            })
+            .catch(function () {
+                inp.removeAttribute('data-ptb-saving');
+                showPtbHint(inp, 'Error de xarxa.', 'err');
+                inp.value = snap;
+            });
+    }
+    function initPersonalTransitoryBonusInline() {
+        document.body.addEventListener('focusin', function (e) {
+            var t = e.target;
+            if (!t || !t.matches || !t.matches('[data-ptb-new-input]')) return;
+            t.setAttribute('data-ptb-snapshot', t.value);
+        });
+        document.body.addEventListener('keydown', function (e) {
+            var inp = e.target;
+            if (!inp || !inp.matches || !inp.matches('[data-ptb-new-input]')) return;
+            if (e.key === 'Escape') {
+                var s = inp.getAttribute('data-ptb-snapshot');
+                inp.value = s !== null && s !== void 0 ? s : '';
+                showPtbHint(inp, '', '');
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                commitPtbInput(inp);
+            }
+        });
+        document.body.addEventListener('blur', function (e) {
+            var inp = e.target;
+            if (!inp || !inp.matches || !inp.matches('[data-ptb-new-input]')) return;
+            commitPtbInput(inp);
+        }, true);
+    }
     document.addEventListener('DOMContentLoaded',function(){
         setupFields();
+        if (module() === 'maintenance_personal_transitory_bonus') {
+            initPersonalTransitoryBonusInline();
+        }
         var scale=$('#maintenance_scale_id'), sub=$('#maintenance_subscale_id');
         if(scale) scale.addEventListener('change', applyCascades);
         if(sub) sub.addEventListener('change', applyCascades);
@@ -727,6 +1263,76 @@
             if(e.target.closest('[data-maintenance-edit]')){ e.preventDefault(); var id=(e.target.closest('[data-maintenance-edit]').getAttribute('data-maintenance-edit')||'').toString().trim(); if(id!=='') openEdit(id); }
             if(e.target.closest('[data-maintenance-delete]')){ e.preventDefault(); var idd=(e.target.closest('[data-maintenance-delete]').getAttribute('data-maintenance-delete')||'').toString().trim(); if(idd!=='') confirmDelete(idd); }
             if(e.target.closest('[data-maintenance-modal-close]')){ e.preventDefault(); closeModal(); }
+            if(e.target.closest('[data-salary-increment]')){
+                e.preventDefault();
+                askIncrementPercent(function(percentRaw){
+                    var goInc = function(){ salaryBulkAction('increment_imports', { percent: percentRaw }, 'Imports incrementats correctament.'); };
+                    if(window.showConfirm){ window.showConfirm('Confirmació','Aplicar increment global d\'imports?',goInc,{confirmLabel:'Si',cancelLabel:'No'}); } else { goInc(); }
+                });
+            }
+            if(e.target.closest('[data-salary-cancel]')){
+                e.preventDefault();
+                var goCancel = function(){ salaryBulkAction('cancel_increment', {}, 'Increment anul·lat correctament.'); };
+                if(window.showConfirm){ window.showConfirm('Confirmació','Anul·lar l\'increment global?',goCancel,{confirmLabel:'Si',cancelLabel:'No'}); } else { if(confirm('Anul·lar l\'increment global?')) goCancel(); }
+            }
+            if(e.target.closest('[data-salary-apply]')){
+                e.preventDefault();
+                var goApply = function(){ salaryBulkAction('apply_imports', {}, 'Imports actualitzats correctament.'); };
+                if(window.showConfirm){ window.showConfirm('Confirmació','Actualitzar imports base amb els imports incrementats?',goApply,{confirmLabel:'Si',cancelLabel:'No'}); } else { if(confirm('Actualitzar imports base amb els imports incrementats?')) goApply(); }
+            }
+            if(e.target.closest('[data-seniority-people-update]')){
+                e.preventDefault();
+                askSeniorityScope(function(scope){
+                    var go = function(){ updatePeopleSeniority(scope); };
+                    if (window.showConfirm) {
+                        window.showConfirm(
+                            'Confirmació',
+                            "Aquesta acció recalcularà l'antiguitat anual pressupostada de totes les persones de l'any actiu. Vols continuar?",
+                            go,
+                            { confirmLabel: 'Si', cancelLabel: 'No' }
+                        );
+                    } else {
+                        go();
+                    }
+                });
+            }
+            if(e.target.closest('[data-special-prices-update]') || e.target.closest('[data-specific-workplace-update]')){
+                e.preventDefault();
+                var goUpdateSpecialPrices = function(){
+                    var csrf = cfg().csrfToken || '';
+                    fetch(apiUrl(), {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'Content-Type':'application/json','X-CSRF-Token':csrf},
+                        body: JSON.stringify({
+                            action: 'update_job_positions_special_prices',
+                            module: module(),
+                            csrf_token: csrf
+                        })
+                    })
+                        .then(function(r){ return r.json(); })
+                        .then(function(d){
+                            if (d.ok) {
+                                if (window.showAlert) window.showAlert('success', 'Èxit', d.message || "S'han actualitzat els preus de 0 llocs de treball.");
+                                return;
+                            }
+                            if (window.showAlert) window.showAlert('error', 'Error', d.message || 'No s’ha pogut actualitzar els preus dels llocs de treball.');
+                        })
+                        .catch(function(){
+                            if (window.showAlert) window.showAlert('error', 'Error', 'No s’ha pogut actualitzar els preus dels llocs de treball.');
+                        });
+                };
+                if (window.showConfirm) {
+                    window.showConfirm(
+                        'ACTUALITZAR PREUS LLOC',
+                        "Aquesta acció actualitzarà el complement específic especial en tots els llocs de treball amb els imports actuals. Vols continuar?",
+                        goUpdateSpecialPrices,
+                        { confirmLabel: 'Sí', cancelLabel: 'No' }
+                    );
+                } else {
+                    goUpdateSpecialPrices();
+                }
+            }
         });
         var mf=$('#maintenance-modal-form');
         if(mf){

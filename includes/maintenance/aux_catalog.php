@@ -25,6 +25,12 @@ function maintenance_modules_config(): array
         'maintenance_social_security_companies' => ['title' => 'Empreses', 'table' => 'social_security_companies', 'implemented' => true],
         'maintenance_social_security_coefficients' => ['title' => 'Coeficients Seguretat Social', 'table' => 'social_security_coefficients', 'implemented' => true],
         'maintenance_social_security_base_limits' => ['title' => 'Bases mínimes i màximes Seguretat Social', 'table' => 'social_security_base_limits', 'implemented' => true],
+        'maintenance_salary_base_by_group' => ['title' => 'Sous', 'table' => 'salary_base_by_group', 'implemented' => true],
+        'maintenance_destination_allowances' => ['title' => 'Complement destinació', 'table' => 'destination_allowances', 'implemented' => true],
+        'maintenance_seniority_pay_by_group' => ['title' => 'Triennis', 'table' => 'seniority_pay_by_group', 'implemented' => true],
+        'maintenance_specific_compensation_special_prices' => ['title' => 'Complement específic especial', 'table' => 'specific_compensation_special', 'implemented' => true],
+        'maintenance_specific_compensation_general' => ['title' => 'Complement específic general', 'table' => 'specific_compensation_general', 'implemented' => true],
+        'maintenance_personal_transitory_bonus' => ['title' => 'CPT personal (transitori)', 'table' => 'people', 'implemented' => true],
         'maintenance_subprograms' => ['title' => 'Subprogrames', 'table' => 'subprograms', 'implemented' => true],
     ];
 }
@@ -46,7 +52,13 @@ function maintenance_sort_normalize(string $module, string $sortBy, string $sort
 /** Mòduls amb llistat SQL genèric (escales / subescales / classes / categories). */
 function maintenance_catalog_list_modules(): array
 {
-    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_subprograms'];
+    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'maintenance_subprograms'];
+}
+
+/** Mòduls de llistat amb persistència CRUD al catàleg (exclou llistats només lectura / accions massives sobre altres taules). */
+function maintenance_catalog_crud_modules(): array
+{
+    return array_values(array_diff(maintenance_catalog_list_modules(), ['maintenance_personal_transitory_bonus']));
 }
 
 /**
@@ -96,12 +108,6 @@ function maintenance_parse_optional_money_input(string $raw): array
     }
 
     return ['ok' => true, 'value' => number_format((float) $norm, 2, '.', '')];
-}
-
-/** Mòduls amb persistència CRUD al catàleg funcionarial. */
-function maintenance_catalog_crud_modules(): array
-{
-    return maintenance_catalog_list_modules();
 }
 
 function maintenance_normalize_pagination(int $page, int $perPage, int $total): array
@@ -245,6 +251,19 @@ function maintenance_count(PDO $db, string $module, int $year, string $q): int
         $sql = 'SELECT COUNT(*) AS c FROM social_security_coefficients t WHERE t.catalog_year = :y' . $search['sql'];
     } elseif ($module === 'maintenance_social_security_base_limits') {
         $sql = 'SELECT COUNT(*) AS c FROM social_security_base_limits t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_salary_base_by_group') {
+        $sql = 'SELECT COUNT(*) AS c FROM salary_base_by_group t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_destination_allowances') {
+        $sql = 'SELECT COUNT(*) AS c FROM destination_allowances t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_seniority_pay_by_group') {
+        $sql = 'SELECT COUNT(*) AS c FROM seniority_pay_by_group t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+        $sql = 'SELECT COUNT(*) AS c FROM specific_compensation_special t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_specific_compensation_general') {
+        $sql = 'SELECT COUNT(*) AS c FROM specific_compensation_general t WHERE t.catalog_year = :y' . $search['sql'];
+    } elseif ($module === 'maintenance_personal_transitory_bonus') {
+        $sql = 'SELECT COUNT(*) AS c FROM people p
+                WHERE p.catalog_year = :y AND p.is_active = 1 AND p.personal_transitory_bonus <> 0' . $search['sql'];
     } elseif ($module === 'maintenance_subprograms') {
         $sql = 'SELECT COUNT(*) AS c FROM subprograms t
                 INNER JOIN programs p ON p.catalog_year = t.catalog_year AND p.program_id = t.program_id
@@ -580,6 +599,99 @@ function maintenance_list(PDO $db, string $module, int $year, string $q, string 
         $params += $search['params'];
         $sql .= $search['sql'];
         $sql .= ' ORDER BY ' . $order . ', t.contribution_group_id ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_salary_base_by_group') {
+        $order = match ($sortBy) {
+            'base_salary' => 't.base_salary ' . $dir,
+            'base_salary_extra_pay' => 't.base_salary_extra_pay ' . $dir,
+            'base_salary_new' => 't.base_salary_new ' . $dir,
+            'base_salary_extra_pay_new' => 't.base_salary_extra_pay_new ' . $dir,
+            default => 't.classification_group ' . $dir,
+        };
+        $sql = 'SELECT t.classification_group, t.base_salary, t.base_salary_extra_pay, t.base_salary_new, t.base_salary_extra_pay_new
+                FROM salary_base_by_group t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.classification_group ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_destination_allowances') {
+        $order = match ($sortBy) {
+            'destination_allowance' => 't.destination_allowance ' . $dir,
+            'destination_allowance_new' => 't.destination_allowance_new ' . $dir,
+            default => 't.organic_level ' . $dir,
+        };
+        $sql = 'SELECT t.organic_level, t.destination_allowance, t.destination_allowance_new
+                FROM destination_allowances t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.organic_level ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_seniority_pay_by_group') {
+        $order = match ($sortBy) {
+            'seniority_amount' => 't.seniority_amount ' . $dir,
+            'seniority_extra_pay_amount' => 't.seniority_extra_pay_amount ' . $dir,
+            'seniority_amount_new' => 't.seniority_amount_new ' . $dir,
+            'seniority_extra_pay_amount_new' => 't.seniority_extra_pay_amount_new ' . $dir,
+            default => 't.classification_group ' . $dir,
+        };
+        $sql = 'SELECT t.classification_group, t.seniority_amount, t.seniority_extra_pay_amount, t.seniority_amount_new, t.seniority_extra_pay_amount_new
+                FROM seniority_pay_by_group t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.classification_group ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+        $order = match ($sortBy) {
+            'special_specific_compensation_name' => 't.special_specific_compensation_name ' . $dir,
+            'amount' => 't.amount ' . $dir,
+            'amount_new' => 't.amount_new ' . $dir,
+            default => 't.special_specific_compensation_id ' . $dir,
+        };
+        $sql = 'SELECT t.special_specific_compensation_id, t.special_specific_compensation_name, t.amount, t.amount_new
+                FROM specific_compensation_special t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.special_specific_compensation_id ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_specific_compensation_general') {
+        $order = match ($sortBy) {
+            'general_specific_compensation_name' => 't.general_specific_compensation_name ' . $dir,
+            'amount' => 't.amount ' . $dir,
+            'decrease_amount' => 't.decrease_amount ' . $dir,
+            'amount_new' => 't.amount_new ' . $dir,
+            'decrease_amount_new' => 't.decrease_amount_new ' . $dir,
+            default => 't.general_specific_compensation_id ' . $dir,
+        };
+        $sql = 'SELECT t.general_specific_compensation_id, t.general_specific_compensation_name, t.amount, t.decrease_amount, t.amount_new, t.decrease_amount_new
+                FROM specific_compensation_general t
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.general_specific_compensation_id ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'maintenance_personal_transitory_bonus') {
+        $order = match ($sortBy) {
+            'last_name_2' => 'p.last_name_2 ' . $dir,
+            'first_name' => 'p.first_name ' . $dir,
+            'personal_transitory_bonus' => 'p.personal_transitory_bonus ' . $dir,
+            'personal_transitory_bonus_new' => 'p.personal_transitory_bonus_new ' . $dir,
+            default => 'p.last_name_1 ' . $dir,
+        };
+        $sql = 'SELECT p.person_id,
+                TRIM(CONCAT_WS(\', \',
+                    NULLIF(TRIM(CONCAT_WS(\' \', NULLIF(TRIM(p.last_name_1), \'\'), NULLIF(TRIM(p.last_name_2), \'\'))), \'\'),
+                    NULLIF(TRIM(p.first_name), \'\')
+                )) AS person_display_name,
+                p.personal_transitory_bonus, p.personal_transitory_bonus_new
+                FROM people p
+                WHERE p.catalog_year = :y AND p.is_active = 1 AND p.personal_transitory_bonus <> 0';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', p.last_name_2 ASC, p.first_name ASC, p.person_id ASC ' . db_sql_limit_offset($limit, $offset);
     } else {
         return [];
     }
@@ -592,6 +704,9 @@ function maintenance_get_by_id(PDO $db, string $module, int $year, string $id): 
 {
     $id = trim($id);
     if ($id === '') {
+        return null;
+    }
+    if ($module === 'maintenance_specific_compensation_special_prices' && !preg_match('/^\d+$/', $id)) {
         return null;
     }
     if ($module === 'maintenance_scales') {
@@ -635,6 +750,16 @@ function maintenance_get_by_id(PDO $db, string $module, int $year, string $id): 
         $sql = 'SELECT * FROM social_security_coefficients WHERE catalog_year = :y AND contribution_epigraph_id = :id LIMIT 1';
     } elseif ($module === 'maintenance_social_security_base_limits') {
         $sql = 'SELECT * FROM social_security_base_limits WHERE catalog_year = :y AND contribution_group_id = :id LIMIT 1';
+    } elseif ($module === 'maintenance_salary_base_by_group') {
+        $sql = 'SELECT * FROM salary_base_by_group WHERE catalog_year = :y AND classification_group = :id LIMIT 1';
+    } elseif ($module === 'maintenance_destination_allowances') {
+        $sql = 'SELECT * FROM destination_allowances WHERE catalog_year = :y AND organic_level = :id LIMIT 1';
+    } elseif ($module === 'maintenance_seniority_pay_by_group') {
+        $sql = 'SELECT * FROM seniority_pay_by_group WHERE catalog_year = :y AND classification_group = :id LIMIT 1';
+    } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+        $sql = 'SELECT * FROM specific_compensation_special WHERE catalog_year = :y AND special_specific_compensation_id = :id LIMIT 1';
+    } elseif ($module === 'maintenance_specific_compensation_general') {
+        $sql = 'SELECT * FROM specific_compensation_general WHERE catalog_year = :y AND general_specific_compensation_id = :id LIMIT 1';
     } elseif ($module === 'maintenance_subprograms') {
         $sql = 'SELECT t.*, p.program_name,
                 jp_t.job_title AS technical_job_title, jp_e.job_title AS elected_job_title
@@ -701,6 +826,16 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
         $sql = 'SELECT contribution_epigraph_id FROM social_security_coefficients WHERE catalog_year = :y AND contribution_epigraph_id = :id';
     } elseif ($module === 'maintenance_social_security_base_limits') {
         $sql = 'SELECT contribution_group_id FROM social_security_base_limits WHERE catalog_year = :y AND contribution_group_id = :id';
+    } elseif ($module === 'maintenance_salary_base_by_group') {
+        $sql = 'SELECT classification_group FROM salary_base_by_group WHERE catalog_year = :y AND classification_group = :id';
+    } elseif ($module === 'maintenance_destination_allowances') {
+        $sql = 'SELECT organic_level FROM destination_allowances WHERE catalog_year = :y AND organic_level = :id';
+    } elseif ($module === 'maintenance_seniority_pay_by_group') {
+        $sql = 'SELECT classification_group FROM seniority_pay_by_group WHERE catalog_year = :y AND classification_group = :id';
+    } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+        $sql = 'SELECT special_specific_compensation_id FROM specific_compensation_special WHERE catalog_year = :y AND special_specific_compensation_id = :id';
+    } elseif ($module === 'maintenance_specific_compensation_general') {
+        $sql = 'SELECT general_specific_compensation_id FROM specific_compensation_general WHERE catalog_year = :y AND general_specific_compensation_id = :id';
     } elseif ($module === 'maintenance_subprograms') {
         $sql = 'SELECT subprogram_id FROM subprograms WHERE catalog_year = :y AND subprogram_id = :id';
     } else {
@@ -717,6 +852,11 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
             'maintenance_social_security_companies' => 'company_id',
             'maintenance_social_security_coefficients' => 'contribution_epigraph_id',
             'maintenance_social_security_base_limits' => 'contribution_group_id',
+            'maintenance_salary_base_by_group' => 'classification_group',
+            'maintenance_destination_allowances' => 'organic_level',
+            'maintenance_seniority_pay_by_group' => 'classification_group',
+            'maintenance_specific_compensation_special_prices' => 'special_specific_compensation_id',
+            'maintenance_specific_compensation_general' => 'general_specific_compensation_id',
             'maintenance_access_types' => 'access_type_id',
             'maintenance_access_systems' => 'access_system_id',
             'maintenance_position_classes' => 'position_class_id',
@@ -1142,6 +1282,332 @@ function maintenance_save(PDO $db, string $module, int $year, int|string|null $o
         ]);
         return;
     }
+    if ($module === 'maintenance_salary_base_by_group') {
+        $group = strtoupper(trim((string) ($data['id'] ?? '')));
+        $baseSalaryRaw = trim((string) ($data['base_salary'] ?? ''));
+        $baseSalaryExtraRaw = trim((string) ($data['base_salary_extra_pay'] ?? ''));
+        $baseSalaryNewRaw = trim((string) ($data['base_salary_new'] ?? ''));
+        $baseSalaryExtraNewRaw = trim((string) ($data['base_salary_extra_pay_new'] ?? ''));
+        $errors = [];
+        if ($group === '') {
+            $errors['id'] = 'El grup de classificació és obligatori.';
+        }
+        $baseParsed = maintenance_parse_optional_money_input($baseSalaryRaw);
+        if (!$baseParsed['ok']) {
+            $errors['base_salary'] = $baseParsed['error'];
+        } elseif ($baseParsed['value'] === null) {
+            $errors['base_salary'] = 'El sou base és obligatori.';
+        }
+        $baseExtraParsed = maintenance_parse_optional_money_input($baseSalaryExtraRaw);
+        if (!$baseExtraParsed['ok']) {
+            $errors['base_salary_extra_pay'] = $baseExtraParsed['error'];
+        } elseif ($baseExtraParsed['value'] === null) {
+            $errors['base_salary_extra_pay'] = 'El sou base afectació pagues és obligatori.';
+        }
+        $baseNewParsed = maintenance_parse_optional_money_input($baseSalaryNewRaw);
+        if (!$baseNewParsed['ok']) {
+            $errors['base_salary_new'] = $baseNewParsed['error'];
+        }
+        $baseExtraNewParsed = maintenance_parse_optional_money_input($baseSalaryExtraNewRaw);
+        if (!$baseExtraNewParsed['ok']) {
+            $errors['base_salary_extra_pay_new'] = $baseExtraNewParsed['error'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $originalIdText = $originalId !== null ? strtoupper(trim((string) $originalId)) : null;
+        if (maintenance_id_exists($db, $module, $year, $group, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest grup de classificació dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO salary_base_by_group (catalog_year, classification_group, base_salary, base_salary_extra_pay, base_salary_new, base_salary_extra_pay_new) VALUES (:y,:grp,:base,:base_extra,:base_new,:base_extra_new)');
+            $st->execute([
+                'y' => $year,
+                'grp' => $group,
+                'base' => $baseParsed['value'],
+                'base_extra' => $baseExtraParsed['value'],
+                'base_new' => $baseNewParsed['value'],
+                'base_extra_new' => $baseExtraNewParsed['value'],
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE salary_base_by_group SET classification_group=:new_grp, base_salary=:base, base_salary_extra_pay=:base_extra, base_salary_new=:base_new, base_salary_extra_pay_new=:base_extra_new WHERE catalog_year=:y AND classification_group=:grp');
+        $st->execute([
+            'y' => $year,
+            'grp' => $originalIdText,
+            'new_grp' => $group,
+            'base' => $baseParsed['value'],
+            'base_extra' => $baseExtraParsed['value'],
+            'base_new' => $baseNewParsed['value'],
+            'base_extra_new' => $baseExtraNewParsed['value'],
+        ]);
+        return;
+    }
+    if ($module === 'maintenance_destination_allowances') {
+        $organicLevel = strtoupper(trim((string) ($data['id'] ?? '')));
+        $destinationAllowanceRaw = trim((string) ($data['destination_allowance'] ?? ''));
+        $destinationAllowanceNewRaw = trim((string) ($data['destination_allowance_new'] ?? ''));
+        $errors = [];
+        if ($organicLevel === '') {
+            $errors['id'] = 'El nivell orgànic és obligatori.';
+        }
+        $destParsed = maintenance_parse_optional_money_input($destinationAllowanceRaw);
+        if (!$destParsed['ok']) {
+            $errors['destination_allowance'] = $destParsed['error'];
+        } elseif ($destParsed['value'] === null) {
+            $errors['destination_allowance'] = 'El complement destinació és obligatori.';
+        }
+        $destNewParsed = maintenance_parse_optional_money_input($destinationAllowanceNewRaw);
+        if (!$destNewParsed['ok']) {
+            $errors['destination_allowance_new'] = $destNewParsed['error'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $originalIdText = $originalId !== null ? strtoupper(trim((string) $originalId)) : null;
+        if (maintenance_id_exists($db, $module, $year, $organicLevel, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest nivell orgànic dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO destination_allowances (catalog_year, organic_level, destination_allowance, destination_allowance_new) VALUES (:y,:org,:dest,:dest_new)');
+            $st->execute([
+                'y' => $year,
+                'org' => $organicLevel,
+                'dest' => $destParsed['value'],
+                'dest_new' => $destNewParsed['value'],
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE destination_allowances SET organic_level=:new_org, destination_allowance=:dest, destination_allowance_new=:dest_new WHERE catalog_year=:y AND organic_level=:org');
+        $st->execute([
+            'y' => $year,
+            'org' => $originalIdText,
+            'new_org' => $organicLevel,
+            'dest' => $destParsed['value'],
+            'dest_new' => $destNewParsed['value'],
+        ]);
+        return;
+    }
+    if ($module === 'maintenance_seniority_pay_by_group') {
+        $group = strtoupper(trim((string) ($data['id'] ?? '')));
+        $seniorityAmountRaw = trim((string) ($data['seniority_amount'] ?? ''));
+        $seniorityExtraAmountRaw = trim((string) ($data['seniority_extra_pay_amount'] ?? ''));
+        $seniorityAmountNewRaw = trim((string) ($data['seniority_amount_new'] ?? ''));
+        $seniorityExtraAmountNewRaw = trim((string) ($data['seniority_extra_pay_amount_new'] ?? ''));
+        $errors = [];
+        if ($group === '') {
+            $errors['id'] = 'El grup de classificació és obligatori.';
+        }
+        $seniorityParsed = maintenance_parse_optional_money_input($seniorityAmountRaw);
+        if (!$seniorityParsed['ok']) {
+            $errors['seniority_amount'] = $seniorityParsed['error'];
+        } elseif ($seniorityParsed['value'] === null) {
+            $errors['seniority_amount'] = 'El trienni és obligatori.';
+        }
+        $seniorityExtraParsed = maintenance_parse_optional_money_input($seniorityExtraAmountRaw);
+        if (!$seniorityExtraParsed['ok']) {
+            $errors['seniority_extra_pay_amount'] = $seniorityExtraParsed['error'];
+        } elseif ($seniorityExtraParsed['value'] === null) {
+            $errors['seniority_extra_pay_amount'] = 'El trienni afectació pagues és obligatori.';
+        }
+        $seniorityNewParsed = maintenance_parse_optional_money_input($seniorityAmountNewRaw);
+        if (!$seniorityNewParsed['ok']) {
+            $errors['seniority_amount_new'] = $seniorityNewParsed['error'];
+        }
+        $seniorityExtraNewParsed = maintenance_parse_optional_money_input($seniorityExtraAmountNewRaw);
+        if (!$seniorityExtraNewParsed['ok']) {
+            $errors['seniority_extra_pay_amount_new'] = $seniorityExtraNewParsed['error'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $originalIdText = $originalId !== null ? strtoupper(trim((string) $originalId)) : null;
+        if (maintenance_id_exists($db, $module, $year, $group, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest grup de classificació dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO seniority_pay_by_group (catalog_year, classification_group, seniority_amount, seniority_extra_pay_amount, seniority_amount_new, seniority_extra_pay_amount_new) VALUES (:y,:grp,:s,:se,:sn,:sen)');
+            $st->execute([
+                'y' => $year,
+                'grp' => $group,
+                's' => $seniorityParsed['value'],
+                'se' => $seniorityExtraParsed['value'],
+                'sn' => $seniorityNewParsed['value'],
+                'sen' => $seniorityExtraNewParsed['value'],
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE seniority_pay_by_group SET classification_group=:new_grp, seniority_amount=:s, seniority_extra_pay_amount=:se, seniority_amount_new=:sn, seniority_extra_pay_amount_new=:sen WHERE catalog_year=:y AND classification_group=:grp');
+        $st->execute([
+            'y' => $year,
+            'grp' => $originalIdText,
+            'new_grp' => $group,
+            's' => $seniorityParsed['value'],
+            'se' => $seniorityExtraParsed['value'],
+            'sn' => $seniorityNewParsed['value'],
+            'sen' => $seniorityExtraNewParsed['value'],
+        ]);
+        return;
+    }
+    if ($module === 'maintenance_specific_compensation_special_prices') {
+        $sidRaw = trim((string) (($data['special_specific_compensation_id'] ?? '') !== '' ? $data['special_specific_compensation_id'] : ($data['id'] ?? '')));
+        $sname = trim((string) ($data['special_specific_compensation_name'] ?? ''));
+        $amountRaw = trim((string) ($data['amount'] ?? ''));
+        $amountNewRaw = trim((string) ($data['amount_new'] ?? ''));
+        $errors = [];
+        if ($sidRaw === '') {
+            $errors['id'] = 'El codi és obligatori.';
+        } elseif (!preg_match('/^\d+$/', $sidRaw)) {
+            $errors['id'] = 'El codi ha de ser numèric.';
+        }
+        if ($sname === '') {
+            $errors['special_specific_compensation_name'] = 'La denominació és obligatòria.';
+        }
+        $amountParsed = maintenance_parse_optional_money_input($amountRaw);
+        if (!$amountParsed['ok']) {
+            $errors['amount'] = $amountParsed['error'];
+        } elseif ($amountParsed['value'] === null) {
+            $errors['amount'] = 'El complement específic especial és obligatori.';
+        }
+        $amountNewParsed = maintenance_parse_optional_money_input($amountNewRaw);
+        if (!$amountNewParsed['ok']) {
+            $errors['amount_new'] = $amountNewParsed['error'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $sidInt = (int) $sidRaw;
+        $originalIdText = $originalId !== null ? trim((string) $originalId) : null;
+        if ($originalIdText !== null && $originalIdText !== '' && !preg_match('/^\d+$/', $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'El codi original no és vàlid.'], JSON_THROW_ON_ERROR));
+        }
+        $originalIdNorm = ($originalIdText !== null && $originalIdText !== '') ? (string) (int) $originalIdText : null;
+        $sidStr = (string) $sidInt;
+        if ($originalIdNorm === null || $originalIdNorm === '') {
+            if ($sidInt === 0) {
+                throw new InvalidArgumentException(json_encode(['id' => 'El codi 0 està reservat i no es pot donar d\'alta des d\'aquest formulari.'], JSON_THROW_ON_ERROR));
+            }
+        } else {
+            if ((int) $originalIdNorm === 0) {
+                throw new InvalidArgumentException(json_encode(['_general' => 'El codi 0 està reservat i no es pot modificar des d\'aquest formulari.'], JSON_THROW_ON_ERROR));
+            }
+            if ($sidInt === 0) {
+                throw new InvalidArgumentException(json_encode(['id' => 'El codi 0 està reservat i no es pot donar d\'alta des d\'aquest formulari.'], JSON_THROW_ON_ERROR));
+            }
+        }
+        if (maintenance_id_exists($db, $module, $year, $sidStr, $originalIdNorm)) {
+            throw new InvalidArgumentException(json_encode(['id' => 'Ja existeix aquest codi dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        if ($originalIdNorm === null || $originalIdNorm === '') {
+            $st = $db->prepare('INSERT INTO specific_compensation_special
+                (catalog_year, special_specific_compensation_id, special_specific_compensation_name, amount, amount_new)
+                VALUES (:y,:sid,:name,:a,:an)');
+            $st->execute([
+                'y' => $year,
+                'sid' => $sidInt,
+                'name' => $sname,
+                'a' => $amountParsed['value'],
+                'an' => $amountNewParsed['value'],
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE specific_compensation_special
+            SET special_specific_compensation_id = :new_sid,
+                special_specific_compensation_name = :name,
+                amount = :a,
+                amount_new = :an
+            WHERE catalog_year = :y
+              AND special_specific_compensation_id = :sid');
+        $st->execute([
+            'y' => $year,
+            'sid' => (int) $originalIdNorm,
+            'new_sid' => $sidInt,
+            'name' => $sname,
+            'a' => $amountParsed['value'],
+            'an' => $amountNewParsed['value'],
+        ]);
+        return;
+    }
+    if ($module === 'maintenance_specific_compensation_general') {
+        $gidRaw = trim((string) (($data['general_specific_compensation_id'] ?? '') !== '' ? $data['general_specific_compensation_id'] : ($data['id'] ?? '')));
+        $gname = trim((string) ($data['general_specific_compensation_name'] ?? ''));
+        $amountRaw = trim((string) ($data['amount'] ?? ''));
+        $decreaseRaw = trim((string) ($data['decrease_amount'] ?? ''));
+        $amountNewRaw = trim((string) ($data['amount_new'] ?? ''));
+        $decreaseNewRaw = trim((string) ($data['decrease_amount_new'] ?? ''));
+        $errors = [];
+        if ($gidRaw === '') {
+            $errors['general_specific_compensation_id'] = 'El codi és obligatori.';
+        } elseif (!preg_match('/^\d+$/', $gidRaw)) {
+            $errors['general_specific_compensation_id'] = 'El codi ha de ser numèric.';
+        }
+        if ($gname === '') {
+            $errors['general_specific_compensation_name'] = 'La descripció del complement és obligatòria.';
+        }
+        $amountParsed = maintenance_parse_optional_money_input($amountRaw);
+        if (!$amountParsed['ok']) {
+            $errors['amount'] = $amountParsed['error'];
+        } elseif ($amountParsed['value'] === null) {
+            $errors['amount'] = 'L’import complement és obligatori.';
+        }
+        $decreaseParsed = maintenance_parse_optional_money_input($decreaseRaw);
+        if (!$decreaseParsed['ok']) {
+            $errors['decrease_amount'] = $decreaseParsed['error'];
+        } elseif ($decreaseParsed['value'] === null) {
+            $errors['decrease_amount'] = 'L’import de la disminució és obligatori.';
+        }
+        $amountNewParsed = maintenance_parse_optional_money_input($amountNewRaw);
+        if (!$amountNewParsed['ok']) {
+            $errors['amount_new'] = $amountNewParsed['error'];
+        }
+        $decreaseNewParsed = maintenance_parse_optional_money_input($decreaseNewRaw);
+        if (!$decreaseNewParsed['ok']) {
+            $errors['decrease_amount_new'] = $decreaseNewParsed['error'];
+        }
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        $gid = (string) ((int) $gidRaw);
+        $originalIdText = $originalId !== null ? trim((string) $originalId) : null;
+        if (maintenance_id_exists($db, $module, $year, $gid, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['general_specific_compensation_id' => 'Ja existeix aquest codi dins del mateix any de catàleg.'], JSON_THROW_ON_ERROR));
+        }
+        if ($originalIdText === null || $originalIdText === '') {
+            $st = $db->prepare('INSERT INTO specific_compensation_general
+                (catalog_year, general_specific_compensation_id, general_specific_compensation_name, amount, decrease_amount, amount_new, decrease_amount_new)
+                VALUES (:y,:id,:name,:a,:d,:an,:dn)');
+            $st->execute([
+                'y' => $year,
+                'id' => $gid,
+                'name' => $gname,
+                'a' => $amountParsed['value'],
+                'd' => $decreaseParsed['value'],
+                'an' => $amountNewParsed['value'],
+                'dn' => $decreaseNewParsed['value'],
+            ]);
+            return;
+        }
+        $st = $db->prepare('UPDATE specific_compensation_general
+            SET general_specific_compensation_id = :new_id,
+                general_specific_compensation_name = :name,
+                amount = :a,
+                decrease_amount = :d,
+                amount_new = :an,
+                decrease_amount_new = :dn
+            WHERE catalog_year = :y
+              AND general_specific_compensation_id = :id');
+        $st->execute([
+            'y' => $year,
+            'id' => $originalIdText,
+            'new_id' => $gid,
+            'name' => $gname,
+            'a' => $amountParsed['value'],
+            'd' => $decreaseParsed['value'],
+            'an' => $amountNewParsed['value'],
+            'dn' => $decreaseNewParsed['value'],
+        ]);
+        return;
+    }
     $isAvailabilityTypes = ($module === 'maintenance_availability_types');
     $isProvisionForms = ($module === 'maintenance_provision_forms');
     $isAlphaSortModule = $isAvailabilityTypes || $isProvisionForms;
@@ -1521,6 +1987,33 @@ function maintenance_delete(PDO $db, string $module, int $year, string $id): voi
             }
         }
         $st = $db->prepare('DELETE FROM social_security_base_limits WHERE catalog_year=:y AND contribution_group_id=:id LIMIT 1');
+    } elseif ($module === 'maintenance_salary_base_by_group') {
+        $st = $db->prepare('DELETE FROM salary_base_by_group WHERE catalog_year=:y AND classification_group=:id LIMIT 1');
+    } elseif ($module === 'maintenance_destination_allowances') {
+        $st = $db->prepare('DELETE FROM destination_allowances WHERE catalog_year=:y AND organic_level=:id LIMIT 1');
+    } elseif ($module === 'maintenance_seniority_pay_by_group') {
+        $st = $db->prepare('DELETE FROM seniority_pay_by_group WHERE catalog_year=:y AND classification_group=:id LIMIT 1');
+    } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+        if (!preg_match('/^\d+$/', trim($id))) {
+            throw new InvalidArgumentException('ID invàlid.');
+        }
+        $sidDel = (int) trim($id);
+        if ($sidDel === 0) {
+            throw new RuntimeException('El codi 0 està reservat i no es pot eliminar des d\'aquest formulari.');
+        }
+        $stCol = $db->prepare("SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'job_positions' AND COLUMN_NAME = 'special_specific_compensation_id'");
+        $stCol->execute();
+        if ((int) (($stCol->fetch())['c'] ?? 0) > 0) {
+            $stc = $db->prepare('SELECT COUNT(*) AS c FROM job_positions WHERE catalog_year = :y AND special_specific_compensation_id = :sid AND deleted_at IS NULL');
+            $stc->execute(['y' => $year, 'sid' => $sidDel]);
+            if ((int) (($stc->fetch())['c'] ?? 0) > 0) {
+                throw new RuntimeException('No es pot eliminar el complement específic especial perquè hi ha llocs de treball que el fan servir.');
+            }
+        }
+        $id = (string) $sidDel;
+        $st = $db->prepare('DELETE FROM specific_compensation_special WHERE catalog_year=:y AND special_specific_compensation_id=:id LIMIT 1');
+    } elseif ($module === 'maintenance_specific_compensation_general') {
+        $st = $db->prepare('DELETE FROM specific_compensation_general WHERE catalog_year=:y AND general_specific_compensation_id=:id LIMIT 1');
     } elseif ($module === 'maintenance_subprograms') {
         $stc = $db->prepare('SELECT COUNT(*) AS c FROM subprogram_people WHERE catalog_year=:y AND subprogram_id=:id');
         $stc->execute(['y' => $year, 'id' => $id]);
@@ -1541,4 +2034,776 @@ function maintenance_delete(PDO $db, string $module, int $year, string $id): voi
     if ($st->rowCount() === 0) {
         throw new RuntimeException('Registre no trobat.');
     }
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_salary_base_increment_imports(PDO $db, int $year, string $rawPercent): array
+{
+    $t = trim($rawPercent);
+    if ($t === '') {
+        return ['ok' => false, 'error' => 'Cal indicar un percentatge d’increment.'];
+    }
+    $t = str_replace(['%', ' '], '', $t);
+    $t = str_replace(',', '.', $t);
+    if (!preg_match('/^-?\d+(?:\.\d+)?$/', $t)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $factor = $pct / 100.0;
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE salary_base_by_group
+            SET base_salary_new = ROUND(base_salary + (base_salary * :f1), 2),
+                base_salary_extra_pay_new = ROUND(base_salary_extra_pay + (base_salary_extra_pay * :f2), 2)
+            WHERE catalog_year = :y1');
+        $st->execute(['y1' => $year, 'f1' => $factor, 'f2' => $factor]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_salary_base_cancel_increment(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE salary_base_by_group
+            SET base_salary_new = NULL,
+                base_salary_extra_pay_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_salary_base_apply_imports(PDO $db, int $year): array
+{
+    $stCheck = $db->prepare('SELECT COUNT(*) AS c
+        FROM salary_base_by_group
+        WHERE catalog_year = :y
+          AND (base_salary_new IS NULL OR base_salary_extra_pay_new IS NULL)');
+    $stCheck->execute(['y' => $year]);
+    $missing = (int) (($stCheck->fetch())['c'] ?? 0);
+    if ($missing > 0) {
+        return ['ok' => false, 'error' => 'No es poden actualitzar els imports perquè hi ha registres sense imports incrementats.'];
+    }
+
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE salary_base_by_group
+            SET base_salary = base_salary_new,
+                base_salary_extra_pay = base_salary_extra_pay_new,
+                base_salary_new = NULL,
+                base_salary_extra_pay_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_destination_allowance_increment_imports(PDO $db, int $year, string $rawPercent): array
+{
+    $t = trim($rawPercent);
+    if ($t === '') {
+        return ['ok' => false, 'error' => 'Cal indicar un percentatge d’increment.'];
+    }
+    $t = str_replace(['%', ' '], '', $t);
+    $t = str_replace(',', '.', $t);
+    if (!preg_match('/^-?\d+(?:\.\d+)?$/', $t)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $factor = $pct / 100.0;
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE destination_allowances
+            SET destination_allowance_new = ROUND(destination_allowance + (destination_allowance * :f1), 2)
+            WHERE catalog_year = :y1');
+        $st->execute(['y1' => $year, 'f1' => $factor]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_destination_allowance_cancel_increment(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE destination_allowances
+            SET destination_allowance_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_destination_allowance_apply_imports(PDO $db, int $year): array
+{
+    $stCheck = $db->prepare('SELECT COUNT(*) AS c
+        FROM destination_allowances
+        WHERE catalog_year = :y
+          AND destination_allowance_new IS NULL');
+    $stCheck->execute(['y' => $year]);
+    $missing = (int) (($stCheck->fetch())['c'] ?? 0);
+    if ($missing > 0) {
+        return ['ok' => false, 'error' => 'No es poden actualitzar els imports perquè hi ha registres sense imports incrementats.'];
+    }
+
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE destination_allowances
+            SET destination_allowance = destination_allowance_new,
+                destination_allowance_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_seniority_pay_increment_imports(PDO $db, int $year, string $rawPercent): array
+{
+    $t = trim($rawPercent);
+    if ($t === '') {
+        return ['ok' => false, 'error' => 'Cal indicar un percentatge d’increment.'];
+    }
+    $t = str_replace(['%', ' '], '', $t);
+    $t = str_replace(',', '.', $t);
+    if (!preg_match('/^-?\d+(?:\.\d+)?$/', $t)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $factor = $pct / 100.0;
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE seniority_pay_by_group
+            SET seniority_amount_new = ROUND(seniority_amount + (seniority_amount * :f1), 2),
+                seniority_extra_pay_amount_new = ROUND(seniority_extra_pay_amount + (seniority_extra_pay_amount * :f2), 2)
+            WHERE catalog_year = :y1');
+        $st->execute(['y1' => $year, 'f1' => $factor, 'f2' => $factor]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_seniority_pay_cancel_increment(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE seniority_pay_by_group
+            SET seniority_amount_new = NULL,
+                seniority_extra_pay_amount_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_seniority_pay_apply_imports(PDO $db, int $year): array
+{
+    $stCheck = $db->prepare('SELECT COUNT(*) AS c
+        FROM seniority_pay_by_group
+        WHERE catalog_year = :y
+          AND (seniority_amount_new IS NULL OR seniority_extra_pay_amount_new IS NULL)');
+    $stCheck->execute(['y' => $year]);
+    $missing = (int) (($stCheck->fetch())['c'] ?? 0);
+    if ($missing > 0) {
+        return ['ok' => false, 'error' => 'No es poden actualitzar els imports perquè hi ha registres sense imports incrementats.'];
+    }
+
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE seniority_pay_by_group
+            SET seniority_amount = seniority_amount_new,
+                seniority_extra_pay_amount = seniority_extra_pay_amount_new,
+                seniority_amount_new = NULL,
+                seniority_extra_pay_amount_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * Recalcula annual_budgeted_seniority a people per l'any actiu.
+ *
+ * @return array{ok:true,updated:int,scope:string}|array{ok:false,error:string}
+ */
+function maintenance_seniority_pay_update_people(PDO $db, int $year, string $scope): array
+{
+    $scopeNorm = strtolower(trim($scope));
+    if (!in_array($scopeNorm, ['active', 'all'], true)) {
+        return ['ok' => false, 'error' => 'Abast d’actualització no vàlid.'];
+    }
+
+    $requiredGroups = ['A1', 'A2', 'C1', 'C2', 'E'];
+    $placeholders = [];
+    $params = ['y' => $year];
+    foreach ($requiredGroups as $idx => $grp) {
+        $k = 'g' . $idx;
+        $placeholders[] = ':' . $k;
+        $params[$k] = $grp;
+    }
+
+    $stGroups = $db->prepare('SELECT classification_group, seniority_amount, seniority_extra_pay_amount
+        FROM seniority_pay_by_group
+        WHERE catalog_year = :y
+          AND UPPER(classification_group) IN (' . implode(',', $placeholders) . ')');
+    $stGroups->execute($params);
+    $rows = $stGroups->fetchAll() ?: [];
+
+    $byGroup = [];
+    foreach ($rows as $r) {
+        $g = strtoupper(trim((string) ($r['classification_group'] ?? '')));
+        if ($g !== '') {
+            $byGroup[$g] = $r;
+        }
+    }
+    foreach ($requiredGroups as $grp) {
+        if (!isset($byGroup[$grp])) {
+            return ['ok' => false, 'error' => 'No es poden actualitzar els triennis de persones perquè falten imports de triennis per algun grup de classificació.'];
+        }
+    }
+
+    $imports = [];
+    foreach ($requiredGroups as $grp) {
+        $base = $byGroup[$grp]['seniority_amount'] ?? null;
+        $extra = $byGroup[$grp]['seniority_extra_pay_amount'] ?? null;
+        if ($base === null || $extra === null) {
+            return ['ok' => false, 'error' => 'No es poden actualitzar els triennis de persones perquè hi ha imports de triennis sense informar.'];
+        }
+        $imports[$grp] = [
+            'base' => (float) $base,
+            'extra' => (float) $extra,
+        ];
+    }
+
+    $db->beginTransaction();
+    try {
+        $where = 'p.catalog_year = :y0';
+        if ($scopeNorm === 'active') {
+            $where .= ' AND p.is_active = :a0';
+        }
+
+        $stCount = $db->prepare('SELECT COUNT(*) AS c FROM people p WHERE ' . $where);
+        $countParams = ['y0' => $year];
+        if ($scopeNorm === 'active') {
+            $countParams['a0'] = 1;
+        }
+        $stCount->execute($countParams);
+        $targetCount = (int) (($stCount->fetch())['c'] ?? 0);
+
+        $sql = 'UPDATE people p
+            SET p.annual_budgeted_seniority =
+                COALESCE(p.group_a1_previous_triennia, 0) * :tri_a1 * 12
+              + COALESCE(p.group_a2_previous_triennia, 0) * :tri_a2 * 12
+              + COALESCE(p.group_c1_previous_triennia, 0) * :tri_c1 * 12
+              + COALESCE(p.group_c2_previous_triennia, 0) * :tri_c2 * 12
+              + COALESCE(p.group_e_previous_triennia, 0)  * :tri_e  * 12
+
+              + COALESCE(p.group_a1_previous_triennia, 0) * :tri_a1p * 2
+              + COALESCE(p.group_a2_previous_triennia, 0) * :tri_a2p * 2
+              + COALESCE(p.group_c1_previous_triennia, 0) * :tri_c1p * 2
+              + COALESCE(p.group_c2_previous_triennia, 0) * :tri_c2p * 2
+              + COALESCE(p.group_e_previous_triennia, 0)  * :tri_ep  * 2
+
+              + ROUND(COALESCE(p.group_a1_current_year_percentage, 0) * :tri_a1b / 100, 2) * 14
+              + ROUND(COALESCE(p.group_a2_current_year_percentage, 0) * :tri_a2b / 100, 2) * 14
+              + ROUND(COALESCE(p.group_c1_current_year_percentage, 0) * :tri_c1b / 100, 2) * 14
+              + ROUND(COALESCE(p.group_c2_current_year_percentage, 0) * :tri_c2b / 100, 2) * 14
+              + ROUND(COALESCE(p.group_e_current_year_percentage, 0)  * :tri_eb  / 100, 2) * 14
+            WHERE ' . $where;
+
+        $stUpd = $db->prepare($sql);
+        $updParams = [
+            'tri_a1' => $imports['A1']['base'],
+            'tri_a2' => $imports['A2']['base'],
+            'tri_c1' => $imports['C1']['base'],
+            'tri_c2' => $imports['C2']['base'],
+            'tri_e' => $imports['E']['base'],
+            'tri_a1p' => $imports['A1']['extra'],
+            'tri_a2p' => $imports['A2']['extra'],
+            'tri_c1p' => $imports['C1']['extra'],
+            'tri_c2p' => $imports['C2']['extra'],
+            'tri_ep' => $imports['E']['extra'],
+            'tri_a1b' => $imports['A1']['base'],
+            'tri_a2b' => $imports['A2']['base'],
+            'tri_c1b' => $imports['C1']['base'],
+            'tri_c2b' => $imports['C2']['base'],
+            'tri_eb' => $imports['E']['base'],
+            'y0' => $year,
+        ];
+        if ($scopeNorm === 'active') {
+            $updParams['a0'] = 1;
+        }
+        $stUpd->execute($updParams);
+
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+
+    return ['ok' => true, 'updated' => $targetCount, 'scope' => $scopeNorm];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_specific_comp_special_increment_imports(PDO $db, int $year, string $rawPercent): array
+{
+    $t = trim($rawPercent);
+    if ($t === '') {
+        return ['ok' => false, 'error' => 'Cal indicar un percentatge d’increment.'];
+    }
+    $t = str_replace(['%', ' '], '', $t);
+    $t = str_replace(',', '.', $t);
+    if (!preg_match('/^-?\d+(?:\.\d+)?$/', $t)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $factor = $pct / 100.0;
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE specific_compensation_special
+            SET amount_new = ROUND(amount + (amount * :f1), 2)
+            WHERE catalog_year = :y1');
+        $st->execute(['y1' => $year, 'f1' => $factor]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_specific_comp_special_cancel_increment(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE specific_compensation_special
+            SET amount_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_specific_comp_special_apply_imports(PDO $db, int $year): array
+{
+    $stCheck = $db->prepare('SELECT COUNT(*) AS c
+        FROM specific_compensation_special
+        WHERE catalog_year = :y
+          AND amount_new IS NULL');
+    $stCheck->execute(['y' => $year]);
+    $missing = (int) (($stCheck->fetch())['c'] ?? 0);
+    if ($missing > 0) {
+        return ['ok' => false, 'error' => 'No es poden actualitzar els imports perquè hi ha registres sense imports incrementats.'];
+    }
+
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE specific_compensation_special
+            SET amount = amount_new,
+                amount_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * Actualitza en massa el complement específic especial als llocs de treball.
+ *
+ * @return array{updated:int}
+ */
+function maintenance_specific_comp_special_update_job_positions(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE job_positions jp
+            JOIN specific_compensation_special sp
+              ON sp.catalog_year = :y1
+             AND jp.catalog_year = :y2
+             AND jp.special_specific_compensation_id = sp.special_specific_compensation_id
+            SET jp.special_specific_compensation_amount = sp.amount
+            WHERE jp.catalog_year = :y3');
+        $st->execute([
+            'y1' => $year,
+            'y2' => $year,
+            'y3' => $year,
+        ]);
+        $updated = $st->rowCount();
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+
+    return ['updated' => (int) $updated];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_specific_comp_general_increment_imports(PDO $db, int $year, string $rawPercent): array
+{
+    $t = trim($rawPercent);
+    if ($t === '') {
+        return ['ok' => false, 'error' => 'Cal indicar un percentatge d’increment.'];
+    }
+    $t = str_replace(['%', ' '], '', $t);
+    $t = str_replace(',', '.', $t);
+    if (!preg_match('/^-?\d+(?:\.\d+)?$/', $t)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $factor = $pct / 100.0;
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE specific_compensation_general
+            SET amount_new = ROUND(amount + (amount * :f1), 2),
+                decrease_amount_new = ROUND(decrease_amount + (decrease_amount * :f2), 2)
+            WHERE catalog_year = :y1');
+        $st->execute(['y1' => $year, 'f1' => $factor, 'f2' => $factor]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_specific_comp_general_cancel_increment(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE specific_compensation_general
+            SET amount_new = NULL,
+                decrease_amount_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_specific_comp_general_apply_imports(PDO $db, int $year): array
+{
+    $stCheck = $db->prepare('SELECT COUNT(*) AS c
+        FROM specific_compensation_general
+        WHERE catalog_year = :y
+          AND (amount_new IS NULL OR decrease_amount_new IS NULL)');
+    $stCheck->execute(['y' => $year]);
+    $missing = (int) (($stCheck->fetch())['c'] ?? 0);
+    if ($missing > 0) {
+        return ['ok' => false, 'error' => 'No es poden actualitzar els imports perquè hi ha registres sense imports incrementats.'];
+    }
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE specific_compensation_general
+            SET amount = amount_new,
+                decrease_amount = decrease_amount_new,
+                amount_new = NULL,
+                decrease_amount_new = NULL
+            WHERE catalog_year = :y');
+        $st->execute(['y' => $year]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+    return ['ok' => true];
+}
+
+/**
+ * Increment en massa del CPT personal transitori (people.personal_transitory_bonus_new).
+ *
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_personal_transitory_bonus_increment_imports(PDO $db, int $year, string $rawPercent): array
+{
+    $t = trim($rawPercent);
+    if ($t === '') {
+        return ['ok' => false, 'error' => 'Cal indicar un percentatge d’increment.'];
+    }
+    $t = str_replace(['%', ' '], '', $t);
+    $t = str_replace(',', '.', $t);
+    if (!preg_match('/^-?\d+(?:\.\d+)?$/', $t)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $pct = (float) $t;
+    if (!is_finite($pct)) {
+        return ['ok' => false, 'error' => 'El percentatge indicat no és vàlid.'];
+    }
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE people
+            SET personal_transitory_bonus_new = ROUND(personal_transitory_bonus + (personal_transitory_bonus * :p1 / 100), 2)
+            WHERE catalog_year = :p2
+              AND is_active = :p3
+              AND personal_transitory_bonus <> 0');
+        $st->execute(['p1' => $pct, 'p2' => $year, 'p3' => 1]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_personal_transitory_bonus_cancel_increment(PDO $db, int $year): array
+{
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE people
+            SET personal_transitory_bonus_new = NULL
+            WHERE catalog_year = :p1
+              AND is_active = :p2
+              AND personal_transitory_bonus <> 0');
+        $st->execute(['p1' => $year, 'p2' => 1]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:true}|array{ok:false,error:string}
+ */
+function maintenance_personal_transitory_bonus_apply_imports(PDO $db, int $year): array
+{
+    $stCheck = $db->prepare('SELECT COUNT(*) AS c
+        FROM people
+        WHERE catalog_year = :p1
+          AND is_active = :p2
+          AND personal_transitory_bonus <> 0
+          AND personal_transitory_bonus_new IS NULL');
+    $stCheck->execute(['p1' => $year, 'p2' => 1]);
+    $missing = (int) (($stCheck->fetch())['c'] ?? 0);
+    if ($missing > 0) {
+        return ['ok' => false, 'error' => 'No es poden actualitzar els imports perquè hi ha registres sense imports incrementats.'];
+    }
+    $db->beginTransaction();
+    try {
+        $st = $db->prepare('UPDATE people
+            SET personal_transitory_bonus = personal_transitory_bonus_new,
+                personal_transitory_bonus_new = NULL
+            WHERE catalog_year = :p1
+              AND is_active = :p2
+              AND personal_transitory_bonus <> 0');
+        $st->execute(['p1' => $year, 'p2' => 1]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+
+    return ['ok' => true];
+}
+
+/**
+ * Actualitza people.personal_transitory_bonus_new per una persona (llistat CPT personal transitori).
+ *
+ * @return array{ok:true, value_display:string, value_for_input:string}|array{ok:false, error:string}
+ */
+function maintenance_personal_transitory_bonus_update_new(PDO $db, int $year, int $personId, string $rawValue): array
+{
+    if ($personId < 1) {
+        return ['ok' => false, 'error' => 'Identificador de persona no vàlid.'];
+    }
+    $rawClean = trim(str_replace(["\xC2\xA0", '€'], '', $rawValue));
+    $rawClean = preg_replace('/\s+/u', '', $rawClean) ?? $rawClean;
+    if ($rawClean === '') {
+        $dbVal = null;
+    } else {
+        $parsed = maintenance_parse_optional_money_input($rawClean);
+        if (!$parsed['ok']) {
+            return ['ok' => false, 'error' => (string) ($parsed['error'] ?? 'Import no vàlid.')];
+        }
+        if ($parsed['value'] === null) {
+            $dbVal = null;
+        } else {
+            $dbVal = (string) $parsed['value'];
+        }
+    }
+
+    $stExist = $db->prepare('SELECT 1 FROM people WHERE catalog_year = :y AND person_id = :pid AND is_active = 1 AND personal_transitory_bonus <> 0 LIMIT 1');
+    $stExist->execute(['y' => $year, 'pid' => $personId]);
+    if (!$stExist->fetchColumn()) {
+        return ['ok' => false, 'error' => 'Persona no trobada o fora de l’àmbit d’aquest mòdul.'];
+    }
+
+    $stUp = $db->prepare('UPDATE people SET personal_transitory_bonus_new = :p_val WHERE catalog_year = :p_y AND person_id = :p_pid AND is_active = 1 AND personal_transitory_bonus <> 0');
+    if ($dbVal === null) {
+        $stUp->bindValue('p_val', null, PDO::PARAM_NULL);
+    } else {
+        $stUp->bindValue('p_val', $dbVal, PDO::PARAM_STR);
+    }
+    $stUp->bindValue('p_y', $year, PDO::PARAM_INT);
+    $stUp->bindValue('p_pid', $personId, PDO::PARAM_INT);
+    $stUp->execute();
+
+    $stRead = $db->prepare('SELECT personal_transitory_bonus_new FROM people WHERE catalog_year = :y AND person_id = :pid LIMIT 1');
+    $stRead->execute(['y' => $year, 'pid' => $personId]);
+    $stored = $stRead->fetchColumn();
+    if ($dbVal === null) {
+        if ($stored !== null && trim((string) $stored) !== '') {
+            return ['ok' => false, 'error' => 'No s’ha pogut desar el valor.'];
+        }
+    } else {
+        if ($stored === null || abs((float) $stored - (float) $dbVal) > 0.000001) {
+            return ['ok' => false, 'error' => 'No s’ha pogut desar el valor.'];
+        }
+    }
+
+    $valueInput = ($stored === null || trim((string) $stored) === '') ? '' : number_format((float) $stored, 2, ',', '.');
+
+    return [
+        'ok' => true,
+        'value_display' => maintenance_format_currency_eur_2_display($stored === null ? null : (string) $stored),
+        'value_for_input' => $valueInput,
+    ];
 }

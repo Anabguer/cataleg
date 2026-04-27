@@ -245,6 +245,12 @@ function maintenance_list_sort_keys(string $module): array
         'maintenance_social_security_companies' => ['company_id', 'company_description', 'contribution_account_code'],
         'maintenance_social_security_coefficients' => ['contribution_epigraph_id', 'company_1', 'company_2', 'company_3', 'company_4', 'company_5a', 'company_5b', 'company_5c', 'company_5d', 'company_5e', 'temporary_employment_company'],
         'maintenance_social_security_base_limits' => ['contribution_group_id', 'contribution_group_description', 'minimum_base', 'maximum_base', 'period_label'],
+        'maintenance_salary_base_by_group' => ['classification_group', 'base_salary', 'base_salary_extra_pay', 'base_salary_new', 'base_salary_extra_pay_new'],
+        'maintenance_destination_allowances' => ['organic_level', 'destination_allowance', 'destination_allowance_new'],
+        'maintenance_seniority_pay_by_group' => ['classification_group', 'seniority_amount', 'seniority_extra_pay_amount', 'seniority_amount_new', 'seniority_extra_pay_amount_new'],
+        'maintenance_specific_compensation_special_prices' => ['special_specific_compensation_id', 'special_specific_compensation_name', 'amount', 'amount_new'],
+        'maintenance_specific_compensation_general' => ['general_specific_compensation_id', 'general_specific_compensation_name', 'amount', 'decrease_amount', 'amount_new', 'decrease_amount_new'],
+        'maintenance_personal_transitory_bonus' => ['last_name_1', 'last_name_2', 'first_name', 'personal_transitory_bonus', 'personal_transitory_bonus_new'],
         'maintenance_subprograms' => [
             'subprogram_program_id', 'subprogram_program_name', 'subprogram_number', 'subprogram_code', 'subprogram_name',
             'technical_manager_code', 'technical_job_title',
@@ -268,7 +274,7 @@ function maintenance_list_sort_keys(string $module): array
  */
 function maintenance_table_columns(string $module, bool $implemented): array
 {
-    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_subprograms'], true);
+    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'maintenance_subprograms'], true);
 
     if ($module === 'maintenance_scales') {
         return [
@@ -430,6 +436,56 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'period_label', 'label' => 'Període', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'period_label']],
         ];
     }
+    if ($module === 'maintenance_salary_base_by_group') {
+        return [
+            ['sort_key' => 'classification_group', 'label' => 'Grup classificació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'classification_group', 'strong' => true]],
+            ['sort_key' => 'base_salary', 'label' => 'Sou base', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'base_salary', 'align' => 'right']],
+            ['sort_key' => 'base_salary_extra_pay', 'label' => 'Sou base afectació pagues', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'base_salary_extra_pay', 'align' => 'right']],
+            ['sort_key' => 'base_salary_new', 'label' => 'Sou base incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'base_salary_new', 'align' => 'right']],
+            ['sort_key' => 'base_salary_extra_pay_new', 'label' => 'Sou base afectació pagues incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'base_salary_extra_pay_new', 'align' => 'right']],
+        ];
+    }
+    if ($module === 'maintenance_destination_allowances') {
+        return [
+            ['sort_key' => 'organic_level', 'label' => 'Nivell orgànic', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'organic_level', 'strong' => true]],
+            ['sort_key' => 'destination_allowance', 'label' => 'Complement destinació', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'destination_allowance', 'align' => 'right']],
+            ['sort_key' => 'destination_allowance_new', 'label' => 'Complement destinació incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'destination_allowance_new', 'align' => 'right']],
+        ];
+    }
+    if ($module === 'maintenance_seniority_pay_by_group') {
+        return [
+            ['sort_key' => 'classification_group', 'label' => 'Grup classificació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'classification_group', 'strong' => true]],
+            ['sort_key' => 'seniority_amount', 'label' => 'Trienni', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'seniority_amount', 'align' => 'right']],
+            ['sort_key' => 'seniority_extra_pay_amount', 'label' => 'Trienni afectació pagues', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'seniority_extra_pay_amount', 'align' => 'right']],
+            ['sort_key' => 'seniority_amount_new', 'label' => 'Trienni incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'seniority_amount_new', 'align' => 'right']],
+            ['sort_key' => 'seniority_extra_pay_amount_new', 'label' => 'Trienni afectació pagues incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'seniority_extra_pay_amount_new', 'align' => 'right']],
+        ];
+    }
+    if ($module === 'maintenance_specific_compensation_special_prices') {
+        return [
+            ['sort_key' => 'special_specific_compensation_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'special_specific_compensation_id', 'strong' => true]],
+            ['sort_key' => 'special_specific_compensation_name', 'label' => 'Denominació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'special_specific_compensation_name']],
+            ['sort_key' => 'amount', 'label' => 'Complement específic especial', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'amount', 'align' => 'right']],
+            ['sort_key' => 'amount_new', 'label' => 'Complement específic especial incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'amount_new', 'align' => 'right']],
+        ];
+    }
+    if ($module === 'maintenance_specific_compensation_general') {
+        return [
+            ['sort_key' => 'general_specific_compensation_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'general_specific_compensation_id', 'strong' => true]],
+            ['sort_key' => 'general_specific_compensation_name', 'label' => 'Descripció Complement', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'general_specific_compensation_name']],
+            ['sort_key' => 'amount', 'label' => 'Import complement', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'amount', 'align' => 'right']],
+            ['sort_key' => 'decrease_amount', 'label' => 'Import de la disminució Complement Específic de Agents i Caporals (C2-C1)', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'decrease_amount', 'align' => 'right', 'header_class' => 'col-long-text']],
+            ['sort_key' => 'amount_new', 'label' => 'Import complement incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'amount_new', 'align' => 'right']],
+            ['sort_key' => 'decrease_amount_new', 'label' => 'Import de la disminució Complement Específic de Agents i Caporals (C2-C1) incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'decrease_amount_new', 'align' => 'right', 'header_class' => 'col-long-text']],
+        ];
+    }
+    if ($module === 'maintenance_personal_transitory_bonus') {
+        return [
+            ['sort_key' => 'last_name_1', 'label' => 'Persona', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'person_display_name', 'class' => 'maintenance-ptb-col--name', 'header_class' => 'maintenance-ptb-col--name']],
+            ['sort_key' => 'personal_transitory_bonus', 'label' => 'CPT', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'personal_transitory_bonus', 'align' => 'right', 'class' => 'maintenance-ptb-col--amt', 'header_class' => 'maintenance-ptb-col--amt']],
+            ['sort_key' => 'personal_transitory_bonus_new', 'label' => 'CPT incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'personal_transitory_bonus_new', 'align' => 'right', 'class' => 'maintenance-ptb-col--new', 'header_class' => 'maintenance-ptb-col--new']],
+        ];
+    }
     if ($module === 'maintenance_subprograms') {
         $subCompact = 'table-col--maint-sub-compact';
 
@@ -475,6 +531,12 @@ function maintenance_default_sort_key(string $module): string
         'maintenance_social_security_companies' => 'company_id',
         'maintenance_social_security_coefficients' => 'contribution_epigraph_id',
         'maintenance_social_security_base_limits' => 'contribution_group_id',
+        'maintenance_salary_base_by_group' => 'classification_group',
+        'maintenance_destination_allowances' => 'organic_level',
+        'maintenance_seniority_pay_by_group' => 'classification_group',
+        'maintenance_specific_compensation_special_prices' => 'special_specific_compensation_id',
+        'maintenance_specific_compensation_general' => 'general_specific_compensation_id',
+        'maintenance_personal_transitory_bonus' => 'last_name_1',
         'maintenance_subprograms' => 'subprogram_program_id',
         default => 'id',
     };
@@ -569,6 +631,29 @@ function maintenance_sort_key_legacy_map(string $module): array
         'maintenance_social_security_base_limits' => [
             'id' => 'contribution_group_id',
             'name' => 'contribution_group_description',
+        ],
+        'maintenance_salary_base_by_group' => [
+            'id' => 'classification_group',
+            'name' => 'classification_group',
+        ],
+        'maintenance_destination_allowances' => [
+            'id' => 'organic_level',
+            'name' => 'organic_level',
+        ],
+        'maintenance_seniority_pay_by_group' => [
+            'id' => 'classification_group',
+            'name' => 'classification_group',
+        ],
+        'maintenance_specific_compensation_special_prices' => [
+            'id' => 'special_specific_compensation_id',
+            'name' => 'special_specific_compensation_name',
+        ],
+        'maintenance_specific_compensation_general' => [
+            'id' => 'general_specific_compensation_id',
+            'name' => 'general_specific_compensation_name',
+        ],
+        'maintenance_personal_transitory_bonus' => [
+            'name' => 'last_name_1',
         ],
         'maintenance_subprograms' => [
             'id' => 'subprogram_code',
@@ -819,6 +904,21 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
     if ($module === 'maintenance_social_security_base_limits') {
         return 't.' . $field;
     }
+    if ($module === 'maintenance_salary_base_by_group') {
+        return 't.' . $field;
+    }
+    if ($module === 'maintenance_destination_allowances') {
+        return 't.' . $field;
+    }
+    if ($module === 'maintenance_seniority_pay_by_group') {
+        return 't.' . $field;
+    }
+    if ($module === 'maintenance_specific_compensation_special_prices') {
+        return 't.' . $field;
+    }
+    if ($module === 'maintenance_specific_compensation_general') {
+        return 't.' . $field;
+    }
 
     return null;
 }
@@ -830,7 +930,7 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
  */
 function maintenance_search_specs_from_columns(string $module): array
 {
-    if (!in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits'], true)) {
+    if (!in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general'], true)) {
         return [];
     }
     $cols = maintenance_table_columns($module, true);
@@ -1125,6 +1225,183 @@ function maintenance_social_security_base_limits_list_q_search_clause(string $q)
 }
 
 /**
+ * Cerca de sous per grup de classificació: grup i imports.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_salary_base_by_group_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    foreach (['classification_group', 'base_salary', 'base_salary_extra_pay', 'base_salary_new', 'base_salary_extra_pay_new'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * Cerca de complements de destinació: nivell orgànic i imports.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_destination_allowances_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    foreach (['organic_level', 'destination_allowance', 'destination_allowance_new'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * Cerca de triennis per grup i imports.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_seniority_pay_by_group_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    foreach (['classification_group', 'seniority_amount', 'seniority_extra_pay_amount', 'seniority_amount_new', 'seniority_extra_pay_amount_new'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * Cerca de preus de complement específic especial.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_specific_comp_special_prices_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    foreach (['special_specific_compensation_id'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+    foreach (['special_specific_compensation_name'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+    foreach (['amount', 'amount_new'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * Cerca de complement específic general.
+ *
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_specific_comp_general_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    foreach (['general_specific_compensation_id', 'general_specific_compensation_name', 'amount', 'decrease_amount', 'amount_new', 'decrease_amount_new'] as $f) {
+        $n = 'mq_' . $i++;
+        $parts[] = '(CAST(t.' . $f . ' AS CHAR) LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_personal_transitory_bonus_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $nameExpr = "TRIM(CONCAT_WS(', ', NULLIF(TRIM(CONCAT_WS(' ', NULLIF(TRIM(p.last_name_1), ''), NULLIF(TRIM(p.last_name_2), ''))), ''), NULLIF(TRIM(p.first_name), '')))";
+    $parts = [];
+    $params = [];
+    $i = 0;
+    $n = 'mq_ptb_' . $i++;
+    $parts[] = '(' . $nameExpr . ' LIKE :' . $n . ')';
+    $params[$n] = $qLike;
+    $n2 = 'mq_ptb_' . $i++;
+    $parts[] = '(CAST(p.person_id AS CHAR) LIKE :' . $n2 . ')';
+    $params[$n2] = $qLike;
+    $n3 = 'mq_ptb_' . $i++;
+    $parts[] = '(CAST(p.personal_transitory_bonus AS CHAR) LIKE :' . $n3 . ')';
+    $params[$n3] = $qLike;
+    $n4 = 'mq_ptb_' . $i++;
+    $parts[] = '(CAST(IFNULL(p.personal_transitory_bonus_new, \'\') AS CHAR) LIKE :' . $n4 . ')';
+    $params[$n4] = $qLike;
+
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
  * Fragment SQL AND (...) per cerca global q, o cadena buida si no aplica.
  * Cada LIKE/LPAD usa un placeholder PDO únic (compatibilitat sense emulació de prepared statements).
  *
@@ -1150,6 +1427,24 @@ function maintenance_list_q_search_clause(string $module, string $q): array
     }
     if ($module === 'maintenance_social_security_base_limits') {
         return maintenance_social_security_base_limits_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_salary_base_by_group') {
+        return maintenance_salary_base_by_group_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_destination_allowances') {
+        return maintenance_destination_allowances_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_seniority_pay_by_group') {
+        return maintenance_seniority_pay_by_group_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_specific_compensation_special_prices') {
+        return maintenance_specific_comp_special_prices_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_specific_compensation_general') {
+        return maintenance_specific_comp_general_list_q_search_clause($q);
+    }
+    if ($module === 'maintenance_personal_transitory_bonus') {
+        return maintenance_personal_transitory_bonus_list_q_search_clause($q);
     }
     $specs = maintenance_search_specs_from_columns($module);
     if ($specs === []) {

@@ -30,7 +30,7 @@ declare(strict_types=1);
                     <input class="form-input" id="maintenance_id" name="id" type="number" min="1" required data-field="id">
                     <p class="form-error" data-error-for="id" hidden></p>
                 </div>
-                <div class="form-group">
+                <div class="form-group" data-maintenance-field="name">
                     <label class="form-label" for="maintenance_name" data-maintenance-label-name>Nom <span class="users-modal-form__req">*</span></label>
                     <input class="form-input" id="maintenance_name" name="name" type="text" required data-field="name">
                     <p class="form-error" data-error-for="name" hidden></p>
@@ -173,6 +173,86 @@ declare(strict_types=1);
                     <label class="form-label" for="maintenance_period_label">Període</label>
                     <input class="form-input" id="maintenance_period_label" name="period_label" type="text" autocomplete="off" data-field="period_label">
                     <p class="form-error" data-error-for="period_label" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="base_salary" hidden>
+                    <label class="form-label" for="maintenance_base_salary">Sou base <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_base_salary" name="base_salary" type="text" inputmode="decimal" autocomplete="off" data-field="base_salary">
+                    <p class="form-error" data-error-for="base_salary" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="base_salary_extra_pay" hidden>
+                    <label class="form-label" for="maintenance_base_salary_extra_pay">Sou base afectació pagues <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_base_salary_extra_pay" name="base_salary_extra_pay" type="text" inputmode="decimal" autocomplete="off" data-field="base_salary_extra_pay">
+                    <p class="form-error" data-error-for="base_salary_extra_pay" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="base_salary_new" hidden>
+                    <label class="form-label" for="maintenance_base_salary_new">Sou base incrementat</label>
+                    <input class="form-input" id="maintenance_base_salary_new" name="base_salary_new" type="text" inputmode="decimal" autocomplete="off" data-field="base_salary_new">
+                    <p class="form-error" data-error-for="base_salary_new" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="base_salary_extra_pay_new" hidden>
+                    <label class="form-label" for="maintenance_base_salary_extra_pay_new">Sou base afectació pagues incrementat</label>
+                    <input class="form-input" id="maintenance_base_salary_extra_pay_new" name="base_salary_extra_pay_new" type="text" inputmode="decimal" autocomplete="off" data-field="base_salary_extra_pay_new">
+                    <p class="form-error" data-error-for="base_salary_extra_pay_new" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="destination_allowance" hidden>
+                    <label class="form-label" for="maintenance_destination_allowance">Complement destinació <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_destination_allowance" name="destination_allowance" type="text" inputmode="decimal" autocomplete="off" data-field="destination_allowance">
+                    <p class="form-error" data-error-for="destination_allowance" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="destination_allowance_new" hidden>
+                    <label class="form-label" for="maintenance_destination_allowance_new">Complement destinació incrementat</label>
+                    <input class="form-input" id="maintenance_destination_allowance_new" name="destination_allowance_new" type="text" inputmode="decimal" autocomplete="off" data-field="destination_allowance_new">
+                    <p class="form-error" data-error-for="destination_allowance_new" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="seniority_amount" hidden>
+                    <label class="form-label" for="maintenance_seniority_amount">Trienni <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_seniority_amount" name="seniority_amount" type="text" inputmode="decimal" autocomplete="off" data-field="seniority_amount">
+                    <p class="form-error" data-error-for="seniority_amount" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="seniority_extra_pay_amount" hidden>
+                    <label class="form-label" for="maintenance_seniority_extra_pay_amount">Trienni afectació pagues <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_seniority_extra_pay_amount" name="seniority_extra_pay_amount" type="text" inputmode="decimal" autocomplete="off" data-field="seniority_extra_pay_amount">
+                    <p class="form-error" data-error-for="seniority_extra_pay_amount" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="seniority_amount_new" hidden>
+                    <label class="form-label" for="maintenance_seniority_amount_new">Trienni incrementat</label>
+                    <input class="form-input" id="maintenance_seniority_amount_new" name="seniority_amount_new" type="text" inputmode="decimal" autocomplete="off" data-field="seniority_amount_new">
+                    <p class="form-error" data-error-for="seniority_amount_new" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="seniority_extra_pay_amount_new" hidden>
+                    <label class="form-label" for="maintenance_seniority_extra_pay_amount_new">Trienni afectació pagues incrementat</label>
+                    <input class="form-input" id="maintenance_seniority_extra_pay_amount_new" name="seniority_extra_pay_amount_new" type="text" inputmode="decimal" autocomplete="off" data-field="seniority_extra_pay_amount_new">
+                    <p class="form-error" data-error-for="seniority_extra_pay_amount_new" hidden></p>
+                </div>
+                <div class="form-group form-grid__full" data-maintenance-field="special_specific_compensation_name" hidden>
+                    <label class="form-label" for="maintenance_special_specific_compensation_name">Denominació <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_special_specific_compensation_name" name="special_specific_compensation_name" type="text" autocomplete="off" data-field="special_specific_compensation_name">
+                    <p class="form-error" data-error-for="special_specific_compensation_name" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="amount" hidden>
+                    <label class="form-label" for="maintenance_amount">Complement específic especial <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_amount" name="amount" type="text" inputmode="decimal" autocomplete="off" data-field="amount">
+                    <p class="form-error" data-error-for="amount" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="amount_new" hidden>
+                    <label class="form-label" for="maintenance_amount_new">Complement específic especial incrementat</label>
+                    <input class="form-input" id="maintenance_amount_new" name="amount_new" type="text" inputmode="decimal" autocomplete="off" data-field="amount_new">
+                    <p class="form-error" data-error-for="amount_new" hidden></p>
+                </div>
+                <div class="form-group form-grid__full" data-maintenance-field="general_specific_compensation_name" hidden>
+                    <label class="form-label" for="maintenance_general_specific_compensation_name">Descripció Complement <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_general_specific_compensation_name" name="general_specific_compensation_name" type="text" autocomplete="off" data-field="general_specific_compensation_name">
+                    <p class="form-error" data-error-for="general_specific_compensation_name" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="decrease_amount" hidden>
+                    <label class="form-label" for="maintenance_decrease_amount">Import de la disminució Complement Específic de Agents i Caporals (C2-C1) <span class="users-modal-form__req">*</span></label>
+                    <input class="form-input" id="maintenance_decrease_amount" name="decrease_amount" type="text" inputmode="decimal" autocomplete="off" data-field="decrease_amount">
+                    <p class="form-error" data-error-for="decrease_amount" hidden></p>
+                </div>
+                <div class="form-group" data-maintenance-field="decrease_amount_new" hidden>
+                    <label class="form-label" for="maintenance_decrease_amount_new">Import de la disminució Complement Específic de Agents i Caporals (C2-C1) incrementat</label>
+                    <input class="form-input" id="maintenance_decrease_amount_new" name="decrease_amount_new" type="text" inputmode="decimal" autocomplete="off" data-field="decrease_amount_new">
+                    <p class="form-error" data-error-for="decrease_amount_new" hidden></p>
                 </div>
                 <div class="form-group" data-maintenance-field="subfunction_id" hidden>
                     <label class="form-label" for="maintenance_subfunction_id">Subfunció <span class="users-modal-form__req">*</span></label>

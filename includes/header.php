@@ -8,6 +8,7 @@ $activeNav = $activeNav ?? '';
 $menuItems = function_exists('menu_visible_forms') ? menu_visible_forms() : [];
 $groupDefs = function_exists('permissions_form_group_definitions') ? permissions_form_group_definitions() : [
     'system' => ['label' => 'Sistema', 'nav' => 'Seguretat'],
+    'salary_tables' => ['label' => 'Taules Retribució', 'nav' => 'Taules Retribució'],
     'organization' => ['label' => 'Organització', 'nav' => 'Manteniments'],
     'training_maintenance' => ['label' => 'Manteniment', 'nav' => 'Manteniments'],
     'social_security_companies' => ['label' => 'Empreses i Seguretat Social', 'nav' => 'Manteniments'],
@@ -23,6 +24,8 @@ $securityItems = [];
 $securityGroups = ['Seguretat' => []];
 $maintenanceGroups = [];
 $maintenanceItems = [];
+$salaryTablesGroups = [];
+$salaryTablesItems = [];
 $gestioItems = [];
 
 foreach ($menuItems as $item) {
@@ -43,6 +46,14 @@ foreach ($menuItems as $item) {
             'name' => (string) ($item['name'] ?? $code),
             'route' => (string) ($item['route'] ?? ''),
         ];
+        continue;
+    }
+    if ($groupKey === 'salary_tables') {
+        if (!isset($salaryTablesGroups[$groupLabel])) {
+            $salaryTablesGroups[$groupLabel] = [];
+        }
+        $salaryTablesGroups[$groupLabel][] = $item;
+        $salaryTablesItems[] = $item;
         continue;
     }
     if ($groupKey === 'organization' || $groupKey === 'training_maintenance' || $groupKey === 'social_security_companies') {
@@ -69,6 +80,13 @@ foreach ($maintenanceGroups as $groupItems) {
     }
 }
 $maintenanceActive = in_array($activeNav, $maintenanceCodes, true);
+$salaryTablesCodes = [];
+foreach ($salaryTablesGroups as $groupItems) {
+    foreach ($groupItems as $groupItem) {
+        $salaryTablesCodes[] = (string) $groupItem['code'];
+    }
+}
+$salaryTablesActive = in_array($activeNav, $salaryTablesCodes, true);
 ?>
 <!DOCTYPE html>
 <html lang="ca">
@@ -98,6 +116,7 @@ $maintenanceActive = in_array($activeNav, $maintenanceCodes, true);
             <?php if (can_view_form('dashboard')): ?>
                 <a href="<?= e(app_url('dashboard.php')) ?>" class="app-nav__link<?= $activeNav === 'dashboard' ? ' is-active' : '' ?>">Tauler</a>
             <?php endif; ?>
+            <?php if ($gestioItems !== []): ?>
             <div class="app-nav__dropdown">
                 <button type="button" class="app-nav__link app-nav__link--button<?= $gestioActive ? ' is-active' : '' ?>" data-app-nav-dropdown-toggle>
                     Gestió
@@ -112,17 +131,19 @@ $maintenanceActive = in_array($activeNav, $maintenanceCodes, true);
                             <?= e((string) $item['name']) ?>
                         </a>
                     <?php endforeach; ?>
-                    <?php if ($gestioItems === []): ?>
-                        <div class="app-nav__dropdown-label">Sense opcions</div>
-                    <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
+            <?php if ($securityItems !== []): ?>
             <div class="app-nav__dropdown">
                 <button type="button" class="app-nav__link app-nav__link--button<?= $securityActive ? ' is-active' : '' ?>" data-app-nav-dropdown-toggle>
                     Seguretat
                 </button>
                 <div class="app-nav__dropdown-menu" data-app-nav-dropdown-menu>
                     <?php foreach ($securityGroups as $groupLabel => $groupItems): ?>
+                        <?php if ($groupItems === []) {
+                            continue;
+                        } ?>
                         <div class="app-nav__dropdown-label"><?= e((string) $groupLabel) ?></div>
                         <?php foreach ($groupItems as $item): ?>
                             <?php
@@ -134,11 +155,31 @@ $maintenanceActive = in_array($activeNav, $maintenanceCodes, true);
                             </a>
                         <?php endforeach; ?>
                     <?php endforeach; ?>
-                    <?php if ($securityItems === []): ?>
-                        <div class="app-nav__dropdown-label">Sense opcions</div>
-                    <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
+            <?php if ($salaryTablesItems !== []): ?>
+            <div class="app-nav__dropdown">
+                <button type="button" class="app-nav__link app-nav__link--button<?= $salaryTablesActive ? ' is-active' : '' ?>" data-app-nav-dropdown-toggle>
+                    Taules Retribució
+                </button>
+                <div class="app-nav__dropdown-menu" data-app-nav-dropdown-menu>
+                    <?php foreach ($salaryTablesGroups as $groupLabel => $groupItems): ?>
+                        <div class="app-nav__dropdown-label"><?= e((string) $groupLabel) ?></div>
+                        <?php foreach ($groupItems as $item): ?>
+                            <?php
+                            $href = app_url(ltrim((string) $item['route'], '/'));
+                            $isActive = $activeNav === (string) $item['code'];
+                            ?>
+                            <a class="app-nav__dropdown-link<?= $isActive ? ' is-active' : '' ?>" href="<?= e($href) ?>">
+                                <?= e((string) $item['name']) ?>
+                            </a>
+                        <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            <?php if ($maintenanceItems !== []): ?>
             <div class="app-nav__dropdown">
                 <button type="button" class="app-nav__link app-nav__link--button<?= $maintenanceActive ? ' is-active' : '' ?>" data-app-nav-dropdown-toggle>
                     Manteniments
@@ -156,11 +197,9 @@ $maintenanceActive = in_array($activeNav, $maintenanceCodes, true);
                             </a>
                         <?php endforeach; ?>
                     <?php endforeach; ?>
-                    <?php if ($maintenanceItems === []): ?>
-                        <div class="app-nav__dropdown-label">Sense opcions</div>
-                    <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
         </nav>
         <div class="app-header__user">
             <span class="app-header__name"><?= e((string) ($_SESSION['full_name'] ?? '')) ?></span>

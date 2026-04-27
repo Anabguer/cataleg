@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 $implemented = (bool) ($config['implemented'] ?? false);
 $listCols = maintenance_table_columns($module, $implemented);
-$tableColspan = count($listCols) + 1;
+$tableColspan = count($listCols) + ($module === 'maintenance_personal_transitory_bonus' ? 0 : 1);
 
 $filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir']);
 
@@ -29,7 +29,33 @@ ob_start();
     <?php if ($implemented && can_create_form($module)): ?>
         <button type="button" class="btn btn--outline btn--module-accent-outline" data-maintenance-open-create><?= ui_icon('plus') ?> Nou registre</button>
     <?php endif; ?>
+    <?php if ($implemented && in_array($module, ['maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus'], true) && can_edit_form($module)): ?>
+        <button type="button" class="btn btn--outline btn--module-accent-outline" data-salary-increment>Increment Imports</button>
+        <button type="button" class="btn btn--outline btn--module-accent-outline" data-salary-apply>Actualitzar Imports</button>
+        <button type="button" class="btn btn--outline btn--module-accent-outline" data-salary-cancel>Anul·lar Increment</button>
+        <?php if ($module === 'maintenance_seniority_pay_by_group'): ?>
+            <button type="button" class="btn btn--outline btn--module-accent-outline" data-seniority-people-update>Actualitzar triennis persona</button>
+        <?php endif; ?>
+        <?php if ($module === 'maintenance_specific_compensation_special_prices'): ?>
+            <button type="button" class="btn btn--outline btn--module-accent-outline" data-special-prices-update>Actualitzar preus Lloc</button>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
+<?php if ($implemented && in_array($module, ['maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus'], true)): ?>
+    <div class="maintenance-legend-note">
+        Per actualitzar els imports, prémer el botó "Increment Imports", demanarà % increment i visualitzarà els valors nous per verificar si és correcte. Si es dóna per bona la modificació, i es vol actualitzar els valors, prémer el botó "Actualitzar Imports" i els imports es modificaran pels nous. Si vols anul·lar el increment prémer el botó "Anul·lar Increment"
+    </div>
+<?php endif; ?>
+<?php if ($implemented && $module === 'maintenance_seniority_pay_by_group'): ?>
+    <div class="maintenance-legend-note maintenance-legend-note--strong">
+        Un cop actualitzats els preus del Trienni, s'ha de prémer el botó d'Actualitzar Triennis Persona perquè els canvis efectuats es vegin reflectits en el Catáleg de Persones.
+    </div>
+<?php endif; ?>
+<?php if ($implemented && $module === 'maintenance_specific_compensation_special_prices'): ?>
+    <div class="maintenance-legend-note maintenance-legend-note--strong">
+        Un cop actualitzats els preus del Complement Específic Especial, s'ha de prémer el botó d'Actualitzar preus Lloc perquè els canvis efectuats es vegin reflectits en el Lloc de Treball.
+    </div>
+<?php endif; ?>
 <?php
 $actionBarInner = ob_get_clean();
 
@@ -68,7 +94,7 @@ $filterCardInner = ob_get_clean();
 
 ob_start();
 ?>
-<table class="data-table<?= $module === 'maintenance_subprograms' ? ' data-table--subprograms' : '' ?>">
+<table class="data-table<?= $module === 'maintenance_subprograms' ? ' data-table--subprograms' : '' ?><?= $module === 'maintenance_personal_transitory_bonus' ? ' data-table--personal-transitory-cpt' : '' ?>">
     <thead>
     <tr>
         <?php foreach ($listCols as $col): ?>
@@ -91,7 +117,9 @@ ob_start();
                 <th<?= $thClasses !== [] ? ' class="' . e(implode(' ', $thClasses)) . '"' : '' ?><?= $colHeaderTitle !== '' ? ' title="' . e($colHeaderTitle) . '"' : '' ?>><?= e($col['label']) ?></th>
             <?php endif; ?>
         <?php endforeach; ?>
+        <?php if ($module !== 'maintenance_personal_transitory_bonus'): ?>
         <th class="data-table__actions table__actions-header<?= $module === 'maintenance_subprograms' ? ' table__actions-header--maint-sub' : '' ?>">Accions</th>
+        <?php endif; ?>
     </tr>
     </thead>
     <tbody>
@@ -112,9 +140,32 @@ ob_start();
                 if ($cellClass !== '') {
                     $tdClasses[] = $cellClass;
                 }
+                $tdClassAttr = $tdClasses !== [] ? ' class="' . e(implode(' ', $tdClasses)) . '"' : '';
                 ?>
-                <td<?= $tdClasses !== [] ? ' class="' . e(implode(' ', $tdClasses)) . '"' : '' ?>><?= maintenance_column_cell_html($colDef, $r) ?></td>
+                <?php if ($module === 'maintenance_personal_transitory_bonus' && ($colDef['cell']['field'] ?? '') === 'personal_transitory_bonus_new'): ?>
+                    <?php
+                    $pid = (int) ($r['person_id'] ?? 0);
+                    $rawNew = $r['personal_transitory_bonus_new'] ?? null;
+                    $inputVal = '';
+                    if ($rawNew !== null && $rawNew !== '' && is_numeric(trim((string) $rawNew))) {
+                        $inputVal = number_format((float) $rawNew, 2, ',', '.');
+                    }
+                    ?>
+                    <td<?= $tdClassAttr ?>>
+                        <?php if (can_edit_form($module)): ?>
+                            <span class="maintenance-ptb-new__cell">
+                                <input type="text" class="form-input form-input--sm maintenance-ptb-new__input" data-ptb-new-input data-person-id="<?= $pid ?>" value="<?= e($inputVal) ?>" inputmode="decimal" autocomplete="off" aria-label="CPT incrementat">
+                                <span class="maintenance-ptb-new__hint" aria-live="polite" hidden></span>
+                            </span>
+                        <?php else: ?>
+                            <?= e(maintenance_format_currency_eur_2_display($rawNew)) ?>
+                        <?php endif; ?>
+                    </td>
+                <?php else: ?>
+                <td<?= $tdClassAttr ?>><?= maintenance_column_cell_html($colDef, $r) ?></td>
+                <?php endif; ?>
             <?php endforeach; ?>
+            <?php if ($module !== 'maintenance_personal_transitory_bonus'): ?>
             <?php
             if ($module === 'maintenance_scales') {
                 $rid = (string) (int) ($r['scale_id'] ?? 0);
@@ -154,25 +205,37 @@ ob_start();
                 $rid = trim((string) ($r['contribution_epigraph_id'] ?? ''));
             } elseif ($module === 'maintenance_social_security_base_limits') {
                 $rid = trim((string) ($r['contribution_group_id'] ?? ''));
+            } elseif ($module === 'maintenance_salary_base_by_group') {
+                $rid = trim((string) ($r['classification_group'] ?? ''));
+            } elseif ($module === 'maintenance_destination_allowances') {
+                $rid = trim((string) ($r['organic_level'] ?? ''));
+            } elseif ($module === 'maintenance_seniority_pay_by_group') {
+                $rid = trim((string) ($r['classification_group'] ?? ''));
+            } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+                $rid = trim((string) ($r['special_specific_compensation_id'] ?? ''));
+            } elseif ($module === 'maintenance_specific_compensation_general') {
+                $rid = trim((string) ($r['general_specific_compensation_id'] ?? ''));
             } elseif ($module === 'maintenance_subprograms') {
                 $rid = trim((string) ($r['subprogram_id'] ?? ''));
             } else {
                 $rid = trim((string) ($r['scale_id'] ?? $r['subscale_id'] ?? $r['category_id'] ?? $r['class_id'] ?? $r['administrative_status_id'] ?? $r['position_class_id'] ?? $r['legal_relation_id'] ?? $r['access_type_id'] ?? $r['access_system_id'] ?? $r['work_center_id'] ?? $r['availability_id'] ?? $r['provision_method_id'] ?? $r['org_unit_level_1_id'] ?? $r['org_unit_level_2_id'] ?? $r['org_unit_level_3_id'] ?? $r['program_id'] ?? $r['subprogram_id'] ?? ''));
             }
+            $specPriceReservedZero = ($module === 'maintenance_specific_compensation_special_prices' && $rid === '0');
             ?>
             <td class="data-table__actions table__actions-cell<?= $module === 'maintenance_subprograms' ? ' table__actions-cell--maint-sub' : '' ?>">
                 <div class="row-actions">
                     <?php if ($implemented && can_view_form($module)): ?>
                         <button type="button" class="btn btn--sm btn--icon-edit js-maintenance-view" data-action="view" data-maintenance-view="<?= $rid ?>" title="Visualitzar" aria-label="Visualitzar registre"><?= ui_icon('eye') ?></button>
                     <?php endif; ?>
-                    <?php if ($implemented && can_edit_form($module)): ?>
+                    <?php if ($implemented && can_edit_form($module) && !$specPriceReservedZero): ?>
                         <button type="button" class="btn btn--sm btn--icon-edit" data-maintenance-edit="<?= $rid ?>" title="Editar" aria-label="Editar registre"><?= ui_icon('pencil-square') ?></button>
                     <?php endif; ?>
-                    <?php if ($implemented && can_delete_form($module)): ?>
+                    <?php if ($implemented && can_delete_form($module) && !$specPriceReservedZero): ?>
                         <button type="button" class="btn btn--sm btn--icon-del" data-maintenance-delete="<?= $rid ?>" title="Eliminar" aria-label="Eliminar registre"><?= ui_icon('trash') ?></button>
                     <?php endif; ?>
                 </div>
             </td>
+            <?php endif; ?>
         </tr>
     <?php endforeach; endif; ?>
     </tbody>
@@ -196,4 +259,6 @@ $pageContentExtra = ob_get_clean();
 echo '<div class="module-users">';
 require APP_ROOT . '/views/layouts/admin_page.php';
 echo '</div>';
-require APP_ROOT . '/views/partials/maintenance_modal.php';
+if ($module !== 'maintenance_personal_transitory_bonus') {
+    require APP_ROOT . '/views/partials/maintenance_modal.php';
+}

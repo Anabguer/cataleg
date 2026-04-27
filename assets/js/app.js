@@ -79,6 +79,7 @@
             '<div class="modal__message-box">' +
             '<p class="modal__lead js-modal-lead"></p>' +
             '<p class="modal__secondary js-modal-secondary" hidden></p>' +
+            '<div class="js-modal-custom" hidden></div>' +
             '</div>' +
             '<div class="modal__graphic-icon js-modal-type-icon modal__graphic-icon--info" aria-hidden="true">?</div>' +
             '</div>' +
@@ -218,12 +219,17 @@
         el.querySelector('.js-modal-lead').textContent = msg;
 
         var sec = el.querySelector('.js-modal-secondary');
+        var custom = el.querySelector('.js-modal-custom');
         if (det) {
             sec.hidden = false;
             sec.textContent = det;
         } else {
             sec.hidden = true;
             sec.textContent = '';
+        }
+        if (custom) {
+            custom.hidden = true;
+            custom.innerHTML = '';
         }
 
         var footEl = el.querySelector('.js-modal-footer');
@@ -278,6 +284,11 @@
 
         var sec = el.querySelector('.js-modal-secondary');
         sec.hidden = true;
+        var custom = el.querySelector('.js-modal-custom');
+        if (custom) {
+            custom.hidden = true;
+            custom.innerHTML = '';
+        }
 
         var footEl = el.querySelector('.js-modal-footer');
         footEl.innerHTML = '';
@@ -306,6 +317,94 @@
         openModal();
         requestAnimationFrame(function () {
             ok.focus();
+        });
+    };
+
+    /**
+     * Modal d'acció reutilitzant el component visual existent.
+     *
+     * @param {{
+     *   title: string,
+     *   message?: string,
+     *   detail?: string,
+     *   size?: 'sm'|'md'|'lg',
+     *   type?: 'confirm'|'info'|'warning'|'error'|'success',
+     *   contentHtml?: string,
+     *   onOpen?: Function,
+     *   buttons?: Array<{label:string,className?:string,closeOnClick?:boolean,onClick?:Function,autofocus?:boolean,dataClose?:boolean}>
+     * }} opts
+     */
+    window.showActionModal = function (opts) {
+        var options = opts || {};
+        var el = ensureModalShell();
+        if (!el) {
+            return;
+        }
+        var type = ['success', 'error', 'warning', 'info', 'confirm'].indexOf(options.type) !== -1 ? options.type : 'confirm';
+        setModalVariant(el, type);
+        setTypeIcon(type === 'confirm' ? 'confirm' : type);
+        setModalSize(options.size || 'md');
+
+        el.querySelector('.js-modal-title').textContent = String(options.title || '');
+        el.querySelector('.js-modal-lead').textContent = String(options.message || '');
+
+        var sec = el.querySelector('.js-modal-secondary');
+        var detail = options.detail !== undefined && options.detail !== null ? String(options.detail) : '';
+        if (detail !== '') {
+            sec.hidden = false;
+            sec.textContent = detail;
+        } else {
+            sec.hidden = true;
+            sec.textContent = '';
+        }
+
+        var custom = el.querySelector('.js-modal-custom');
+        if (custom) {
+            if (options.contentHtml) {
+                custom.hidden = false;
+                custom.innerHTML = String(options.contentHtml);
+            } else {
+                custom.hidden = true;
+                custom.innerHTML = '';
+            }
+        }
+
+        var footEl = el.querySelector('.js-modal-footer');
+        footEl.innerHTML = '';
+        var buttons = Array.isArray(options.buttons) ? options.buttons : [];
+        if (buttons.length === 0) {
+            buttons = [{ label: 'D’acord', className: '', dataClose: true, autofocus: true }];
+        }
+        var focusBtn = null;
+        buttons.forEach(function (btn) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'modal__btn modal__btn--classic' + (btn.className ? (' ' + btn.className) : '');
+            b.textContent = String(btn.label || '');
+            if (btn.dataClose) {
+                b.setAttribute('data-modal-close', '');
+            }
+            b.addEventListener('click', function () {
+                if (typeof btn.onClick === 'function') {
+                    btn.onClick(closeModal, b);
+                }
+                if (btn.closeOnClick !== false) {
+                    closeModal();
+                }
+            });
+            footEl.appendChild(b);
+            if (!focusBtn || btn.autofocus) {
+                focusBtn = b;
+            }
+        });
+
+        openModal();
+        requestAnimationFrame(function () {
+            if (typeof options.onOpen === 'function') {
+                options.onOpen(el);
+            } else if (focusBtn) {
+                focusBtn.focus();
+            }
         });
     };
 

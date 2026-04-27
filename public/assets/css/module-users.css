@@ -273,6 +273,11 @@
     text-transform: none;
     letter-spacing: normal;
     padding: 0.4rem 0.65rem;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+    max-width: 180px;
 }
 
 .module-users .data-table tbody td {
@@ -872,6 +877,21 @@
     align-items: center;
 }
 
+.maintenance-legend-note {
+    margin-top: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: #dbeafe;
+    border: 1px solid #000;
+    border-radius: var(--radius-sm);
+    color: #1f2937;
+    line-height: 1.4;
+}
+
+.maintenance-legend-note--strong {
+    margin-top: var(--space-2);
+    background: #bfdbfe;
+}
+
 .module-users .users-modal-form .btn--ghost {
     background: #fff;
     color: #4b5563;
@@ -981,9 +1001,15 @@
     color: inherit;
     text-decoration: none;
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: baseline;
     gap: 0.2em;
     font-weight: inherit;
+    white-space: normal;
+}
+
+.module-users .data-table thead th.col-long-text {
+    max-width: 220px;
 }
 
 .module-users .data-table__sort-link:hover {
@@ -1616,4 +1642,61 @@
 
 .module-users .data-table--subprograms .table__actions-cell .row-actions {
     flex-wrap: nowrap;
+}
+
+/* --- CPT personal (transitori): taula compacta i centrada --- */
+.module-users .data-table--personal-transitory-cpt {
+    width: auto;
+    max-width: 42rem;
+    margin-left: auto;
+    margin-right: auto;
+    table-layout: auto;
+}
+
+.module-users .data-table--personal-transitory-cpt th.maintenance-ptb-col--name,
+.module-users .data-table--personal-transitory-cpt td.maintenance-ptb-col--name {
+    max-width: 16rem;
+    width: 42%;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.module-users .data-table--personal-transitory-cpt th.maintenance-ptb-col--amt,
+.module-users .data-table--personal-transitory-cpt td.maintenance-ptb-col--amt,
+.module-users .data-table--personal-transitory-cpt th.maintenance-ptb-col--new,
+.module-users .data-table--personal-transitory-cpt td.maintenance-ptb-col--new {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.module-users .data-table--personal-transitory-cpt .maintenance-ptb-new__cell {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    max-width: 9.5rem;
+}
+
+.module-users .data-table--personal-transitory-cpt .maintenance-ptb-new__input {
+    width: 100%;
+    min-width: 6.5rem;
+    max-width: 9.5rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.module-users .data-table--personal-transitory-cpt .maintenance-ptb-new__hint {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    min-height: 0.9rem;
+}
+
+.module-users .data-table--personal-transitory-cpt .maintenance-ptb-new__hint--ok {
+    color: var(--module-users-success);
+}
+
+.module-users .data-table--personal-transitory-cpt .maintenance-ptb-new__hint--err {
+    color: #b42318;
 }

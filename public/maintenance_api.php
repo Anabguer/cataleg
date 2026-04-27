@@ -92,7 +92,7 @@ try {
         }
         try {
             $originalIdRaw = (string) ($in['original_id'] ?? '');
-            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
+            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
             maintenance_save(db(), $module, $year, $originalForSave, [
                 'id' => (string) ($in['id'] ?? ''),
                 'name' => (string) ($in['name'] ?? ''),
@@ -139,6 +139,24 @@ try {
                 'minimum_base' => (string) ($in['minimum_base'] ?? ''),
                 'maximum_base' => (string) ($in['maximum_base'] ?? ''),
                 'period_label' => (string) ($in['period_label'] ?? ''),
+                'base_salary' => (string) ($in['base_salary'] ?? ''),
+                'base_salary_extra_pay' => (string) ($in['base_salary_extra_pay'] ?? ''),
+                'base_salary_new' => (string) ($in['base_salary_new'] ?? ''),
+                'base_salary_extra_pay_new' => (string) ($in['base_salary_extra_pay_new'] ?? ''),
+                'destination_allowance' => (string) ($in['destination_allowance'] ?? ''),
+                'destination_allowance_new' => (string) ($in['destination_allowance_new'] ?? ''),
+                'seniority_amount' => (string) ($in['seniority_amount'] ?? ''),
+                'seniority_extra_pay_amount' => (string) ($in['seniority_extra_pay_amount'] ?? ''),
+                'seniority_amount_new' => (string) ($in['seniority_amount_new'] ?? ''),
+                'seniority_extra_pay_amount_new' => (string) ($in['seniority_extra_pay_amount_new'] ?? ''),
+                'special_specific_compensation_id' => (string) ($in['special_specific_compensation_id'] ?? ''),
+                'special_specific_compensation_name' => (string) ($in['special_specific_compensation_name'] ?? ''),
+                'amount' => (string) ($in['amount'] ?? ''),
+                'amount_new' => (string) ($in['amount_new'] ?? ''),
+                'general_specific_compensation_id' => (string) ($in['general_specific_compensation_id'] ?? ''),
+                'general_specific_compensation_name' => (string) ($in['general_specific_compensation_name'] ?? ''),
+                'decrease_amount' => (string) ($in['decrease_amount'] ?? ''),
+                'decrease_amount_new' => (string) ($in['decrease_amount_new'] ?? ''),
             ]);
             maintenance_api_json(true, ['message' => $isCreate ? 'Registre creat.' : 'Registre actualitzat.']);
         } catch (Throwable $e) {
@@ -170,6 +188,152 @@ try {
             }
         }
         exit;
+    }
+
+    if (in_array($action, ['increment_imports', 'apply_imports', 'cancel_increment'], true)) {
+        if (!in_array($module, ['maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus'], true)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Acció no vàlida per al mòdul.']], 400);
+            exit;
+        }
+        if (!can_edit_form($module)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Sense permís per editar']], 403);
+            exit;
+        }
+        try {
+            if ($action === 'increment_imports') {
+                $res = $module === 'maintenance_destination_allowances'
+                    ? maintenance_destination_allowance_increment_imports(db(), $year, (string) ($in['percent'] ?? ''))
+                    : ($module === 'maintenance_seniority_pay_by_group'
+                        ? maintenance_seniority_pay_increment_imports(db(), $year, (string) ($in['percent'] ?? ''))
+                        : ($module === 'maintenance_specific_compensation_special_prices'
+                            ? maintenance_specific_comp_special_increment_imports(db(), $year, (string) ($in['percent'] ?? ''))
+                            : ($module === 'maintenance_specific_compensation_general'
+                                ? maintenance_specific_comp_general_increment_imports(db(), $year, (string) ($in['percent'] ?? ''))
+                                : ($module === 'maintenance_personal_transitory_bonus'
+                                    ? maintenance_personal_transitory_bonus_increment_imports(db(), $year, (string) ($in['percent'] ?? ''))
+                                    : maintenance_salary_base_increment_imports(db(), $year, (string) ($in['percent'] ?? ''))))));
+                if (!$res['ok']) {
+                    maintenance_api_json(false, ['errors' => ['_general' => $res['error']]], 422);
+                    exit;
+                }
+                maintenance_api_json(true, ['message' => 'Imports incrementats correctament.']);
+                exit;
+            }
+            if ($action === 'cancel_increment') {
+                if ($module === 'maintenance_destination_allowances') {
+                    maintenance_destination_allowance_cancel_increment(db(), $year);
+                } elseif ($module === 'maintenance_seniority_pay_by_group') {
+                    maintenance_seniority_pay_cancel_increment(db(), $year);
+                } elseif ($module === 'maintenance_specific_compensation_special_prices') {
+                    maintenance_specific_comp_special_cancel_increment(db(), $year);
+                } elseif ($module === 'maintenance_specific_compensation_general') {
+                    maintenance_specific_comp_general_cancel_increment(db(), $year);
+                } elseif ($module === 'maintenance_personal_transitory_bonus') {
+                    maintenance_personal_transitory_bonus_cancel_increment(db(), $year);
+                } else {
+                    maintenance_salary_base_cancel_increment(db(), $year);
+                }
+                maintenance_api_json(true, ['message' => 'Increment anul·lat correctament.']);
+                exit;
+            }
+            $res = $module === 'maintenance_destination_allowances'
+                ? maintenance_destination_allowance_apply_imports(db(), $year)
+                : ($module === 'maintenance_seniority_pay_by_group'
+                    ? maintenance_seniority_pay_apply_imports(db(), $year)
+                    : ($module === 'maintenance_specific_compensation_special_prices'
+                        ? maintenance_specific_comp_special_apply_imports(db(), $year)
+                        : ($module === 'maintenance_specific_compensation_general'
+                            ? maintenance_specific_comp_general_apply_imports(db(), $year)
+                            : ($module === 'maintenance_personal_transitory_bonus'
+                                ? maintenance_personal_transitory_bonus_apply_imports(db(), $year)
+                                : maintenance_salary_base_apply_imports(db(), $year)))));
+            if (!$res['ok']) {
+                maintenance_api_json(false, ['errors' => ['_general' => $res['error']]], 422);
+                exit;
+            }
+            maintenance_api_json(true, ['message' => 'Imports actualitzats correctament.']);
+            exit;
+        } catch (Throwable $e) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'No s’ha pogut completar l’operació d’imports. Torna-ho a provar.']], 500);
+            exit;
+        }
+    }
+
+    if ($action === 'update_people_seniority') {
+        if ($module !== 'maintenance_seniority_pay_by_group') {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Acció no vàlida per al mòdul.']], 400);
+            exit;
+        }
+        if (!can_edit_form($module)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Sense permís per editar']], 403);
+            exit;
+        }
+        try {
+            $scope = (string) ($in['scope'] ?? '');
+            $res = maintenance_seniority_pay_update_people(db(), $year, $scope);
+            if (!$res['ok']) {
+                maintenance_api_json(false, ['errors' => ['_general' => $res['error']]], 422);
+                exit;
+            }
+            $updated = (int) ($res['updated'] ?? 0);
+            $msg = ($res['scope'] ?? '') === 'active'
+                ? "S'han actualitzat els triennis de {$updated} persones actives."
+                : "S'han actualitzat els triennis de {$updated} persones.";
+            maintenance_api_json(true, ['updated' => $updated, 'message' => $msg]);
+            exit;
+        } catch (Throwable $e) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'No s’ha pogut completar l’actualització de triennis de persones. Torna-ho a provar.']], 500);
+            exit;
+        }
+    }
+
+    if ($action === 'update_personal_transitory_bonus_new') {
+        if ($module !== 'maintenance_personal_transitory_bonus') {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Acció no vàlida per al mòdul.']], 400);
+            exit;
+        }
+        if (!can_edit_form($module)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Sense permís per editar']], 403);
+            exit;
+        }
+        $personId = (int) ($in['person_id'] ?? 0);
+        $valueRaw = (string) ($in['value'] ?? '');
+        try {
+            $res = maintenance_personal_transitory_bonus_update_new(db(), $year, $personId, $valueRaw);
+            if (!$res['ok']) {
+                maintenance_api_json(false, ['errors' => ['_general' => (string) ($res['error'] ?? 'Import no vàlid.')]], 422);
+                exit;
+            }
+            maintenance_api_json(true, [
+                'value_display' => (string) ($res['value_display'] ?? ''),
+                'value_for_input' => (string) ($res['value_for_input'] ?? ''),
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'No s’ha pogut desar el valor.']], 500);
+            exit;
+        }
+    }
+
+    if ($action === 'update_job_positions_special_prices') {
+        if ($module !== 'maintenance_specific_compensation_special_prices') {
+            maintenance_api_json(false, ['success' => false, 'errors' => ['_general' => 'Acció no vàlida per al mòdul.'], 'message' => 'No s’ha pogut actualitzar els preus dels llocs de treball.'], 400);
+            exit;
+        }
+        if (!can_edit_form($module)) {
+            maintenance_api_json(false, ['success' => false, 'errors' => ['_general' => 'Sense permís per editar'], 'message' => 'No s’ha pogut actualitzar els preus dels llocs de treball.'], 403);
+            exit;
+        }
+        try {
+            $res = maintenance_specific_comp_special_update_job_positions(db(), $year);
+            $updated = (int) ($res['updated'] ?? 0);
+            $msg = "S'han actualitzat els preus de {$updated} llocs de treball.";
+            maintenance_api_json(true, ['success' => true, 'updated' => $updated, 'message' => $msg]);
+            exit;
+        } catch (Throwable $e) {
+            maintenance_api_json(false, ['success' => false, 'errors' => ['_general' => 'No s’ha pogut actualitzar els preus dels llocs de treball.'], 'message' => 'No s’ha pogut actualitzar els preus dels llocs de treball.'], 500);
+            exit;
+        }
     }
 
     maintenance_api_json(false, ['errors' => ['_general' => 'Acció no vàlida']], 400);

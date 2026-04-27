@@ -53,7 +53,6 @@ $organicLevel2 = maintenance_org_units_level_2_options($db, $year);
 $jobPositions = maintenance_job_positions_options($db, $year);
 $programsForSelect = maintenance_programs_options_for_select($db, $year);
 $jobPositionsCm = maintenance_job_positions_cm_options($db, $year);
-
 $pageTitle = (string) $config['title'];
 $activeNav = $module;
 $extraCss = ['css/module-users.css'];
