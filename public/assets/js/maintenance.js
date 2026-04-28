@@ -1,6 +1,8 @@
 (function () {
     'use strict';
     var currentModalReadonly = false;
+    var currentMaintenanceModalMode = 'closed';
+    var copyManagementPositionSourceId = '';
     function cfg() { return window.APP_MAINTENANCE || {}; }
     function $(s, r) { return (r || document).querySelector(s); }
     function overlay() { return document.getElementById('maintenance-modal-overlay'); }
@@ -38,6 +40,8 @@
         if(mod==='maintenance_seniority_pay_by_group') return row && row.classification_group !== undefined ? row.classification_group : '';
         if(mod==='maintenance_specific_compensation_special_prices') return row && row.special_specific_compensation_id != null ? String(row.special_specific_compensation_id) : '';
         if(mod==='maintenance_specific_compensation_general') return row && row.general_specific_compensation_id !== undefined ? row.general_specific_compensation_id : '';
+        if(mod==='people') return row && row.person_id !== undefined ? row.person_id : '';
+        if(mod==='management_positions') return row && row.position_id !== undefined ? row.position_id : '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_id !== undefined ? row.subprogram_id : '';
         return row && (row.scale_id || row.subscale_id || row.category_id || '');
     }
@@ -66,6 +70,8 @@
         if(mod==='maintenance_seniority_pay_by_group') return row && row.classification_group !== undefined ? row.classification_group : '';
         if(mod==='maintenance_specific_compensation_special_prices') return row && row.special_specific_compensation_name !== undefined ? row.special_specific_compensation_name : '';
         if(mod==='maintenance_specific_compensation_general') return row && row.general_specific_compensation_name !== undefined ? row.general_specific_compensation_name : '';
+        if(mod==='people') return row && row.first_name !== undefined ? row.first_name : '';
+        if(mod==='management_positions') return row && row.position_name !== undefined ? row.position_name : '';
         if(mod==='maintenance_social_security_coefficients') return '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_name !== undefined ? row.subprogram_name : '';
         return row && (row.scale_name || row.subscale_name || row.category_name || '');
@@ -183,7 +189,7 @@
         var fixed = n.toFixed(2);
         var parts = fixed.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        return parts[0] + ',' + parts[1];
+        return parts[0] + ',' + parts[1] + ' €';
     }
     function normalizeMoneyInput(value) {
         var t = String(value || '').trim();
@@ -208,6 +214,532 @@
         if (!/^\d+(?:\.\d{1,2})?$/.test(norm)) return null;
         return norm;
     }
+    function formatPositionCode4(v) {
+        var s = String(v == null ? '' : v).trim();
+        if (!/^\d+$/.test(s)) return s;
+        return ('0000' + String(parseInt(s, 10))).slice(-4);
+    }
+    function formatPeopleCode5(v) {
+        var s = String(v == null ? '' : v).trim();
+        if (!/^\d+$/.test(s)) return s;
+        return ('00000' + String(parseInt(s, 10))).slice(-5);
+    }
+    function parseVisualPercent100(value) {
+        var t = String(value || '').trim();
+        if (t === '') return { ok: true, value: null };
+        t = t.replace(/\u00A0/g, '').replace(/%/g, '').replace(/\s+/g, '').replace(',', '.');
+        if (!/^\d+(?:\.\d{1,4})?$/.test(t)) return { ok: false, error: 'Percentatge invàlid.' };
+        var n = parseFloat(t);
+        if (!isFinite(n) || n < 0 || n > 100) return { ok: false, error: 'El percentatge ha d’estar entre 0 i 100.' };
+        return { ok: true, value: n.toFixed(4) };
+    }
+    function formatVisualPercent100(value) {
+        if (value === null || value === undefined || String(value).trim() === '') return '';
+        var n = parseFloat(String(value).replace(',', '.'));
+        if (!isFinite(n)) return '';
+        return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+    }
+    function formatFractionPercent(value, decimals) {
+        var d = typeof decimals === 'number' ? decimals : 2;
+        if (value === null || value === undefined || String(value).trim() === '') return '';
+        var n = Number(String(value).replace(',', '.'));
+        if (Number.isNaN(n)) return '';
+        return (n * 100).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' %';
+    }
+    function parseFractionPercent(value) {
+        if (value === null || value === undefined) return { ok: true, value: null };
+        var raw = String(value).replace('%', '').trim();
+        if (raw === '') return { ok: true, value: null };
+        raw = raw.replace(/\u00A0/g, '').replace(/\s+/g, '').replace(',', '.');
+        if (!/^\d+(?:\.\d{1,4})?$/.test(raw)) return { ok: false, error: 'Percentatge invàlid.' };
+        var visualPercent = Number(raw);
+        if (Number.isNaN(visualPercent) || visualPercent < 0 || visualPercent > 100) return { ok: false, error: 'El percentatge ha d’estar entre 0 i 100.' };
+        return { ok: true, value: (visualPercent / 100).toFixed(6) };
+    }
+    function syncPeopleActive() {
+        if (module() !== 'people') return;
+        var term = document.querySelector('[data-field="terminated_at"]');
+        var active = document.querySelector('[data-field="is_active"]');
+        if (!term || !active) return;
+        active.checked = String(term.value || '').trim() === '';
+        active.disabled = true;
+    }
+    function peopleSubprogramRowsEl() {
+        return document.querySelector('[data-people-subprogram-rows]');
+    }
+    function peopleSubprogramSetRows(rows, readOnly) {
+        var tbody = peopleSubprogramRowsEl();
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        var subOpts = cfg().subprogramsForPeople || [];
+        (rows || []).forEach(function (it) {
+            var tr = document.createElement('tr');
+            var td1 = document.createElement('td');
+            var sel = document.createElement('select');
+            sel.className = 'form-select';
+            sel.setAttribute('data-people-subprogram-id', '1');
+            var o0 = document.createElement('option');
+            o0.value = '';
+            o0.textContent = 'Selecciona…';
+            sel.appendChild(o0);
+            subOpts.forEach(function (sp) {
+                var o = document.createElement('option');
+                o.value = String(sp.id || '');
+                o.textContent = String(sp.id || '') + ' - ' + String(sp.name || '');
+                sel.appendChild(o);
+            });
+            sel.value = String(it.subprogram_id || '');
+            sel.disabled = !!readOnly;
+            td1.appendChild(sel);
+            var td2 = document.createElement('td');
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'form-input';
+            inp.setAttribute('data-people-subprogram-dedication', '1');
+            inp.value = formatVisualPercent100(it.dedication);
+            inp.disabled = !!readOnly;
+            td2.appendChild(inp);
+            var td3 = document.createElement('td');
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'btn btn--ghost btn--sm';
+            del.textContent = 'Eliminar';
+            del.disabled = !!readOnly;
+            del.addEventListener('click', function () { tr.remove(); });
+            td3.appendChild(del);
+            tr.appendChild(td1);
+            tr.appendChild(td2);
+            tr.appendChild(td3);
+            tbody.appendChild(tr);
+        });
+    }
+    function peopleSubprogramGetRows() {
+        var tbody = peopleSubprogramRowsEl();
+        if (!tbody) return [];
+        var out = [];
+        Array.prototype.forEach.call(tbody.querySelectorAll('tr'), function (tr) {
+            var sid = tr.querySelector('[data-people-subprogram-id]');
+            var ded = tr.querySelector('[data-people-subprogram-dedication]');
+            out.push({
+                subprogram_id: String(sid && sid.value ? sid.value : '').trim(),
+                dedication: String(ded && ded.value ? ded.value : '').trim()
+            });
+        });
+        return out;
+    }
+    function setPeopleSubprogramsReadOnly(readOnly) {
+        if (module() !== 'people') return;
+        var tbody = peopleSubprogramRowsEl();
+        if (tbody) {
+            tbody.querySelectorAll('input,select,button').forEach(function (el) {
+                el.disabled = !!readOnly;
+            });
+            tbody.querySelectorAll('button').forEach(function (btn) {
+                btn.classList.toggle('d-none', !!readOnly);
+            });
+        }
+        var addBtn = document.querySelector('[data-people-subprogram-add]');
+        if (addBtn) {
+            addBtn.disabled = !!readOnly;
+            addBtn.classList.toggle('d-none', !!readOnly);
+        }
+    }
+    function loadPeopleSeniorityPayByGroup() {
+        var src = cfg().peopleSeniorityPayByGroup || {};
+        var out = {};
+        Object.keys(src).forEach(function (k) {
+            var key = String(k || '').trim().toUpperCase();
+            if (!key) return;
+            var item = src[k] || {};
+            out[key] = {
+                monthly_amount: Number(item.monthly_amount || 0) || 0,
+                extra_pay_amount: Number(item.extra_pay_amount || 0) || 0
+            };
+        });
+        return out;
+    }
+    function parsePeopleNumeric(v) {
+        var s = String(v == null ? '' : v).trim();
+        if (s === '') return null;
+        s = s.replace('%', '').replace(/\s+/g, '').replace(',', '.');
+        var n = Number(s);
+        return isFinite(n) ? n : null;
+    }
+    function setPeopleSeniorityComputedReadOnly() {
+        if (module() !== 'people') return;
+        var f = document.getElementById('maintenance-modal-form');
+        if (!f) return;
+        f.querySelectorAll('[data-people-seniority-monthly],[data-people-seniority-extra],[data-people-seniority-total],[data-people-seniority-accum],[data-people-seniority-db]').forEach(function (el) {
+            el.readOnly = true;
+            el.disabled = true;
+        });
+        ['a1', 'a2', 'c1', 'c2', 'e'].forEach(function (g) {
+            var tr = f.querySelector('[data-field="group_' + g + '_current_year_triennia"]');
+            if (tr) {
+                tr.readOnly = true;
+                tr.disabled = currentModalReadonly;
+            }
+        });
+    }
+    function calculatePeopleSeniority() {
+        if (module() !== 'people') return;
+        var f = document.getElementById('maintenance-modal-form');
+        if (!f) return;
+        var byGroup = loadPeopleSeniorityPayByGroup();
+        var defs = [
+            { key: 'A1', prev: 'group_a1_previous_triennia', pct: 'group_a1_current_year_percentage', cur: 'group_a1_current_year_triennia' },
+            { key: 'A2', prev: 'group_a2_previous_triennia', pct: 'group_a2_current_year_percentage', cur: 'group_a2_current_year_triennia' },
+            { key: 'C1', prev: 'group_c1_previous_triennia', pct: 'group_c1_current_year_percentage', cur: 'group_c1_current_year_triennia' },
+            { key: 'C2', prev: 'group_c2_previous_triennia', pct: 'group_c2_current_year_percentage', cur: 'group_c2_current_year_triennia' },
+            { key: 'E', prev: 'group_e_previous_triennia', pct: 'group_e_current_year_percentage', cur: 'group_e_current_year_triennia' }
+        ];
+        var sumMonthly = 0, sumExtra = 0, sumTotal = 0;
+        defs.forEach(function (d) {
+            var monthlyAmount = Number((byGroup[d.key] && byGroup[d.key].monthly_amount) || 0) || 0;
+            var extraAmount = Number((byGroup[d.key] && byGroup[d.key].extra_pay_amount) || 0) || 0;
+            var prevEl = $('[data-field="' + d.prev + '"]', f);
+            var pctEl = $('[data-field="' + d.pct + '"]', f);
+            var curEl = $('[data-field="' + d.cur + '"]', f);
+            var prev = prevEl ? parsePeopleNumeric(prevEl.value) : null;
+            var pct = pctEl ? parsePeopleNumeric(pctEl.value) : null;
+            var monthly = prev === null ? null : (prev * monthlyAmount);
+            var extra = prev === null ? null : (prev * extraAmount);
+            var trienniaAny = (pct !== null && pct > 0) ? 1 : null;
+            var total = (pct !== null && pct > 0) ? ((pct * monthlyAmount) / 100) : null;
+            if (curEl) curEl.value = trienniaAny === null ? '' : String(trienniaAny);
+            var mEl = f.querySelector('[data-people-seniority-monthly="' + d.key + '"]');
+            var pEl = f.querySelector('[data-people-seniority-extra="' + d.key + '"]');
+            var tEl = f.querySelector('[data-people-seniority-total="' + d.key + '"]');
+            if (mEl) mEl.value = monthly === null ? '' : formatMoneyForInput(monthly);
+            if (pEl) pEl.value = extra === null ? '' : formatMoneyForInput(extra);
+            if (tEl) tEl.value = total === null ? '' : formatMoneyForInput(total);
+            sumMonthly += monthly || 0;
+            sumExtra += extra || 0;
+            sumTotal += total || 0;
+        });
+        var budgetCalc = sumMonthly + sumTotal;
+        var extraCalc = sumExtra + sumTotal;
+        var annualCalc = (sumMonthly * 12) + (sumExtra * 2) + (sumTotal * 14);
+        var budgetEl = f.querySelector('[data-people-seniority-accum="budget"]');
+        var extraEl = f.querySelector('[data-people-seniority-accum="extra"]');
+        var monthlyEl = f.querySelector('[data-people-seniority-accum="monthly"]');
+        var annualEl = f.querySelector('[data-people-seniority-accum="annual"]');
+        if (budgetEl) budgetEl.value = formatMoneyForInput(budgetCalc);
+        if (extraEl) extraEl.value = formatMoneyForInput(extraCalc);
+        if (monthlyEl) monthlyEl.value = formatMoneyForInput(sumMonthly);
+        if (annualEl) annualEl.value = formatMoneyForInput(annualCalc);
+        setPeopleSeniorityComputedReadOnly();
+    }
+    function setupPeopleSeniorityFields() {
+        if (module() !== 'people') return;
+        var f = document.getElementById('maintenance-modal-form');
+        if (!f || f.getAttribute('data-people-seniority-bound') === '1') return;
+        f.setAttribute('data-people-seniority-bound', '1');
+        f.querySelectorAll('[data-people-seniority-edit="1"]').forEach(function (el) {
+            el.addEventListener('input', calculatePeopleSeniority);
+            el.addEventListener('change', calculatePeopleSeniority);
+        });
+    }
+    function syncPeopleAdministrativeStatusByLegalRelation() {
+        if (module() !== 'people') return;
+        var f = document.getElementById('maintenance-modal-form');
+        if (!f) return;
+        var legalEl = $('[data-field="legal_relation_id"]', f);
+        var adminEl = $('[data-field="administrative_status_id"]', f);
+        if (!legalEl || !adminEl) return;
+        var legal = String(legalEl.value || '').trim();
+        var allowAdmin = legal !== '' && legal.charAt(0) === '1';
+        if (!allowAdmin) adminEl.value = '';
+        adminEl.disabled = currentModalReadonly ? true : !allowAdmin;
+    }
+    function normalizeVisualPercentInput(value) {
+        var t = String(value || '').trim();
+        if (t === '') return '';
+        t = t.replace(/\u00A0/g, '').replace(/%/g, '').replace(/\s+/g, '').replace(',', '.');
+        if (/[^0-9.]/.test(t)) return null;
+        if (!/^\d+(?:\.\d{1,2})?$/.test(t)) return null;
+        return t;
+    }
+    function formatVisualPercentFromFraction(value) {
+        if (value === null || value === undefined) return '';
+        var s = String(value).trim();
+        if (s === '') return '';
+        var n = parseFloat(s.replace(',', '.'));
+        if (!isFinite(n)) return '';
+        return (n * 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+    }
+    function loadSalaryGroups() {
+        if (module() !== 'management_positions') return;
+        var select = document.querySelector('[data-field="classification_group"]');
+        if (!select) return;
+        fetch(apiUrl() + '&action=get_salary_groups', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d || !d.ok || !Array.isArray(d.groups)) return;
+                var current = String(select.value || '');
+                select.innerHTML = '<option value="">Selecciona...</option>';
+                d.groups.forEach(function (g) {
+                    var option = document.createElement('option');
+                    option.value = String(g);
+                    option.textContent = String(g);
+                    select.appendChild(option);
+                });
+                if (current !== '') select.value = current;
+            })
+            .catch(function () {});
+    }
+    function syncManagementPositionActive() {
+        if (module() !== 'management_positions') return;
+        var deletedWrap = document.querySelector('[data-maintenance-field="deleted_at"]');
+        var activeWrap = document.querySelector('[data-maintenance-field="is_active"]');
+        var deletedAtInput = deletedWrap ? (deletedWrap.querySelector('[data-field="deleted_at"]') || deletedWrap.querySelector('input,select,textarea')) : document.querySelector('[data-field="deleted_at"]');
+        var activeInput = activeWrap ? (activeWrap.querySelector('[data-field="is_active"]') || activeWrap.querySelector('input[type="checkbox"]')) : document.querySelector('[data-field="is_active"]');
+        if (!deletedAtInput || !activeInput) return;
+        var hasDeletedAt = String(deletedAtInput.value || '').trim() !== '';
+        activeInput.checked = !hasDeletedAt;
+        activeInput.disabled = true;
+    }
+    function syncManagementPositionClassFields() {
+        if (module() !== 'management_positions') return;
+        var getFieldInput = function (fieldName) {
+            var wrap = document.querySelector('[data-maintenance-field="' + fieldName + '"]');
+            if (!wrap) return null;
+            return wrap.querySelector('[data-field="' + fieldName + '"]') || wrap.querySelector('input,select,textarea');
+        };
+        var positionClassInput = getFieldInput('position_class_id');
+        if (!positionClassInput) return;
+        var scaleInput = getFieldInput('scale_id');
+        var subscaleInput = getFieldInput('subscale_id');
+        var classInput = getFieldInput('class_id');
+        var categoryInput = getFieldInput('category_id');
+        var laborCategoryInput = getFieldInput('labor_category_id') || getFieldInput('labor_category');
+        var value = String(positionClassInput.value || '').trim();
+        var funcionarioFields = [scaleInput, subscaleInput, classInput, categoryInput];
+        var laboralFields = [laborCategoryInput];
+        var isViewMode = currentMaintenanceModalMode === 'view' || currentModalReadonly;
+        var setDisabled = function (fields, disabled, clearOnDisable) {
+            fields.forEach(function (field) {
+                if (!field) return;
+                field.disabled = !!disabled;
+                if (disabled && clearOnDisable) field.value = '';
+            });
+        };
+        if (isViewMode) {
+            setDisabled(funcionarioFields, true, false);
+            setDisabled(laboralFields, true, false);
+            return;
+        }
+        if (value === '1') {
+            setDisabled(funcionarioFields, false, false);
+            setDisabled(laboralFields, true, true);
+        } else if (value === '2') {
+            setDisabled(funcionarioFields, true, true);
+            setDisabled(laboralFields, false, false);
+        } else {
+            setDisabled(funcionarioFields, true, true);
+            setDisabled(laboralFields, true, true);
+        }
+    }
+    function syncManagementPositionCategoryCascade(forceClearClass) {
+        if (module() !== 'management_positions') return;
+        var scale = $('#maintenance_scale_id');
+        var sub = $('#maintenance_subscale_id');
+        var cls = $('#maintenance_class_id');
+        var cat = $('#maintenance_category_id');
+        if (!scale || !sub || !cls || !cat) return;
+        var sid = String(scale.value || '');
+        var ssid = String(sub.value || '');
+        var cid = String(cls.value || '');
+        if (forceClearClass) {
+            cls.value = '';
+            cid = '';
+            cat.value = '';
+        }
+        Array.prototype.forEach.call(sub.options, function (o) {
+            if (!o.value) return;
+            o.hidden = sid !== '' && o.getAttribute('data-scale-id') !== sid;
+        });
+        if (sub.selectedOptions[0] && sub.selectedOptions[0].hidden) {
+            sub.value = '';
+            ssid = '';
+            cls.value = '';
+            cid = '';
+            cat.value = '';
+        }
+        Array.prototype.forEach.call(cls.options, function (o) {
+            if (!o.value) return;
+            var okScale = sid === '' || o.getAttribute('data-scale-id') === sid;
+            var okSub = ssid === '' || o.getAttribute('data-subscale-id') === ssid;
+            o.hidden = !(okScale && okSub);
+        });
+        if (cls.selectedOptions[0] && cls.selectedOptions[0].hidden) {
+            cls.value = '';
+            cid = '';
+            cat.value = '';
+        }
+        Array.prototype.forEach.call(cat.options, function (o) {
+            if (!o.value) return;
+            var okScale = sid === '' || o.getAttribute('data-scale-id') === sid;
+            var okSub = ssid === '' || o.getAttribute('data-subscale-id') === ssid;
+            var okClass = cid !== '' && o.getAttribute('data-class-id') === cid;
+            o.hidden = !(okScale && okSub && okClass);
+        });
+        if (cid === '') {
+            cat.value = '';
+        } else if (cat.selectedOptions[0] && cat.selectedOptions[0].hidden) {
+            cat.value = '';
+        }
+    }
+    function toggleCopyManagementPositionButton() {
+        var btn = document.getElementById('btn-copy-management-position');
+        if (!btn) return;
+        if (module() !== 'management_positions') {
+            btn.classList.add('d-none');
+            btn.hidden = true;
+            btn.style.display = 'none';
+            btn.disabled = true;
+            return;
+        }
+        var originalIdEl = document.querySelector('[data-field="original_id"]');
+        var sourceId = String(originalIdEl && originalIdEl.value ? originalIdEl.value : '').trim();
+        copyManagementPositionSourceId = sourceId;
+        var isViewMode = currentMaintenanceModalMode === 'view';
+        var show = isViewMode && sourceId !== '';
+        if (show) {
+            btn.classList.remove('d-none');
+            btn.hidden = false;
+            btn.style.display = '';
+            btn.disabled = false;
+            return;
+        }
+        btn.classList.add('d-none');
+        btn.hidden = true;
+        btn.style.display = 'none';
+        btn.disabled = true;
+    }
+    function copyManagementPositionValidateInputs(rawId, rawName) {
+        var newId = String(rawId || '').trim();
+        var newName = String(rawName || '').trim();
+        var errors = {};
+        if (newId === '') errors.new_position_id = 'El codi és obligatori.';
+        else if (!/^\d{1,4}$/.test(newId)) errors.new_position_id = 'El codi ha de ser numèric i de màxim 4 dígits.';
+        if (newName === '') errors.new_position_name = 'La denominació és obligatòria.';
+        return { errors: errors, newId: newId, newName: newName };
+    }
+    function executeCopyManagementPosition(newPositionId, newPositionName) {
+        var sourceId = String(copyManagementPositionSourceId || '').trim();
+        if (sourceId === '') {
+            if (window.showAlert) window.showAlert('error', 'Error', 'No s’ha pogut identificar la plaça origen.');
+            return;
+        }
+        var csrf = cfg().csrfToken || '';
+        fetch(apiUrl(), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            body: JSON.stringify({
+                action: 'copy_management_position',
+                module: module(),
+                csrf_token: csrf,
+                source_position_id: sourceId,
+                new_position_id: newPositionId,
+                new_position_name: newPositionName
+            })
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.ok) {
+                    closeModal();
+                    if (window.showAlert) {
+                        window.showAlert('success', 'Èxit', d.message || 'Plaça copiada correctament.');
+                        setTimeout(function () { window.location.reload(); }, 650);
+                    } else {
+                        window.location.reload();
+                    }
+                    return;
+                }
+                var msg = (d && d.errors && d.errors._general) ? d.errors._general : 'No s’ha pogut copiar la plaça.';
+                if (window.showAlert) window.showAlert('error', 'Error', msg);
+            })
+            .catch(function () {
+                if (window.showAlert) window.showAlert('error', 'Error', 'Error de xarxa.');
+            });
+    }
+    function openCopyManagementPositionModal() {
+        if (module() !== 'management_positions') return;
+        if (typeof window.showActionModal !== 'function') {
+            if (window.showAlert) window.showAlert('error', 'Error', 'No s’ha pogut obrir la finestra de còpia.');
+            return;
+        }
+        window.showActionModal({
+            title: 'COPIAR PLAÇA',
+            message: 'Introdueix el codi i la denominació de la nova plaça.',
+            type: 'confirm',
+            size: 'md',
+            contentHtml:
+                '<div class="form-group" style="margin-top:8px;">' +
+                    '<label class="form-label" for="copy_new_position_id">Codi nova plaça</label>' +
+                    '<input class="form-input" id="copy_new_position_id" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="p. ex. 0001">' +
+                    '<p class="form-error" id="copy_new_position_id_error" hidden></p>' +
+                '</div>' +
+                '<div class="form-group" style="margin-top:8px;">' +
+                    '<label class="form-label" for="copy_new_position_name">Denominació nova plaça</label>' +
+                    '<input class="form-input" id="copy_new_position_name" type="text" autocomplete="off">' +
+                    '<p class="form-error" id="copy_new_position_name_error" hidden></p>' +
+                '</div>',
+            onOpen: function (el) {
+                var idInput = el.querySelector('#copy_new_position_id');
+                if (idInput) idInput.focus();
+            },
+            buttons: [
+                { label: 'Cancel·lar', className: 'modal__btn--no', dataClose: true },
+                {
+                    label: 'Continuar',
+                    className: 'modal__btn--si',
+                    closeOnClick: false,
+                    autofocus: true,
+                    onClick: function (close, btn) {
+                        var root = btn && btn.closest('.js-app-modal');
+                        if (!root) return;
+                        var idInput = root.querySelector('#copy_new_position_id');
+                        var nameInput = root.querySelector('#copy_new_position_name');
+                        var idErr = root.querySelector('#copy_new_position_id_error');
+                        var nameErr = root.querySelector('#copy_new_position_name_error');
+                        if (idErr) { idErr.hidden = true; idErr.textContent = ''; }
+                        if (nameErr) { nameErr.hidden = true; nameErr.textContent = ''; }
+                        var validated = copyManagementPositionValidateInputs(idInput ? idInput.value : '', nameInput ? nameInput.value : '');
+                        if (validated.errors.new_position_id && idErr) {
+                            idErr.hidden = false;
+                            idErr.textContent = validated.errors.new_position_id;
+                        }
+                        if (validated.errors.new_position_name && nameErr) {
+                            nameErr.hidden = false;
+                            nameErr.textContent = validated.errors.new_position_name;
+                        }
+                        if (validated.errors.new_position_id || validated.errors.new_position_name) return;
+                        var proceed = function () {
+                            close();
+                            executeCopyManagementPosition(validated.newId, validated.newName);
+                        };
+                        if (window.showConfirm) {
+                            window.showConfirm('Confirmació', 'Es crearà una nova plaça copiant les dades de la plaça actual. Vols continuar?', proceed, { confirmLabel: 'Sí', cancelLabel: 'No' });
+                        } else {
+                            proceed();
+                        }
+                    }
+                }
+            ]
+        });
+    }
+    function setupCopyManagementPositionButton() {
+        var btn = document.getElementById('btn-copy-management-position');
+        if (!btn) return;
+        if (btn.getAttribute('data-copy-bound') === '1') return;
+        btn.setAttribute('data-copy-bound', '1');
+        btn.addEventListener('click', function () {
+            openCopyManagementPositionModal();
+        });
+    }
     function setupFields() {
         var mod = module();
         var show = function (name, on) { var el = document.querySelector('[data-maintenance-field="'+name+'"]'); if (el) el.hidden = !on; };
@@ -228,7 +760,7 @@
         if (idInput) {
             if (mod === 'maintenance_programs' || mod === 'maintenance_subprograms') {
                 idInput.type = 'hidden';
-            } else if (mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_social_security_companies' || mod === 'maintenance_social_security_coefficients' || mod === 'maintenance_social_security_base_limits' || mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general') {
+            } else if (mod === 'maintenance_availability_types' || mod === 'maintenance_provision_forms' || mod === 'maintenance_social_security_companies' || mod === 'maintenance_social_security_coefficients' || mod === 'maintenance_social_security_base_limits' || mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general' || mod === 'management_positions') {
                 idInput.type = 'text';
                 idInput.removeAttribute('min');
                 if (mod === 'maintenance_social_security_coefficients') {
@@ -259,6 +791,14 @@
                     idInput.setAttribute('maxlength', '10');
                     idInput.setAttribute('inputmode', 'numeric');
                     idInput.setAttribute('pattern', '[0-9]+');
+                } else if (mod === 'management_positions') {
+                    idInput.setAttribute('maxlength', '4');
+                    idInput.setAttribute('inputmode', 'numeric');
+                    idInput.setAttribute('pattern', '[0-9]{1,4}');
+                } else if (mod === 'people') {
+                    idInput.setAttribute('maxlength', '5');
+                    idInput.setAttribute('inputmode', 'numeric');
+                    idInput.setAttribute('pattern', '[0-9]{1,5}');
                 }
             } else {
                 idInput.type = 'number';
@@ -281,12 +821,71 @@
         show('has_corporate_agreements', mod === 'maintenance_subprograms');
         show('objectives', mod === 'maintenance_subprograms');
         show('activities', mod === 'maintenance_subprograms');
-        show('notes', mod === 'maintenance_subprograms');
+        show('notes', mod === 'maintenance_subprograms' || mod === 'management_positions');
+        show('position_name', mod === 'management_positions');
         show('short_name', mod === 'maintenance_scales' || mod === 'maintenance_subscales' || mod === 'maintenance_classes' || mod === 'maintenance_categories');
         show('full_name', mod === 'maintenance_scales');
-        show('scale_id', mod === 'maintenance_subscales' || mod === 'maintenance_categories' || mod === 'maintenance_classes');
-        show('subscale_id', mod === 'maintenance_categories' || mod === 'maintenance_classes');
-        show('class_id', mod === 'maintenance_categories');
+        show('scale_id', mod === 'maintenance_subscales' || mod === 'maintenance_categories' || mod === 'maintenance_classes' || mod === 'management_positions');
+        show('subscale_id', mod === 'maintenance_categories' || mod === 'maintenance_classes' || mod === 'management_positions');
+        show('class_id', mod === 'maintenance_categories' || mod === 'management_positions');
+        show('position_class_id', mod === 'management_positions');
+        show('category_id', mod === 'management_positions');
+        show('labor_category', mod === 'management_positions');
+        show('classification_group', mod === 'management_positions');
+        show('access_type_id', mod === 'management_positions');
+        show('access_system_id', mod === 'management_positions');
+        show('budgeted_amount', mod === 'management_positions');
+        show('is_offerable', mod === 'management_positions');
+        show('opo_year', mod === 'management_positions');
+        show('is_to_be_amortized', mod === 'management_positions');
+        show('is_internal_promotion', mod === 'management_positions');
+        show('created_at', mod === 'management_positions');
+        show('creation_file_reference', mod === 'management_positions');
+        show('call_for_applications_date', mod === 'management_positions');
+        show('deleted_at', mod === 'management_positions');
+        show('deletion_file_reference', mod === 'management_positions');
+        show('is_active', mod === 'management_positions');
+        show('legacy_person_id', mod === 'people');
+        show('last_name_1', mod === 'people');
+        show('last_name_2', mod === 'people');
+        show('first_name', mod === 'people');
+        show('birth_date', mod === 'people');
+        show('national_id_number', mod === 'people');
+        show('email', mod === 'people');
+        show('social_security_number', mod === 'people');
+        show('job_position_id', mod === 'people');
+        show('people_position_id', mod === 'people');
+        show('dedication', mod === 'people');
+        show('people_budgeted_amount', mod === 'people');
+        show('legal_relation_id', mod === 'people');
+        show('administrative_status_id', mod === 'people');
+        show('status_text', mod === 'people');
+        show('company_id', mod === 'people');
+        show('social_security_contribution_coefficient', mod === 'people');
+        show('productivity_bonus', mod === 'people');
+        show('legacy_social_security', mod === 'people');
+        show('hired_at', mod === 'people');
+        show('terminated_at', mod === 'people');
+        show('personal_grade', mod === 'people');
+        show('group_a1_previous_triennia', mod === 'people');
+        show('group_a1_current_year_percentage', mod === 'people');
+        show('group_a1_current_year_triennia', mod === 'people');
+        show('group_a2_previous_triennia', mod === 'people');
+        show('group_a2_current_year_percentage', mod === 'people');
+        show('group_a2_current_year_triennia', mod === 'people');
+        show('group_c1_previous_triennia', mod === 'people');
+        show('group_c1_current_year_percentage', mod === 'people');
+        show('group_c1_current_year_triennia', mod === 'people');
+        show('group_c2_previous_triennia', mod === 'people');
+        show('group_c2_current_year_percentage', mod === 'people');
+        show('group_c2_current_year_triennia', mod === 'people');
+        show('group_e_previous_triennia', mod === 'people');
+        show('group_e_current_year_percentage', mod === 'people');
+        show('group_e_current_year_triennia', mod === 'people');
+        show('people_seniority_block', mod === 'people');
+        show('subprogram_people', mod === 'people');
+        show('notes', mod === 'maintenance_subprograms' || mod === 'management_positions' || mod === 'people');
+        show('is_active', mod === 'management_positions' || mod === 'people');
         show('org_unit_level_1_id', mod === 'maintenance_organic_level_2');
         show('org_unit_level_2_id', mod === 'maintenance_organic_level_3');
         show('address', mod === 'maintenance_work_centers');
@@ -325,10 +924,68 @@
         show('general_specific_compensation_name', mod === 'maintenance_specific_compensation_general');
         show('decrease_amount', mod === 'maintenance_specific_compensation_general');
         show('decrease_amount_new', mod === 'maintenance_specific_compensation_general');
-        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general');
+        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general' && mod !== 'management_positions' && mod !== 'people');
         if (nameInput) {
             if (mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general') nameInput.removeAttribute('required');
             else nameInput.setAttribute('required', 'required');
+        }
+        if (mod === 'management_positions') {
+            setupCopyManagementPositionButton();
+            var posClassSel = document.querySelector('[data-field="position_class_id"]');
+            if (posClassSel) {
+                posClassSel.addEventListener('change', function () {
+                    syncManagementPositionClassFields();
+                    syncManagementPositionCategoryCascade(false);
+                });
+            }
+            var subSel = document.querySelector('[data-field="subscale_id"]');
+            if (subSel) {
+                subSel.addEventListener('change', function () {
+                    syncManagementPositionCategoryCascade(true);
+                });
+            }
+            var classSel = document.querySelector('[data-field="class_id"]');
+            if (classSel) {
+                classSel.addEventListener('change', function () {
+                    var catSel = document.querySelector('[data-field="category_id"]');
+                    if (catSel) catSel.value = '';
+                    syncManagementPositionCategoryCascade(false);
+                });
+            }
+            var deletedAtEl = document.querySelector('[data-field="deleted_at"]');
+            if (deletedAtEl) deletedAtEl.addEventListener('change', syncManagementPositionActive);
+            syncManagementPositionClassFields();
+            syncManagementPositionCategoryCascade(false);
+            syncManagementPositionActive();
+            toggleCopyManagementPositionButton();
+        }
+        if (mod === 'people') {
+            fillSelect($('#maintenance_job_position_id'), cfg().jobPositions || [], 'id', formatJobPosSelectLabel);
+            fillSelect($('#maintenance_people_position_id'), cfg().positionsForPeople || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+            fillSelect($('#maintenance_legal_relation_id'), cfg().legalRelations || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+            fillSelect($('#maintenance_administrative_status_id'), cfg().administrativeStatuses || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+            fillSelect($('#maintenance_company_id'), cfg().socialSecurityCompanies || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+            fillSelect($('#maintenance_personal_grade'), cfg().peoplePersonalGrades || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+            var legal = document.querySelector('[data-field="legal_relation_id"]');
+            if (legal && legal.getAttribute('data-people-legal-bound') !== '1') {
+                legal.setAttribute('data-people-legal-bound', '1');
+                legal.addEventListener('change', syncPeopleAdministrativeStatusByLegalRelation);
+            }
+            setupPeopleSeniorityFields();
+            var term = document.querySelector('[data-field="terminated_at"]');
+            if (term) term.addEventListener('change', syncPeopleActive);
+            var addSp = document.querySelector('[data-people-subprogram-add]');
+            if (addSp && addSp.getAttribute('data-people-subprogram-bound') !== '1') {
+                addSp.setAttribute('data-people-subprogram-bound', '1');
+                addSp.addEventListener('click', function () {
+                    var rows = peopleSubprogramGetRows();
+                    rows.push({ subprogram_id: '', dedication: '' });
+                    peopleSubprogramSetRows(rows, currentModalReadonly);
+                });
+            }
+            syncPeopleActive();
+            syncPeopleAdministrativeStatusByLegalRelation();
+            calculatePeopleSeniority();
         }
     }
     function fillSelect(sel, items, valKey, txtFn){
@@ -340,6 +997,7 @@
             o.textContent=txtFn(it);
             if (it.scale_id !== undefined) o.setAttribute('data-scale-id', String(it.scale_id));
             if (it.subscale_id !== undefined) o.setAttribute('data-subscale-id', String(it.subscale_id));
+            if (it.class_id !== undefined) o.setAttribute('data-class-id', String(it.class_id));
             sel.appendChild(o);
         });
     }
@@ -353,7 +1011,7 @@
             if(sub.selectedOptions[0] && sub.selectedOptions[0].hidden) sub.value='';
             return;
         }
-        if(mod !== 'maintenance_categories') return;
+        if(mod !== 'maintenance_categories' && mod !== 'management_positions') return;
         if(!cls) return;
         var ssid=sub.value;
         Array.prototype.forEach.call(sub.options,function(o){ if(!o.value) return; o.hidden = sid!=='' && o.getAttribute('data-scale-id')!==sid; });
@@ -361,9 +1019,17 @@
         ssid=sub.value;
         Array.prototype.forEach.call(cls.options,function(o){ if(!o.value) return; var okScale = sid==='' || o.getAttribute('data-scale-id')===sid; var okSub = ssid==='' || o.getAttribute('data-subscale-id')===ssid; o.hidden = !(okScale && okSub); });
         if(cls.selectedOptions[0] && cls.selectedOptions[0].hidden) cls.value='';
+        if(mod === 'management_positions') {
+            var cat = $('#maintenance_category_id');
+            if(!cat) return;
+            var cid = cls.value;
+            Array.prototype.forEach.call(cat.options,function(o){ if(!o.value) return; var okScale = sid==='' || o.getAttribute('data-scale-id')===sid; var okSub = ssid==='' || o.getAttribute('data-subscale-id')===ssid; var okClass = cid==='' || o.getAttribute('data-class-id')===cid; o.hidden = !(okScale && okSub && okClass); });
+            if(cat.selectedOptions[0] && cat.selectedOptions[0].hidden) cat.value='';
+        }
     }
     function reset(form){
         form.reset();
+        copyManagementPositionSourceId = '';
         $('[data-field="original_id"]',form).value='';
         clearErrors(form);
         fillSelect($('#maintenance_scale_id'), cfg().scales || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
@@ -371,6 +1037,11 @@
         if (module() !== 'maintenance_classes') {
             fillSelect($('#maintenance_class_id'), cfg().classes || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
         }
+        fillSelect($('#maintenance_category_id'), cfg().categories || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+        fillSelect($('#maintenance_position_class_id'), cfg().positionClasses || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+        fillSelect($('#maintenance_access_type_id'), cfg().accessTypes || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+        fillSelect($('#maintenance_access_system_id'), cfg().accessSystems || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+        loadSalaryGroups();
         fillSelect($('#maintenance_org_unit_level_1_id'), cfg().organicLevel1 || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
         fillSelect($('#maintenance_org_unit_level_2_id'), cfg().organicLevel2 || [], 'id', function(it){
             var sid = String(it.id);
@@ -393,6 +1064,18 @@
             var m2 = $('#maintenance_has_corporate_agreements', form);
             if (m1) m1.checked = false;
             if (m2) m2.checked = false;
+        }
+        if (module() === 'management_positions') {
+            syncManagementPositionClassFields();
+            syncManagementPositionCategoryCascade(false);
+            syncManagementPositionActive();
+            toggleCopyManagementPositionButton();
+        }
+        if (module() === 'people') {
+            peopleSubprogramSetRows([], false);
+            syncPeopleActive();
+            syncPeopleAdministrativeStatusByLegalRelation();
+            calculatePeopleSeniority();
         }
         applyCascades();
     }
@@ -419,29 +1102,54 @@
             if (!(el instanceof HTMLElement)) return;
             if (el.matches('[type="hidden"]')) return;
             if (el.matches('[data-maintenance-modal-close]') || el.matches('[data-maintenance-modal-cancel]') || el.matches('[data-maintenance-modal-submit]')) return;
+            if (currentModalReadonly) {
+                if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+                    el.disabled = true;
+                }
+                if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+                    el.readOnly = true;
+                }
+                return;
+            }
             if (el instanceof HTMLSelectElement) {
-                el.disabled = currentModalReadonly;
+                el.disabled = false;
                 return;
             }
             if (el instanceof HTMLTextAreaElement) {
-                el.readOnly = currentModalReadonly;
+                el.readOnly = false;
                 el.disabled = false;
                 return;
             }
             if (el instanceof HTMLInputElement) {
                 if (el.type === 'checkbox' || el.type === 'radio') {
-                    el.disabled = currentModalReadonly;
+                    el.disabled = false;
                 } else {
-                    el.readOnly = currentModalReadonly;
+                    el.readOnly = false;
                     el.disabled = false;
                 }
             }
         });
+        if (module() === 'management_positions') {
+            var activeEl = f.querySelector('[data-field="is_active"]');
+            if (activeEl) activeEl.disabled = true;
+            if (!currentModalReadonly) syncManagementPositionClassFields();
+            syncManagementPositionActive();
+            toggleCopyManagementPositionButton();
+        }
+        if (module() === 'people') {
+            syncPeopleActive();
+            peopleSubprogramSetRows(peopleSubprogramGetRows(), currentModalReadonly);
+            setPeopleSubprogramsReadOnly(currentModalReadonly);
+            syncPeopleAdministrativeStatusByLegalRelation();
+            setPeopleSeniorityComputedReadOnly();
+        }
     }
     function setMode(create, readOnly){
+        currentMaintenanceModalMode = readOnly ? 'view' : (create ? 'new' : 'edit');
         var h=$('[data-maintenance-modal-heading]'), s=$('[data-maintenance-modal-subheading]');
         if(h) h.textContent=readOnly?'Consultar registre':(create?'Nou registre':'Actualització');
         if(s) s.textContent=readOnly?'Consulta en mode només lectura':(create?'Introdueix les dades del nou registre':'Modifica la informació del registre');
+        if (module() === 'management_positions') toggleCopyManagementPositionButton();
     }
     function openCreate(){ if(!cfg().canCreate || !cfg().implemented) return; var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(true,false); setReadOnlyMode(false,f); if(module()==='maintenance_programs') updateProgramComputedCode(); if(module()==='maintenance_subprograms') updateSubprogramComputedCode(); openModal(); }
     function openRecord(id, readOnly){
@@ -633,6 +1341,94 @@
                 $('[data-field="decrease_amount_new"]', f).value = formatMoneyForInput(r.decrease_amount_new);
                 setReadOnlyMode(!!readOnly, f);
                 applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'management_positions') {
+                $('[data-field="original_id"]', f).value = String(r.position_id != null ? r.position_id : '');
+                $('[data-field="id"]', f).value = formatPositionCode4(r.position_id);
+                $('[data-field="position_name"]', f).value = String(r.position_name || '');
+                $('[data-field="position_class_id"]', f).value = String(r.position_class_id || '');
+                $('[data-field="scale_id"]', f).value = String(r.scale_id || '');
+                $('[data-field="subscale_id"]', f).value = String(r.subscale_id || '');
+                $('[data-field="class_id"]', f).value = String(r.class_id || '');
+                $('[data-field="category_id"]', f).value = String(r.category_id || '');
+                $('[data-field="labor_category"]', f).value = String(r.labor_category || '');
+                $('[data-field="classification_group"]', f).value = String(r.classification_group || '');
+                $('[data-field="access_type_id"]', f).value = String(r.access_type_id || '');
+                $('[data-field="access_system_id"]', f).value = String(r.access_system_id || '');
+                $('[data-field="budgeted_amount"]', f).value = formatVisualPercentFromFraction(r.budgeted_amount);
+                $('[data-field="opo_year"]', f).value = String(r.opo_year || '');
+                $('[data-field="created_at"]', f).value = String(r.created_at || '');
+                $('[data-field="creation_file_reference"]', f).value = String(r.creation_file_reference || '');
+                $('[data-field="call_for_applications_date"]', f).value = String(r.call_for_applications_date || '');
+                $('[data-field="deleted_at"]', f).value = String(r.deleted_at || '');
+                $('[data-field="deletion_file_reference"]', f).value = String(r.deletion_file_reference || '');
+                $('[data-field="notes"]', f).value = String(r.notes || '');
+                var b1 = $('[data-field="is_offerable"]', f); if (b1) b1.checked = String(r.is_offerable || '0') === '1';
+                var b2 = $('[data-field="is_to_be_amortized"]', f); if (b2) b2.checked = String(r.is_to_be_amortized || '0') === '1';
+                var b3 = $('[data-field="is_internal_promotion"]', f); if (b3) b3.checked = String(r.is_internal_promotion || '0') === '1';
+                syncManagementPositionClassFields();
+                syncManagementPositionCategoryCascade(false);
+                syncManagementPositionActive();
+                applyCascades();
+                setReadOnlyMode(!!readOnly, f);
+                toggleCopyManagementPositionButton();
+                openModal();
+                return;
+            }
+            if (module() === 'people') {
+                $('[data-field="original_id"]', f).value = String(r.person_id != null ? r.person_id : '');
+                $('[data-field="id"]', f).value = formatPeopleCode5(r.person_id);
+                $('[data-field="legacy_person_id"]', f).value = String(r.legacy_person_id || '');
+                $('[data-field="last_name_1"]', f).value = String(r.last_name_1 || '');
+                $('[data-field="last_name_2"]', f).value = String(r.last_name_2 || '');
+                $('[data-field="first_name"]', f).value = String(r.first_name || '');
+                $('[data-field="birth_date"]', f).value = String(r.birth_date || '');
+                $('[data-field="national_id_number"]', f).value = String(r.national_id_number || '');
+                $('[data-field="email"]', f).value = String(r.email || '');
+                $('[data-field="social_security_number"]', f).value = String(r.social_security_number || '');
+                $('[data-field="job_position_id"]', f).value = String(r.job_position_id || '');
+                $('[data-field="people_position_id"]', f).value = String(r.position_id || '');
+                $('[data-field="dedication"]', f).value = formatFractionPercent(r.dedication, 2);
+                $('[data-field="people_budgeted_amount"]', f).value = formatFractionPercent(r.budgeted_amount, 2);
+                $('[data-field="legal_relation_id"]', f).value = String(r.legal_relation_id || '');
+                $('[data-field="administrative_status_id"]', f).value = String(r.administrative_status_id || '');
+                $('[data-field="status_text"]', f).value = String(r.status_text || '');
+                $('[data-field="company_id"]', f).value = String(r.company_id || '');
+                $('[data-field="social_security_contribution_coefficient"]', f).value = formatFractionPercent(r.social_security_contribution_coefficient, 4);
+                $('[data-field="productivity_bonus"]', f).value = formatMoneyForInput(r.productivity_bonus);
+                $('[data-field="legacy_social_security"]', f).value = formatMoneyForInput(r.legacy_social_security);
+                $('[data-field="hired_at"]', f).value = String(r.hired_at || '');
+                $('[data-field="terminated_at"]', f).value = String(r.terminated_at || '');
+                $('[data-field="personal_grade"]', f).value = String(r.personal_grade || '');
+                $('[data-field="group_a1_previous_triennia"]', f).value = r.group_a1_previous_triennia == null ? '' : String(r.group_a1_previous_triennia);
+                $('[data-field="group_a1_current_year_percentage"]', f).value = r.group_a1_current_year_percentage == null ? '' : String(r.group_a1_current_year_percentage);
+                $('[data-field="group_a1_current_year_triennia"]', f).value = r.group_a1_current_year_triennia == null ? '' : String(r.group_a1_current_year_triennia);
+                $('[data-field="group_a2_previous_triennia"]', f).value = r.group_a2_previous_triennia == null ? '' : String(r.group_a2_previous_triennia);
+                $('[data-field="group_a2_current_year_percentage"]', f).value = r.group_a2_current_year_percentage == null ? '' : String(r.group_a2_current_year_percentage);
+                $('[data-field="group_a2_current_year_triennia"]', f).value = r.group_a2_current_year_triennia == null ? '' : String(r.group_a2_current_year_triennia);
+                $('[data-field="group_c1_previous_triennia"]', f).value = r.group_c1_previous_triennia == null ? '' : String(r.group_c1_previous_triennia);
+                $('[data-field="group_c1_current_year_percentage"]', f).value = r.group_c1_current_year_percentage == null ? '' : String(r.group_c1_current_year_percentage);
+                $('[data-field="group_c1_current_year_triennia"]', f).value = r.group_c1_current_year_triennia == null ? '' : String(r.group_c1_current_year_triennia);
+                $('[data-field="group_c2_previous_triennia"]', f).value = r.group_c2_previous_triennia == null ? '' : String(r.group_c2_previous_triennia);
+                $('[data-field="group_c2_current_year_percentage"]', f).value = r.group_c2_current_year_percentage == null ? '' : String(r.group_c2_current_year_percentage);
+                $('[data-field="group_c2_current_year_triennia"]', f).value = r.group_c2_current_year_triennia == null ? '' : String(r.group_c2_current_year_triennia);
+                $('[data-field="group_e_previous_triennia"]', f).value = r.group_e_previous_triennia == null ? '' : String(r.group_e_previous_triennia);
+                $('[data-field="group_e_current_year_percentage"]', f).value = r.group_e_current_year_percentage == null ? '' : String(r.group_e_current_year_percentage);
+                $('[data-field="group_e_current_year_triennia"]', f).value = r.group_e_current_year_triennia == null ? '' : String(r.group_e_current_year_triennia);
+                var dbSeniority = f.querySelector('[data-people-seniority-db="seniority_amount"]');
+                var dbAnnual = f.querySelector('[data-people-seniority-db="annual_budgeted_seniority"]');
+                if (dbSeniority) dbSeniority.value = formatMoneyForInput(r.seniority_amount);
+                if (dbAnnual) dbAnnual.value = formatMoneyForInput(r.annual_budgeted_seniority);
+                $('[data-field="notes"]', f).value = String(r.notes || '');
+                var act = $('[data-field="is_active"]', f); if (act) act.checked = String(r.is_active || '0') === '1';
+                peopleSubprogramSetRows(Array.isArray(r.subprogram_people) ? r.subprogram_people : [], !!readOnly);
+                syncPeopleActive();
+                setReadOnlyMode(!!readOnly, f);
+                setPeopleSubprogramsReadOnly(!!readOnly);
+                syncPeopleAdministrativeStatusByLegalRelation();
+                calculatePeopleSeniority();
                 openModal();
                 return;
             }
@@ -955,11 +1751,69 @@
                 return;
             }
         }
+        if (module() === 'management_positions') {
+            var pid2 = (fd.get('id') || '').toString().trim();
+            var pname2 = (fd.get('position_name') || '').toString().trim();
+            var pclass2 = (fd.get('position_class_id') || '').toString().trim();
+            if (!/^\d{1,4}$/.test(pid2)) { showErrors(f, { id: 'El codi és obligatori, numèric i de màxim 4 dígits.' }); return; }
+            if (pname2 === '') { showErrors(f, { position_name: 'La denominació és obligatòria.' }); return; }
+            if (pclass2 === '') { showErrors(f, { position_class_id: 'La classe de plaça és obligatòria.' }); return; }
+            if (pclass2 === '1') {
+                if ((fd.get('scale_id') || '').toString().trim() === '') { showErrors(f, { scale_id: 'L’escala és obligatòria.' }); return; }
+                if ((fd.get('subscale_id') || '').toString().trim() === '') { showErrors(f, { subscale_id: 'La subescala és obligatòria.' }); return; }
+                if ((fd.get('class_id') || '').toString().trim() === '') { showErrors(f, { class_id: 'La classe és obligatòria.' }); return; }
+                if ((fd.get('category_id') || '').toString().trim() === '') { showErrors(f, { category_id: 'La categoria és obligatòria.' }); return; }
+            } else if (pclass2 === '2' && (fd.get('labor_category') || '').toString().trim() === '') {
+                showErrors(f, { labor_category: 'La categoria laboral és obligatòria.' }); return;
+            }
+            var delAt = (fd.get('deleted_at') || '').toString().trim();
+            if (delAt !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(delAt) && !/^\d{2}\/\d{2}\/\d{4}$/.test(delAt)) { showErrors(f, { deleted_at: 'La data baixa no és vàlida.' }); return; }
+            var bp = normalizeVisualPercentInput((fd.get('budgeted_amount') || '').toString());
+            if (bp === '') { showErrors(f, { budgeted_amount: 'El camp Pressupostat és obligatori.' }); return; }
+            if (bp === null) { showErrors(f, { budgeted_amount: 'Percentatge invàlid (màxim 2 decimals).' }); return; }
+            if (parseFloat(bp) < 0 || parseFloat(bp) > 100) { showErrors(f, { budgeted_amount: 'El percentatge ha d\'estar entre 0 i 100.' }); return; }
+        }
+        if (module() === 'people') {
+            var pplId = (fd.get('id') || '').toString().trim();
+            if (!/^\d{1,5}$/.test(pplId)) { showErrors(f, { id: 'El codi és obligatori, numèric i de màxim 5 dígits.' }); return; }
+            if ((fd.get('last_name_1') || '').toString().trim() === '') { showErrors(f, { last_name_1: 'El primer cognom és obligatori.' }); return; }
+            if ((fd.get('first_name') || '').toString().trim() === '') { showErrors(f, { first_name: 'El nom és obligatori.' }); return; }
+            var em = (fd.get('email') || '').toString().trim();
+            if (em !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { showErrors(f, { email: 'L\'adreça electrònica no és vàlida.' }); return; }
+            var d1 = parseFractionPercent((fd.get('dedication') || '').toString());
+            if (!d1.ok) { showErrors(f, { dedication: d1.error }); return; }
+            var d2 = parseFractionPercent((fd.get('budgeted_amount') || '').toString());
+            if (!d2.ok) { showErrors(f, { people_budgeted_amount: d2.error }); return; }
+            var d3 = parseFractionPercent((fd.get('social_security_contribution_coefficient') || '').toString());
+            if (!d3.ok) { showErrors(f, { social_security_contribution_coefficient: d3.error }); return; }
+            var triPctKeys = ['group_a1_current_year_percentage','group_a2_current_year_percentage','group_c1_current_year_percentage','group_c2_current_year_percentage','group_e_current_year_percentage'];
+            triPctKeys.forEach(function (k) {
+                var val = parsePeopleNumeric(fd.get(k));
+                fd.set(k, val === null ? '' : String(val));
+                var triKey = k.replace('_current_year_percentage', '_current_year_triennia');
+                fd.set(triKey, (val !== null && val > 0) ? '1' : '');
+            });
+            var prodNorm = normalizeMoneyInput((fd.get('productivity_bonus') || '').toString());
+            if (prodNorm === null) { showErrors(f, { productivity_bonus: 'Import invàlid (màxim 2 decimals).' }); return; }
+            var compNorm = normalizeMoneyInput((fd.get('legacy_social_security') || '').toString());
+            if (compNorm === null) { showErrors(f, { legacy_social_security: 'Import invàlid (màxim 2 decimals).' }); return; }
+            fd.set('productivity_bonus', prodNorm || '');
+            fd.set('legacy_social_security', compNorm || '');
+            var subRows = peopleSubprogramGetRows();
+            for (var spi = 0; spi < subRows.length; spi += 1) {
+                var rr = subRows[spi];
+                if (rr.subprogram_id === '' && rr.dedication === '') continue;
+                if (rr.subprogram_id === '') { showErrors(f, { subprogram_people: 'Cal indicar subprograma a totes les files.' }); return; }
+                var pd = parseVisualPercent100(rr.dedication);
+                if (!pd.ok || pd.value === null) { showErrors(f, { subprogram_people: 'La dedicació dels subprogrames ha d\'estar entre 0 i 100.' }); return; }
+            }
+        }
         var payload={
             action:'save', module:module(), csrf_token:csrf,
             original_id:(fd.get('original_id')||'').toString(),
             id:(fd.get('id')||'').toString(),
-            name:(fd.get('name')||'').toString(),
+            name:(module()==='management_positions' ? (fd.get('position_name')||'').toString() : (module()==='people' ? (fd.get('first_name')||'').toString() : (fd.get('name')||'').toString())),
+            position_name:(fd.get('position_name')||'').toString(),
             sort_order:(fd.get('sort_order')||'').toString(),
             short_name:(fd.get('short_name')||'').toString(),
             full_name:(fd.get('full_name')||'').toString(),
@@ -1020,6 +1874,59 @@
             ,general_specific_compensation_name:(fd.get('general_specific_compensation_name')||'').toString()
             ,decrease_amount:(fd.get('decrease_amount')||'').toString()
             ,decrease_amount_new:(fd.get('decrease_amount_new')||'').toString()
+            ,position_class_id:(fd.get('position_class_id')||'').toString()
+            ,category_id:(fd.get('category_id')||'').toString()
+            ,labor_category:(fd.get('labor_category')||'').toString()
+            ,classification_group:(fd.get('classification_group')||'').toString()
+            ,access_type_id:(fd.get('access_type_id')||'').toString()
+            ,access_system_id:(fd.get('access_system_id')||'').toString()
+            ,budgeted_amount:(fd.get('budgeted_amount')||'').toString()
+            ,is_offerable:(function(){ var el=document.querySelector('[data-field="is_offerable"]'); return el && el.checked ? 1 : 0; })()
+            ,opo_year:(fd.get('opo_year')||'').toString()
+            ,is_to_be_amortized:(function(){ var el=document.querySelector('[data-field="is_to_be_amortized"]'); return el && el.checked ? 1 : 0; })()
+            ,is_internal_promotion:(function(){ var el=document.querySelector('[data-field="is_internal_promotion"]'); return el && el.checked ? 1 : 0; })()
+            ,created_at:(fd.get('created_at')||'').toString()
+            ,creation_file_reference:(fd.get('creation_file_reference')||'').toString()
+            ,call_for_applications_date:(fd.get('call_for_applications_date')||'').toString()
+            ,deleted_at:(fd.get('deleted_at')||'').toString()
+            ,deletion_file_reference:(fd.get('deletion_file_reference')||'').toString()
+            ,legacy_person_id:(fd.get('legacy_person_id')||'').toString()
+            ,last_name_1:(fd.get('last_name_1')||'').toString()
+            ,last_name_2:(fd.get('last_name_2')||'').toString()
+            ,first_name:(fd.get('first_name')||'').toString()
+            ,birth_date:(fd.get('birth_date')||'').toString()
+            ,national_id_number:(fd.get('national_id_number')||'').toString()
+            ,email:(fd.get('email')||'').toString()
+            ,social_security_number:(fd.get('social_security_number')||'').toString()
+            ,job_position_id:(fd.get('job_position_id')||'').toString()
+            ,position_id:(fd.get('people_position_id')||'').toString()
+            ,dedication:(fd.get('dedication')||'').toString()
+            ,legal_relation_id:(fd.get('legal_relation_id')||'').toString()
+            ,administrative_status_id:(fd.get('administrative_status_id')||'').toString()
+            ,status_text:(fd.get('status_text')||'').toString()
+            ,company_id:(fd.get('company_id')||'').toString()
+            ,social_security_contribution_coefficient:(fd.get('social_security_contribution_coefficient')||'').toString()
+            ,productivity_bonus:(fd.get('productivity_bonus')||'').toString()
+            ,legacy_social_security:(fd.get('legacy_social_security')||'').toString()
+            ,hired_at:(fd.get('hired_at')||'').toString()
+            ,terminated_at:(fd.get('terminated_at')||'').toString()
+            ,personal_grade:(fd.get('personal_grade')||'').toString()
+            ,group_a1_previous_triennia:(fd.get('group_a1_previous_triennia')||'').toString()
+            ,group_a1_current_year_percentage:(fd.get('group_a1_current_year_percentage')||'').toString()
+            ,group_a1_current_year_triennia:(fd.get('group_a1_current_year_triennia')||'').toString()
+            ,group_a2_previous_triennia:(fd.get('group_a2_previous_triennia')||'').toString()
+            ,group_a2_current_year_percentage:(fd.get('group_a2_current_year_percentage')||'').toString()
+            ,group_a2_current_year_triennia:(fd.get('group_a2_current_year_triennia')||'').toString()
+            ,group_c1_previous_triennia:(fd.get('group_c1_previous_triennia')||'').toString()
+            ,group_c1_current_year_percentage:(fd.get('group_c1_current_year_percentage')||'').toString()
+            ,group_c1_current_year_triennia:(fd.get('group_c1_current_year_triennia')||'').toString()
+            ,group_c2_previous_triennia:(fd.get('group_c2_previous_triennia')||'').toString()
+            ,group_c2_current_year_percentage:(fd.get('group_c2_current_year_percentage')||'').toString()
+            ,group_c2_current_year_triennia:(fd.get('group_c2_current_year_triennia')||'').toString()
+            ,group_e_previous_triennia:(fd.get('group_e_previous_triennia')||'').toString()
+            ,group_e_current_year_percentage:(fd.get('group_e_current_year_percentage')||'').toString()
+            ,group_e_current_year_triennia:(fd.get('group_e_current_year_triennia')||'').toString()
+            ,subprogram_people:peopleSubprogramGetRows()
         };
         fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)})
             .then(function(r){return r.json();})
@@ -1174,6 +2081,14 @@
         if (norm === '') return { kind: 'empty' };
         return { kind: 'amount', norm: norm };
     }
+    function formatPtbEditableValue(raw) {
+        var parsed = parsePtbClientInput(raw);
+        if (parsed.kind === 'empty') return '';
+        if (parsed.kind !== 'amount') return String(raw || '').trim();
+        var n = parseFloat(parsed.norm);
+        if (!isFinite(n)) return String(raw || '').trim();
+        return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    }
     function commitPtbInput(inp) {
         if (!inp || inp.getAttribute('data-ptb-saving') === '1') return;
         var snap = inp.getAttribute('data-ptb-snapshot');
@@ -1208,9 +2123,9 @@
             .then(function (d) {
                 inp.removeAttribute('data-ptb-saving');
                 if (d.ok) {
-                    var vi = d.value_for_input !== undefined && d.value_for_input !== null ? String(d.value_for_input) : '';
-                    inp.value = vi;
-                    inp.setAttribute('data-ptb-snapshot', vi);
+                    var vd = d.value_display !== undefined && d.value_display !== null ? String(d.value_display) : '';
+                    inp.value = vd;
+                    inp.setAttribute('data-ptb-snapshot', formatPtbEditableValue(vd));
                     showPtbHint(inp, 'Desat.', 'ok');
                     return;
                 }
@@ -1228,7 +2143,9 @@
         document.body.addEventListener('focusin', function (e) {
             var t = e.target;
             if (!t || !t.matches || !t.matches('[data-ptb-new-input]')) return;
-            t.setAttribute('data-ptb-snapshot', t.value);
+            var editVal = formatPtbEditableValue(t.value);
+            t.value = editVal;
+            t.setAttribute('data-ptb-snapshot', editVal);
         });
         document.body.addEventListener('keydown', function (e) {
             var inp = e.target;

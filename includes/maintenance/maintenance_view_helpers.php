@@ -6,15 +6,15 @@ declare(strict_types=1);
  *
  * @return array<string, string>
  */
-function maintenance_view_filter_query_base(string $module, string $q, int $perPage, string $sortBy, string $sortDir): array
+function maintenance_view_filter_query_base(string $module, string $q, int $perPage, string $sortBy, string $sortDir, array $extra = []): array
 {
-    return [
+    return array_merge([
         'module' => $module,
         'q' => $q,
         'per_page' => (string) $perPage,
         'sort_by' => $sortBy,
         'sort_dir' => $sortDir,
-    ];
+    ], $extra);
 }
 
 function maintenance_view_query_url(array $base, array $overrides): string

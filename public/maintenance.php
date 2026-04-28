@@ -21,6 +21,28 @@ if ($year === null) {
 $db = db();
 
 $q = get_string('q');
+$managementPositionsFilters = [
+    'f_position_id' => get_string('f_position_id'),
+    'f_position_name' => get_string('f_position_name'),
+    'f_position_class_id' => get_string('f_position_class_id'),
+    'f_scale_id' => get_string('f_scale_id'),
+    'f_subscale_id' => get_string('f_subscale_id'),
+    'f_class_id' => get_string('f_class_id'),
+    'f_category_id' => get_string('f_category_id'),
+    'f_is_active' => get_string('f_is_active'),
+];
+$peopleFilters = [
+    'f_person_id' => get_string('f_person_id'),
+    'f_last_name_1' => get_string('f_last_name_1'),
+    'f_last_name_2' => get_string('f_last_name_2'),
+    'f_first_name' => get_string('f_first_name'),
+    'f_national_id_number' => get_string('f_national_id_number'),
+    'f_email' => get_string('f_email'),
+    'f_job_position_id' => get_string('f_job_position_id'),
+    'f_position_id' => get_string('f_position_id'),
+    'f_legal_relation_id' => get_string('f_legal_relation_id'),
+    'f_is_active' => get_string('f_is_active'),
+];
 $sort = maintenance_sort_normalize($module, get_string('sort_by'), get_string('sort_dir'));
 $perPage = (int) get_string('per_page');
 if ($perPage < 1) {
@@ -36,18 +58,30 @@ $total = 0;
 $totalPages = 1;
 $offset = 0;
 if ($config['implemented'] ?? false) {
-    $total = maintenance_count($db, $module, $year, $q);
+    $activeFilters = $module === 'management_positions' ? $managementPositionsFilters : ($module === 'people' ? $peopleFilters : []);
+    $total = maintenance_count($db, $module, $year, $q, $activeFilters);
     $pn = maintenance_normalize_pagination($page, $perPage, $total);
     $page = $pn['page'];
     $perPage = $pn['per_page'];
     $totalPages = $pn['total_pages'];
     $offset = $pn['offset'];
-    $rows = maintenance_list($db, $module, $year, $q, $sort['by'], $sort['dir'], $perPage, $offset);
+    $rows = maintenance_list($db, $module, $year, $q, $sort['by'], $sort['dir'], $perPage, $offset, $activeFilters);
 }
 
 $scales = maintenance_scales_options($db, $year);
 $subscales = maintenance_subscales_options($db, $year);
 $classes = maintenance_classes_options($db, $year);
+$positionClasses = $db->query('SELECT position_class_id AS id, position_class_name AS name FROM position_classes WHERE catalog_year = ' . (int) $year . ' ORDER BY position_class_id ASC')->fetchAll() ?: [];
+$categories = $db->query('SELECT category_id AS id, class_id, subscale_id, scale_id, category_name AS name FROM civil_service_categories WHERE catalog_year = ' . (int) $year . ' ORDER BY scale_id ASC, subscale_id ASC, class_id ASC, category_id ASC')->fetchAll() ?: [];
+$accessTypes = $db->query('SELECT access_type_id AS id, access_type_name AS name FROM access_types WHERE catalog_year = ' . (int) $year . ' ORDER BY access_type_id ASC')->fetchAll() ?: [];
+$accessSystems = $db->query('SELECT access_system_id AS id, access_system_name AS name FROM access_systems WHERE catalog_year = ' . (int) $year . ' ORDER BY access_system_id ASC')->fetchAll() ?: [];
+$legalRelations = $db->query('SELECT legal_relation_id AS id, legal_relation_name AS name FROM legal_relations WHERE catalog_year = ' . (int) $year . ' ORDER BY legal_relation_id ASC')->fetchAll() ?: [];
+$administrativeStatuses = $db->query('SELECT administrative_status_id AS id, administrative_status_name AS name FROM administrative_statuses WHERE catalog_year = ' . (int) $year . ' ORDER BY administrative_status_id ASC')->fetchAll() ?: [];
+$positionsForPeople = $db->query('SELECT position_id AS id, position_name AS name FROM positions WHERE catalog_year = ' . (int) $year . ' ORDER BY position_id ASC')->fetchAll() ?: [];
+$subprogramsForPeople = $db->query('SELECT subprogram_id AS id, subprogram_name AS name FROM subprograms WHERE catalog_year = ' . (int) $year . ' ORDER BY subprogram_id ASC')->fetchAll() ?: [];
+$socialSecurityCompanies = $db->query('SELECT company_id AS id, company_description AS name FROM social_security_companies WHERE catalog_year = ' . (int) $year . ' ORDER BY company_id ASC')->fetchAll() ?: [];
+$peoplePersonalGrades = maintenance_people_personal_grade_options($db, $year);
+$peopleSeniorityPayByGroup = maintenance_people_seniority_pay_by_group($db, $year);
 $organicLevel1 = maintenance_org_units_level_1_options($db, $year);
 $organicLevel2 = maintenance_org_units_level_2_options($db, $year);
 $jobPositions = maintenance_job_positions_options($db, $year);
@@ -70,11 +104,24 @@ $maintenancePageInlineConfig = [
     'scales' => $scales,
     'subscales' => $subscales,
     'classes' => $classes,
+    'categories' => $categories,
+    'positionClasses' => $positionClasses,
+    'accessTypes' => $accessTypes,
+    'accessSystems' => $accessSystems,
+    'legalRelations' => $legalRelations,
+    'administrativeStatuses' => $administrativeStatuses,
+    'positionsForPeople' => $positionsForPeople,
+    'subprogramsForPeople' => $subprogramsForPeople,
+    'socialSecurityCompanies' => $socialSecurityCompanies,
+    'peoplePersonalGrades' => $peoplePersonalGrades,
+    'peopleSeniorityPayByGroup' => $peopleSeniorityPayByGroup,
     'organicLevel1' => $organicLevel1,
     'organicLevel2' => $organicLevel2,
     'jobPositions' => $jobPositions,
     'programsForSelect' => $programsForSelect,
     'jobPositionsCm' => $jobPositionsCm,
+    'managementPositionsFilters' => management_positions_normalize_filters($managementPositionsFilters),
+    'peopleFilters' => maintenance_people_normalize_filters($peopleFilters),
 ];
 
 require APP_ROOT . '/includes/header.php';

@@ -251,6 +251,8 @@ function maintenance_list_sort_keys(string $module): array
         'maintenance_specific_compensation_special_prices' => ['special_specific_compensation_id', 'special_specific_compensation_name', 'amount', 'amount_new'],
         'maintenance_specific_compensation_general' => ['general_specific_compensation_id', 'general_specific_compensation_name', 'amount', 'decrease_amount', 'amount_new', 'decrease_amount_new'],
         'maintenance_personal_transitory_bonus' => ['last_name_1', 'last_name_2', 'first_name', 'personal_transitory_bonus', 'personal_transitory_bonus_new'],
+        'people' => ['person_id', 'last_name_1', 'last_name_2', 'first_name', 'national_id_number', 'email', 'job_position_id', 'position_id', 'legal_relation_name', 'is_active'],
+        'management_positions' => ['position_id', 'position_name', 'position_class_name', 'scale_name', 'subscale_name', 'class_name', 'category_name', 'is_active'],
         'maintenance_subprograms' => [
             'subprogram_program_id', 'subprogram_program_name', 'subprogram_number', 'subprogram_code', 'subprogram_name',
             'technical_manager_code', 'technical_job_title',
@@ -274,7 +276,7 @@ function maintenance_list_sort_keys(string $module): array
  */
 function maintenance_table_columns(string $module, bool $implemented): array
 {
-    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'maintenance_subprograms'], true);
+    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'maintenance_subprograms'], true);
 
     if ($module === 'maintenance_scales') {
         return [
@@ -486,6 +488,32 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'personal_transitory_bonus_new', 'label' => 'CPT incrementat', 'sortable' => $sortList, 'cell' => ['type' => 'currency_eur_2', 'field' => 'personal_transitory_bonus_new', 'align' => 'right', 'class' => 'maintenance-ptb-col--new', 'header_class' => 'maintenance-ptb-col--new']],
         ];
     }
+    if ($module === 'people') {
+        return [
+            ['sort_key' => 'person_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'padded_id', 'field' => 'person_id', 'pad' => 5, 'strong' => true]],
+            ['sort_key' => 'last_name_1', 'label' => '1r Cognom', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'last_name_1']],
+            ['sort_key' => 'last_name_2', 'label' => '2n Cognom', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'last_name_2']],
+            ['sort_key' => 'first_name', 'label' => 'Nom', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'first_name']],
+            ['sort_key' => 'national_id_number', 'label' => 'DNI', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'national_id_number']],
+            ['sort_key' => 'email', 'label' => 'Email', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'email']],
+            ['sort_key' => 'job_position_id', 'label' => 'Lloc de treball', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'job_position_name']],
+            ['sort_key' => 'position_id', 'label' => 'Plaça', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'position_name']],
+            ['sort_key' => 'legal_relation_name', 'label' => 'Relació jurídica', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'legal_relation_name']],
+            ['sort_key' => 'is_active', 'label' => 'Activa', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center']],
+        ];
+    }
+    if ($module === 'management_positions') {
+        return [
+            ['sort_key' => 'position_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'padded_id', 'field' => 'position_id', 'pad' => 4, 'strong' => true]],
+            ['sort_key' => 'position_name', 'label' => 'Denominació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'position_name']],
+            ['sort_key' => 'position_class_name', 'label' => 'Classe de plaça', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'position_class_name']],
+            ['sort_key' => 'scale_name', 'label' => 'Escala', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'scale_name']],
+            ['sort_key' => 'subscale_name', 'label' => 'Subescala', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'subscale_name']],
+            ['sort_key' => 'class_name', 'label' => 'Classe', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'class_name']],
+            ['sort_key' => 'category_name', 'label' => 'Categoria', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'category_name']],
+            ['sort_key' => 'is_active', 'label' => 'Activa', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center']],
+        ];
+    }
     if ($module === 'maintenance_subprograms') {
         $subCompact = 'table-col--maint-sub-compact';
 
@@ -537,6 +565,8 @@ function maintenance_default_sort_key(string $module): string
         'maintenance_specific_compensation_special_prices' => 'special_specific_compensation_id',
         'maintenance_specific_compensation_general' => 'general_specific_compensation_id',
         'maintenance_personal_transitory_bonus' => 'last_name_1',
+        'people' => 'person_id',
+        'management_positions' => 'position_id',
         'maintenance_subprograms' => 'subprogram_program_id',
         default => 'id',
     };
@@ -654,6 +684,14 @@ function maintenance_sort_key_legacy_map(string $module): array
         ],
         'maintenance_personal_transitory_bonus' => [
             'name' => 'last_name_1',
+        ],
+        'people' => [
+            'id' => 'person_id',
+            'name' => 'last_name_1',
+        ],
+        'management_positions' => [
+            'id' => 'position_id',
+            'name' => 'position_name',
         ],
         'maintenance_subprograms' => [
             'id' => 'subprogram_code',
@@ -919,6 +957,24 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
     if ($module === 'maintenance_specific_compensation_general') {
         return 't.' . $field;
     }
+    if ($module === 'management_positions') {
+        return match ($field) {
+            'position_class_name' => 'pc.position_class_name',
+            'scale_name' => 's.scale_name',
+            'subscale_name' => 'ss.subscale_name',
+            'class_name' => 'c.class_name',
+            'category_name' => 'cat.category_name',
+            default => 't.' . $field,
+        };
+    }
+    if ($module === 'people') {
+        return match ($field) {
+            'job_position_name' => 'jp.job_title',
+            'position_name' => 'pos.position_name',
+            'legal_relation_name' => 'lr.legal_relation_name',
+            default => 'p.' . $field,
+        };
+    }
 
     return null;
 }
@@ -930,7 +986,7 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
  */
 function maintenance_search_specs_from_columns(string $module): array
 {
-    if (!in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general'], true)) {
+    if (!in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'people', 'management_positions'], true)) {
         return [];
     }
     $cols = maintenance_table_columns($module, true);
@@ -1402,6 +1458,85 @@ function maintenance_personal_transitory_bonus_list_q_search_clause(string $q): 
 }
 
 /**
+ * @return array{sql:string, params:array<string, string>}
+ */
+function management_positions_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    $n0 = 'mq_mp_' . $i++;
+    $n1 = 'mq_mp_' . $i++;
+    $parts[] = '(CAST(t.position_id AS CHAR) LIKE :' . $n0 . ' OR LPAD(CAST(t.position_id AS CHAR), 4, \'0\') LIKE :' . $n1 . ')';
+    $params[$n0] = $qLike;
+    $params[$n1] = $qLike;
+    foreach ([
+        't.position_name',
+        'pc.position_class_name',
+        's.scale_name',
+        'ss.subscale_name',
+        'c.class_name',
+        'cat.category_name',
+        't.labor_category',
+        't.classification_group',
+        't.creation_file_reference',
+        't.deletion_file_reference',
+        't.notes',
+    ] as $expr) {
+        $n = 'mq_mp_' . $i++;
+        $parts[] = '(' . $expr . ' LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+    return [
+        'sql' => ' AND (' . implode(' OR ', $parts) . ')',
+        'params' => $params,
+    ];
+}
+
+/**
+ * @return array{sql:string, params:array<string, string>}
+ */
+function maintenance_people_list_q_search_clause(string $q): array
+{
+    $q = trim($q);
+    if ($q === '') {
+        return ['sql' => '', 'params' => []];
+    }
+    $qLike = '%' . $q . '%';
+    $parts = [];
+    $params = [];
+    $i = 0;
+    $n0 = 'mq_ppl_' . $i++;
+    $n1 = 'mq_ppl_' . $i++;
+    $parts[] = '(CAST(p.person_id AS CHAR) LIKE :' . $n0 . ' OR LPAD(CAST(p.person_id AS CHAR), 5, \'0\') LIKE :' . $n1 . ')';
+    $params[$n0] = $qLike;
+    $params[$n1] = $qLike;
+    foreach ([
+        'p.last_name_1',
+        'p.last_name_2',
+        'p.first_name',
+        'p.national_id_number',
+        'p.email',
+        'p.job_position_id',
+        'jp.job_title',
+        'p.position_id',
+        'pos.position_name',
+        'lr.legal_relation_name',
+    ] as $expr) {
+        $n = 'mq_ppl_' . $i++;
+        $parts[] = '(' . $expr . ' LIKE :' . $n . ')';
+        $params[$n] = $qLike;
+    }
+
+    return ['sql' => ' AND (' . implode(' OR ', $parts) . ')', 'params' => $params];
+}
+
+/**
  * Fragment SQL AND (...) per cerca global q, o cadena buida si no aplica.
  * Cada LIKE/LPAD usa un placeholder PDO únic (compatibilitat sense emulació de prepared statements).
  *
@@ -1445,6 +1580,12 @@ function maintenance_list_q_search_clause(string $module, string $q): array
     }
     if ($module === 'maintenance_personal_transitory_bonus') {
         return maintenance_personal_transitory_bonus_list_q_search_clause($q);
+    }
+    if ($module === 'management_positions') {
+        return management_positions_list_q_search_clause($q);
+    }
+    if ($module === 'people') {
+        return maintenance_people_list_q_search_clause($q);
     }
     $specs = maintenance_search_specs_from_columns($module);
     if ($specs === []) {

@@ -929,6 +929,29 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.form-grid--three-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
+.form-grid--two-cols {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
+.form-grid--one-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
 @media (max-width: 720px) {
     .users-modal-form .form-grid--modal {
         grid-template-columns: 1fr;
@@ -959,6 +982,56 @@
     border-radius: 0.5rem;
     border-color: #d1d5db;
     font-size: 0.875rem;
+}
+
+.users-modal-form .form-input--money {
+    text-align: right;
+}
+
+.people-seniority-block {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.people-seniority-block__title {
+    margin: 0 0 10px 0;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.people-seniority-group {
+    border-top: 1px dashed #e5e7eb;
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+.people-seniority-group__label {
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+.people-seniority-grid,
+.people-seniority-accum__row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+
+.people-seniority-accum {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+@media (max-width: 900px) {
+    .people-seniority-grid,
+    .people-seniority-accum__row {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .users-modal-form textarea.form-input {

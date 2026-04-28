@@ -16,11 +16,13 @@ $implemented = (bool) ($config['implemented'] ?? false);
 $listCols = maintenance_table_columns($module, $implemented);
 $tableColspan = count($listCols) + ($module === 'maintenance_personal_transitory_bonus' ? 0 : 1);
 
-$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir']);
+$mpFilters = (array) ($maintenancePageInlineConfig['managementPositionsFilters'] ?? []);
+$peopleFilters = (array) ($maintenancePageInlineConfig['peopleFilters'] ?? []);
+$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : []));
 
 $pageHeader = page_header_with_escut([
     'title' => (string) $config['title'],
-    'subtitle' => 'Manteniment auxiliar · Any actiu ' . $year,
+    'subtitle' => (($module === 'management_positions' || $module === 'people') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year,
 ]);
 
 ob_start();
@@ -80,6 +82,120 @@ ob_start();
             <?php endforeach; ?>
         </select>
     </div>
+    <?php if ($module === 'management_positions'): ?>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_position_id">Codi</label>
+            <input class="form-input" id="f_position_id" name="f_position_id" value="<?= e((string) ($mpFilters['f_position_id'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_position_name">Denominació</label>
+            <input class="form-input" id="f_position_name" name="f_position_name" value="<?= e((string) ($mpFilters['f_position_name'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_position_class_id">Classe de plaça</label>
+            <select class="form-select" id="f_position_class_id" name="f_position_class_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['positionClasses'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($mpFilters['f_position_class_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_scale_id">Escala</label>
+            <select class="form-select" id="f_scale_id" name="f_scale_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['scales'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($mpFilters['f_scale_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_subscale_id">Subescala</label>
+            <select class="form-select" id="f_subscale_id" name="f_subscale_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['subscales'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($mpFilters['f_subscale_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_class_id">Classe</label>
+            <select class="form-select" id="f_class_id" name="f_class_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['classes'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($mpFilters['f_class_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_category_id">Categoria</label>
+            <select class="form-select" id="f_category_id" name="f_category_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['categories'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($mpFilters['f_category_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_is_active">Activa</label>
+            <select class="form-select" id="f_is_active" name="f_is_active">
+                <option value="">Totes</option>
+                <option value="1"<?= (string) ($mpFilters['f_is_active'] ?? '') === '1' ? ' selected' : '' ?>>Sí</option>
+                <option value="0"<?= (string) ($mpFilters['f_is_active'] ?? '') === '0' ? ' selected' : '' ?>>No</option>
+            </select>
+        </div>
+    <?php endif; ?>
+    <?php if ($module === 'people'): ?>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_person_id">Codi</label>
+            <input class="form-input" id="f_person_id" name="f_person_id" value="<?= e((string) ($peopleFilters['f_person_id'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_last_name_1">1r Cognom</label>
+            <input class="form-input" id="f_last_name_1" name="f_last_name_1" value="<?= e((string) ($peopleFilters['f_last_name_1'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_last_name_2">2n Cognom</label>
+            <input class="form-input" id="f_last_name_2" name="f_last_name_2" value="<?= e((string) ($peopleFilters['f_last_name_2'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_first_name">Nom</label>
+            <input class="form-input" id="f_first_name" name="f_first_name" value="<?= e((string) ($peopleFilters['f_first_name'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_national_id_number">DNI</label>
+            <input class="form-input" id="f_national_id_number" name="f_national_id_number" value="<?= e((string) ($peopleFilters['f_national_id_number'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_email">Email</label>
+            <input class="form-input" id="f_email" name="f_email" value="<?= e((string) ($peopleFilters['f_email'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_job_position_id">Lloc de treball</label>
+            <input class="form-input" id="f_job_position_id" name="f_job_position_id" value="<?= e((string) ($peopleFilters['f_job_position_id'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_position_id">Plaça</label>
+            <input class="form-input" id="f_position_id" name="f_position_id" value="<?= e((string) ($peopleFilters['f_position_id'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_legal_relation_id">Relació jurídica</label>
+            <select class="form-select" id="f_legal_relation_id" name="f_legal_relation_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['legalRelations'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($peopleFilters['f_legal_relation_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_is_active_people">Activa</label>
+            <select class="form-select" id="f_is_active_people" name="f_is_active">
+                <option value="">Totes</option>
+                <option value="1"<?= (string) ($peopleFilters['f_is_active'] ?? '') === '1' ? ' selected' : '' ?>>Sí</option>
+                <option value="0"<?= (string) ($peopleFilters['f_is_active'] ?? '') === '0' ? ' selected' : '' ?>>No</option>
+            </select>
+        </div>
+    <?php endif; ?>
     <div class="users-filter-actions">
         <button type="submit" class="btn btn--filter-icon btn--filter-apply" title="Aplicar filtres" aria-label="Aplicar filtres">
             <img src="<?= e(asset_url('img/icon_filter_apply.svg')) ?>" alt="" width="48" height="48">
@@ -146,10 +262,7 @@ ob_start();
                     <?php
                     $pid = (int) ($r['person_id'] ?? 0);
                     $rawNew = $r['personal_transitory_bonus_new'] ?? null;
-                    $inputVal = '';
-                    if ($rawNew !== null && $rawNew !== '' && is_numeric(trim((string) $rawNew))) {
-                        $inputVal = number_format((float) $rawNew, 2, ',', '.');
-                    }
+                    $inputVal = maintenance_format_currency_eur_2_display($rawNew);
                     ?>
                     <td<?= $tdClassAttr ?>>
                         <?php if (can_edit_form($module)): ?>
@@ -217,8 +330,12 @@ ob_start();
                 $rid = trim((string) ($r['general_specific_compensation_id'] ?? ''));
             } elseif ($module === 'maintenance_subprograms') {
                 $rid = trim((string) ($r['subprogram_id'] ?? ''));
+            } elseif ($module === 'people') {
+                $rid = (string) (int) ($r['person_id'] ?? 0);
+            } elseif ($module === 'management_positions') {
+                $rid = (string) (int) ($r['position_id'] ?? 0);
             } else {
-                $rid = trim((string) ($r['scale_id'] ?? $r['subscale_id'] ?? $r['category_id'] ?? $r['class_id'] ?? $r['administrative_status_id'] ?? $r['position_class_id'] ?? $r['legal_relation_id'] ?? $r['access_type_id'] ?? $r['access_system_id'] ?? $r['work_center_id'] ?? $r['availability_id'] ?? $r['provision_method_id'] ?? $r['org_unit_level_1_id'] ?? $r['org_unit_level_2_id'] ?? $r['org_unit_level_3_id'] ?? $r['program_id'] ?? $r['subprogram_id'] ?? ''));
+                $rid = trim((string) ($r['scale_id'] ?? $r['subscale_id'] ?? $r['category_id'] ?? $r['class_id'] ?? $r['administrative_status_id'] ?? $r['position_class_id'] ?? $r['legal_relation_id'] ?? $r['access_type_id'] ?? $r['access_system_id'] ?? $r['work_center_id'] ?? $r['availability_id'] ?? $r['provision_method_id'] ?? $r['org_unit_level_1_id'] ?? $r['org_unit_level_2_id'] ?? $r['org_unit_level_3_id'] ?? $r['program_id'] ?? $r['subprogram_id'] ?? $r['position_id'] ?? ''));
             }
             $specPriceReservedZero = ($module === 'maintenance_specific_compensation_special_prices' && $rid === '0');
             ?>

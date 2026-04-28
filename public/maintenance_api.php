@@ -51,6 +51,14 @@ try {
 
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         $action = get_string('action');
+        if ($action === 'get_salary_groups') {
+            if (!can_view_form($module)) {
+                maintenance_api_json(false, ['errors' => ['_general' => 'Sense permís de consulta']], 403);
+                exit;
+            }
+            maintenance_api_json(true, ['groups' => get_salary_groups(db(), $year)]);
+            exit;
+        }
         if ($action !== 'get') {
             maintenance_api_json(false, ['errors' => ['_general' => 'Acció no vàlida']], 400);
             exit;
@@ -92,10 +100,11 @@ try {
         }
         try {
             $originalIdRaw = (string) ($in['original_id'] ?? '');
-            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
+            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'management_positions', 'people'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
             maintenance_save(db(), $module, $year, $originalForSave, [
                 'id' => (string) ($in['id'] ?? ''),
                 'name' => (string) ($in['name'] ?? ''),
+                'position_name' => (string) ($in['position_name'] ?? ''),
                 'short_name' => (string) ($in['short_name'] ?? ''),
                 'full_name' => (string) ($in['full_name'] ?? ''),
                 'sort_order' => (string) ($in['sort_order'] ?? ''),
@@ -104,9 +113,9 @@ try {
                 'city' => (string) ($in['city'] ?? ''),
                 'phone' => (string) ($in['phone'] ?? ''),
                 'fax' => (string) ($in['fax'] ?? ''),
-                'scale_id' => (int) ($in['scale_id'] ?? 0),
-                'subscale_id' => (int) ($in['subscale_id'] ?? 0),
-                'class_id' => (int) ($in['class_id'] ?? 0),
+                'scale_id' => (string) ($in['scale_id'] ?? ''),
+                'subscale_id' => (string) ($in['subscale_id'] ?? ''),
+                'class_id' => (string) ($in['class_id'] ?? ''),
                 'org_unit_level_1_id' => (string) ($in['org_unit_level_1_id'] ?? ''),
                 'org_unit_level_2_id' => (string) ($in['org_unit_level_2_id'] ?? ''),
                 'original_id_text' => $originalIdRaw,
@@ -157,6 +166,62 @@ try {
                 'general_specific_compensation_name' => (string) ($in['general_specific_compensation_name'] ?? ''),
                 'decrease_amount' => (string) ($in['decrease_amount'] ?? ''),
                 'decrease_amount_new' => (string) ($in['decrease_amount_new'] ?? ''),
+                'position_class_id' => (int) ($in['position_class_id'] ?? 0),
+                'category_id' => (string) ($in['category_id'] ?? ''),
+                'labor_category' => (string) ($in['labor_category'] ?? ''),
+                'classification_group' => (string) ($in['classification_group'] ?? ''),
+                'access_type_id' => (string) ($in['access_type_id'] ?? ''),
+                'access_system_id' => (string) ($in['access_system_id'] ?? ''),
+                'budgeted_amount' => (string) ($in['budgeted_amount'] ?? ''),
+                'is_offerable' => $in['is_offerable'] ?? 0,
+                'opo_year' => (string) ($in['opo_year'] ?? ''),
+                'is_to_be_amortized' => $in['is_to_be_amortized'] ?? 0,
+                'is_internal_promotion' => $in['is_internal_promotion'] ?? 0,
+                'created_at' => (string) ($in['created_at'] ?? ''),
+                'creation_file_reference' => (string) ($in['creation_file_reference'] ?? ''),
+                'call_for_applications_date' => (string) ($in['call_for_applications_date'] ?? ''),
+                'deleted_at' => (string) ($in['deleted_at'] ?? ''),
+                'deletion_file_reference' => (string) ($in['deletion_file_reference'] ?? ''),
+                'last_name_1' => (string) ($in['last_name_1'] ?? ''),
+                'last_name_2' => (string) ($in['last_name_2'] ?? ''),
+                'first_name' => (string) ($in['first_name'] ?? ''),
+                'legacy_person_id' => (string) ($in['legacy_person_id'] ?? ''),
+                'birth_date' => (string) ($in['birth_date'] ?? ''),
+                'national_id_number' => (string) ($in['national_id_number'] ?? ''),
+                'social_security_number' => (string) ($in['social_security_number'] ?? ''),
+                'job_position_id' => (string) ($in['job_position_id'] ?? ''),
+                'position_id' => (string) ($in['position_id'] ?? ''),
+                'dedication' => (string) ($in['dedication'] ?? ''),
+                'legal_relation_id' => (string) ($in['legal_relation_id'] ?? ''),
+                'administrative_status_id' => (string) ($in['administrative_status_id'] ?? ''),
+                'status_text' => (string) ($in['status_text'] ?? ''),
+                'company_id' => (string) ($in['company_id'] ?? ''),
+                'social_security_contribution_coefficient' => (string) ($in['social_security_contribution_coefficient'] ?? ''),
+                'productivity_bonus' => (string) ($in['productivity_bonus'] ?? ''),
+                'seniority_amount' => (string) ($in['seniority_amount'] ?? ''),
+                'seniority_extra_pay_amount' => (string) ($in['seniority_extra_pay_amount'] ?? ''),
+                'annual_budgeted_seniority' => (string) ($in['annual_budgeted_seniority'] ?? ''),
+                'personal_transitory_bonus' => (string) ($in['personal_transitory_bonus'] ?? ''),
+                'legacy_social_security' => (string) ($in['legacy_social_security'] ?? ''),
+                'hired_at' => (string) ($in['hired_at'] ?? ''),
+                'terminated_at' => (string) ($in['terminated_at'] ?? ''),
+                'personal_grade' => (string) ($in['personal_grade'] ?? ''),
+                'group_a1_previous_triennia' => (string) ($in['group_a1_previous_triennia'] ?? ''),
+                'group_a1_current_year_triennia' => (string) ($in['group_a1_current_year_triennia'] ?? ''),
+                'group_a1_current_year_percentage' => (string) ($in['group_a1_current_year_percentage'] ?? ''),
+                'group_a2_previous_triennia' => (string) ($in['group_a2_previous_triennia'] ?? ''),
+                'group_a2_current_year_triennia' => (string) ($in['group_a2_current_year_triennia'] ?? ''),
+                'group_a2_current_year_percentage' => (string) ($in['group_a2_current_year_percentage'] ?? ''),
+                'group_c1_previous_triennia' => (string) ($in['group_c1_previous_triennia'] ?? ''),
+                'group_c1_current_year_triennia' => (string) ($in['group_c1_current_year_triennia'] ?? ''),
+                'group_c1_current_year_percentage' => (string) ($in['group_c1_current_year_percentage'] ?? ''),
+                'group_c2_previous_triennia' => (string) ($in['group_c2_previous_triennia'] ?? ''),
+                'group_c2_current_year_triennia' => (string) ($in['group_c2_current_year_triennia'] ?? ''),
+                'group_c2_current_year_percentage' => (string) ($in['group_c2_current_year_percentage'] ?? ''),
+                'group_e_previous_triennia' => (string) ($in['group_e_previous_triennia'] ?? ''),
+                'group_e_current_year_triennia' => (string) ($in['group_e_current_year_triennia'] ?? ''),
+                'group_e_current_year_percentage' => (string) ($in['group_e_current_year_percentage'] ?? ''),
+                'subprogram_people' => $in['subprogram_people'] ?? [],
             ]);
             maintenance_api_json(true, ['message' => $isCreate ? 'Registre creat.' : 'Registre actualitzat.']);
         } catch (Throwable $e) {
@@ -185,6 +250,51 @@ try {
                 maintenance_api_json(false, ['errors' => ['_general' => 'No es pot eliminar perquè té dades dependents.']], 422);
             } else {
                 maintenance_api_json(false, ['errors' => ['_general' => $e->getMessage()]], 422);
+            }
+        }
+        exit;
+    }
+
+    if ($action === 'copy_management_position') {
+        if ($module !== 'management_positions') {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Acció no vàlida per al mòdul.']], 400);
+            exit;
+        }
+        if (!can_create_form($module)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'Sense permís per crear']], 403);
+            exit;
+        }
+        $sourcePositionIdRaw = trim((string) ($in['source_position_id'] ?? ''));
+        $newPositionIdRaw = trim((string) ($in['new_position_id'] ?? ''));
+        $newPositionName = trim((string) ($in['new_position_name'] ?? ''));
+        if ($sourcePositionIdRaw === '' || !preg_match('/^\d{1,4}$/', $sourcePositionIdRaw)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'No s’ha pogut identificar la plaça origen.']], 422);
+            exit;
+        }
+        if ($newPositionIdRaw === '' || !preg_match('/^\d{1,4}$/', $newPositionIdRaw)) {
+            maintenance_api_json(false, ['errors' => ['_general' => 'El codi de la nova plaça és obligatori, numèric i de màxim 4 dígits.']], 422);
+            exit;
+        }
+        if ($newPositionName === '') {
+            maintenance_api_json(false, ['errors' => ['_general' => 'La denominació de la nova plaça és obligatòria.']], 422);
+            exit;
+        }
+        try {
+            maintenance_copy_management_position(
+                db(),
+                $year,
+                (int) $sourcePositionIdRaw,
+                (int) $newPositionIdRaw,
+                $newPositionName
+            );
+            maintenance_api_json(true, ['message' => 'Plaça copiada correctament.']);
+        } catch (InvalidArgumentException $e) {
+            maintenance_api_json(false, ['errors' => ['_general' => $e->getMessage()]], 422);
+        } catch (Throwable $e) {
+            if (db_is_integrity_constraint_violation($e)) {
+                maintenance_api_json(false, ['errors' => ['_general' => 'Ja existeix una plaça amb aquest codi en aquest exercici.']], 422);
+            } else {
+                maintenance_api_json(false, ['errors' => ['_general' => 'No s’ha pogut copiar la plaça. Torna-ho a provar.']], 500);
             }
         }
         exit;
