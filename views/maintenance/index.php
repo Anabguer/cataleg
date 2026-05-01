@@ -18,11 +18,12 @@ $tableColspan = count($listCols) + ($module === 'maintenance_personal_transitory
 
 $mpFilters = (array) ($maintenancePageInlineConfig['managementPositionsFilters'] ?? []);
 $peopleFilters = (array) ($maintenancePageInlineConfig['peopleFilters'] ?? []);
-$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : []));
+$jpFilters = (array) ($maintenancePageInlineConfig['jobPositionsFilters'] ?? []);
+$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : ($module === 'job_positions' ? $jpFilters : [])));
 
 $pageHeader = page_header_with_escut([
     'title' => (string) $config['title'],
-    'subtitle' => (($module === 'management_positions' || $module === 'people') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year,
+    'subtitle' => (($module === 'management_positions' || $module === 'people' || $module === 'job_positions') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year,
 ]);
 
 ob_start();
@@ -196,6 +197,54 @@ ob_start();
             </select>
         </div>
     <?php endif; ?>
+    <?php if ($module === 'job_positions'): ?>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_job_code">Codi</label>
+            <input class="form-input" id="f_job_code" name="f_job_code" value="<?= e((string) ($jpFilters['f_job_code'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_job_title">Denominació</label>
+            <input class="form-input" id="f_job_title" name="f_job_title" value="<?= e((string) ($jpFilters['f_job_title'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_org_dependency_id">Responsable</label>
+            <input class="form-input" id="f_org_dependency_id" name="f_org_dependency_id" value="<?= e((string) ($jpFilters['f_org_dependency_id'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_jp_is_active">Actiu</label>
+            <select class="form-select" id="f_jp_is_active" name="f_is_active">
+                <option value="">Tots</option>
+                <option value="1"<?= (string) ($jpFilters['f_is_active'] ?? '') === '1' ? ' selected' : '' ?>>Sí</option>
+                <option value="0"<?= (string) ($jpFilters['f_is_active'] ?? '') === '0' ? ' selected' : '' ?>>No</option>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_jp_scale_id">Escala</label>
+            <select class="form-select" id="f_jp_scale_id" name="f_scale_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['scales'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($jpFilters['f_scale_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_jp_legal_relation_id">Relació jurídica</label>
+            <select class="form-select" id="f_jp_legal_relation_id" name="f_legal_relation_id">
+                <option value="">Totes</option>
+                <?php foreach (($maintenancePageInlineConfig['jobPositionLegalOptions'] ?? []) as $it): ?>
+                    <option value="<?= e((string) ($it['id'] ?? '')) ?>"<?= (string) ($jpFilters['f_legal_relation_id'] ?? '') === (string) ($it['id'] ?? '') ? ' selected' : '' ?>><?= e((string) ($it['name'] ?? '')) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_jp_is_to_be_amortized">Amortitzat</label>
+            <select class="form-select" id="f_jp_is_to_be_amortized" name="f_is_to_be_amortized">
+                <option value="">Tots</option>
+                <option value="1"<?= (string) ($jpFilters['f_is_to_be_amortized'] ?? '') === '1' ? ' selected' : '' ?>>Sí</option>
+                <option value="0"<?= (string) ($jpFilters['f_is_to_be_amortized'] ?? '') === '0' ? ' selected' : '' ?>>No</option>
+            </select>
+        </div>
+    <?php endif; ?>
     <div class="users-filter-actions">
         <button type="submit" class="btn btn--filter-icon btn--filter-apply" title="Aplicar filtres" aria-label="Aplicar filtres">
             <img src="<?= e(asset_url('img/icon_filter_apply.svg')) ?>" alt="" width="48" height="48">
@@ -334,6 +383,8 @@ ob_start();
                 $rid = (string) (int) ($r['person_id'] ?? 0);
             } elseif ($module === 'management_positions') {
                 $rid = (string) (int) ($r['position_id'] ?? 0);
+            } elseif ($module === 'job_positions') {
+                $rid = trim((string) ($r['job_position_id'] ?? ''));
             } else {
                 $rid = trim((string) ($r['scale_id'] ?? $r['subscale_id'] ?? $r['category_id'] ?? $r['class_id'] ?? $r['administrative_status_id'] ?? $r['position_class_id'] ?? $r['legal_relation_id'] ?? $r['access_type_id'] ?? $r['access_system_id'] ?? $r['work_center_id'] ?? $r['availability_id'] ?? $r['provision_method_id'] ?? $r['org_unit_level_1_id'] ?? $r['org_unit_level_2_id'] ?? $r['org_unit_level_3_id'] ?? $r['program_id'] ?? $r['subprogram_id'] ?? $r['position_id'] ?? ''));
             }

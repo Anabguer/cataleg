@@ -841,6 +841,12 @@ textarea.form-input:focus {
     color: rgba(255, 255, 255, 0.88);
 }
 
+/* showActionModal: formularis dins caixa blava fosca */
+.modal__dialog--classic .js-modal-custom .form-label,
+.modal__dialog--classic .js-modal-custom label {
+    color: #fff;
+}
+
 .modal__secondary[hidden] {
     display: none !important;
 }

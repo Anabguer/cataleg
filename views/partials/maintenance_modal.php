@@ -28,18 +28,20 @@ declare(strict_types=1);
                 <div class="form-group form-grid__full js-maintenance-msg" hidden>
                     <div class="alert alert--error" role="alert" data-maintenance-form-error></div>
                 </div>
-                <?php if (($module ?? '') !== 'people'): ?>
+                <?php if (($module ?? '') !== 'people' && ($module ?? '') !== 'job_positions'): ?>
                     <div class="form-group" data-maintenance-field="id">
                         <label class="form-label" for="maintenance_id" data-maintenance-label-id>Codi <span class="users-modal-form__req">*</span></label>
                         <input class="form-input" id="maintenance_id" name="id" type="number" min="1" required data-field="id">
                         <p class="form-error" data-error-for="id" hidden></p>
                     </div>
                 <?php endif; ?>
+                <?php if (($module ?? '') !== 'job_positions'): ?>
                 <div class="form-group" data-maintenance-field="name">
                     <label class="form-label" for="maintenance_name" data-maintenance-label-name>Nom <span class="users-modal-form__req">*</span></label>
                     <input class="form-input" id="maintenance_name" name="name" type="text" required data-field="name">
                     <p class="form-error" data-error-for="name" hidden></p>
                 </div>
+                <?php endif; ?>
                 <div class="form-group form-grid__full" data-maintenance-field="position_name" hidden>
                     <label class="form-label" for="maintenance_position_name">Denominació <span class="users-modal-form__req">*</span></label>
                     <input class="form-input" id="maintenance_position_name" name="position_name" type="text" data-field="position_name">
@@ -417,24 +419,57 @@ declare(strict_types=1);
                     <textarea class="form-input" id="maintenance_activities" name="activities" rows="4" data-field="activities"></textarea>
                     <p class="form-error" data-error-for="activities" hidden></p>
                 </div>
-                <div class="form-group" data-maintenance-field="is_offerable" hidden>
-                    <label class="form-check">
-                        <input type="checkbox" class="form-check__input" id="maintenance_is_offerable" name="is_offerable" value="1" data-field="is_offerable">
-                        <span class="form-check__label">Ofertable</span>
-                    </label>
-                </div>
-                <div class="form-group" data-maintenance-field="is_to_be_amortized" hidden>
-                    <label class="form-check">
-                        <input type="checkbox" class="form-check__input" id="maintenance_is_to_be_amortized" name="is_to_be_amortized" value="1" data-field="is_to_be_amortized">
-                        <span class="form-check__label">Amortitzar</span>
-                    </label>
-                </div>
-                <div class="form-group" data-maintenance-field="is_internal_promotion" hidden>
-                    <label class="form-check">
-                        <input type="checkbox" class="form-check__input" id="maintenance_is_internal_promotion" name="is_internal_promotion" value="1" data-field="is_internal_promotion">
-                        <span class="form-check__label">Promoció interna</span>
-                    </label>
-                </div>
+                <?php if (($module ?? '') === 'management_positions'): ?>
+                    <div class="management-positions-checkboxes">
+                        <div class="form-group" data-maintenance-field="is_offerable" hidden>
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check__input" id="maintenance_is_offerable" name="is_offerable" value="1" data-field="is_offerable">
+                                <span class="form-check__label">Ofertable</span>
+                            </label>
+                        </div>
+                        <div class="form-group" data-maintenance-field="is_to_be_amortized" hidden>
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check__input" id="maintenance_is_to_be_amortized" name="is_to_be_amortized" value="1" data-field="is_to_be_amortized">
+                                <span class="form-check__label">Amortitzar</span>
+                            </label>
+                        </div>
+                        <div class="form-group" data-maintenance-field="is_internal_promotion" hidden>
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check__input" id="maintenance_is_internal_promotion" name="is_internal_promotion" value="1" data-field="is_internal_promotion">
+                                <span class="form-check__label">Promoció interna</span>
+                            </label>
+                        </div>
+                        <div class="form-group management-position-active-check" data-maintenance-field="is_active" hidden>
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check__input" id="maintenance_is_active" name="is_active" value="1" data-field="is_active" disabled>
+                                <span class="form-check__label">Activa</span>
+                            </label>
+                        </div>
+                    </div>
+                <?php elseif (($module ?? '') !== 'job_positions'): ?>
+                    <div class="form-group" data-maintenance-field="is_offerable" hidden>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check__input" id="maintenance_is_offerable" name="is_offerable" value="1" data-field="is_offerable">
+                            <span class="form-check__label">Ofertable</span>
+                        </label>
+                    </div>
+                    <div class="form-group" data-maintenance-field="is_to_be_amortized" hidden>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check__input" id="maintenance_is_to_be_amortized" name="is_to_be_amortized" value="1" data-field="is_to_be_amortized">
+                            <span class="form-check__label">Amortitzar</span>
+                        </label>
+                    </div>
+                    <div class="form-group" data-maintenance-field="is_internal_promotion" hidden>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check__input" id="maintenance_is_internal_promotion" name="is_internal_promotion" value="1" data-field="is_internal_promotion">
+                            <span class="form-check__label">Promoció interna</span>
+                        </label>
+                    </div>
+                <?php endif; ?>
+                <?php if (($module ?? '') === 'job_positions'): ?>
+                    <?php require __DIR__ . '/maintenance_modal_job_positions.php'; ?>
+                <?php endif; ?>
+                <?php if (($module ?? '') === 'people'): ?>
                 <div class="form-grid--three-cols">
                     <?php if (($module ?? '') === 'people'): ?>
                         <div class="form-group" data-maintenance-field="id" hidden>
@@ -447,12 +482,14 @@ declare(strict_types=1);
                         <label class="form-label" for="maintenance_legacy_person_id">Codi antic</label>
                         <input class="form-input" id="maintenance_legacy_person_id" name="legacy_person_id" type="text" inputmode="numeric" data-field="legacy_person_id">
                     </div>
-                    <div class="form-group" data-maintenance-field="is_active" hidden>
-                        <label class="form-check">
-                            <input type="checkbox" class="form-check__input" id="maintenance_is_active" name="is_active" value="1" data-field="is_active" disabled>
-                            <span class="form-check__label">Activa</span>
-                        </label>
-                    </div>
+                    <?php if (($module ?? '') === 'people'): ?>
+                        <div class="form-group" data-maintenance-field="is_active" hidden>
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check__input" id="maintenance_is_active" name="is_active" value="1" data-field="is_active" disabled>
+                                <span class="form-check__label">Activa</span>
+                            </label>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="form-grid--three-cols">
                     <div class="form-group" data-maintenance-field="last_name_1" hidden>
@@ -568,9 +605,9 @@ declare(strict_types=1);
                         <input class="form-input" id="maintenance_terminated_at" name="terminated_at" type="text" placeholder="dd/mm/yyyy" data-field="terminated_at">
                     </div>
                 </div>
-                <div class="form-grid--one-col" data-maintenance-field="people_seniority_block" hidden>
-                    <div class="people-seniority-block">
-                        <h3 class="people-seniority-block__title">Antiguitat (Triennis)</h3>
+                    <div class="form-grid--one-col" data-maintenance-field="people_seniority_block" hidden>
+                        <div class="people-seniority-block">
+                            <h3 class="people-seniority-block__title">Antiguitat (Triennis)</h3>
 
                         <div class="people-seniority-group" data-people-seniority-group="A1">
                             <div class="people-seniority-group__label">Grup A1</div>
@@ -722,8 +759,8 @@ declare(strict_types=1);
                             </div>
                         </div>
 
-                        <div class="people-seniority-accum">
-                            <div class="people-seniority-accum__row">
+                            <div class="people-seniority-accum people-seniority-totals">
+                                <div class="form-grid--four-cols">
                                 <div class="form-group">
                                     <label class="form-label" for="maintenance_people_seniority_amount_current">Antiguitat pressupost (BBDD)</label>
                                     <input class="form-input form-input--money" id="maintenance_people_seniority_amount_current" type="text" data-people-seniority-db="seniority_amount" readonly>
@@ -736,12 +773,12 @@ declare(strict_types=1);
                                     <label class="form-label" for="maintenance_people_seniority_extra_calc">Antiguitat pagues</label>
                                     <input class="form-input form-input--money" id="maintenance_people_seniority_extra_calc" type="text" data-people-seniority-accum="extra" readonly>
                                 </div>
-                            </div>
-                            <div class="people-seniority-accum__row">
                                 <div class="form-group">
                                     <label class="form-label" for="maintenance_people_seniority_monthly_calc">Antiguitat Mes</label>
                                     <input class="form-input form-input--money" id="maintenance_people_seniority_monthly_calc" type="text" data-people-seniority-accum="monthly" readonly>
                                 </div>
+                                </div>
+                                <div class="form-grid--two-cols">
                                 <div class="form-group">
                                     <label class="form-label" for="maintenance_people_annual_budgeted_seniority_current">Antiguitat anyal pressupost (BBDD)</label>
                                     <input class="form-input form-input--money" id="maintenance_people_annual_budgeted_seniority_current" type="text" data-people-seniority-db="annual_budgeted_seniority" readonly>
@@ -750,12 +787,13 @@ declare(strict_types=1);
                                     <label class="form-label" for="maintenance_people_annual_budgeted_seniority_calc">Antiguitat anyal pressupost calculada</label>
                                     <input class="form-input form-input--money" id="maintenance_people_annual_budgeted_seniority_calc" type="text" data-people-seniority-accum="annual" readonly>
                                 </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                <?php endif; ?>
                 <div class="form-grid--one-col">
-                    <div class="form-group" data-maintenance-field="notes" hidden>
+                    <div class="form-group<?= (($module ?? '') === 'management_positions') ? ' management-positions-observations' : '' ?>" data-maintenance-field="notes" hidden>
                         <label class="form-label" for="maintenance_notes">Observacions</label>
                         <textarea class="form-input" id="maintenance_notes" name="notes" rows="3" data-field="notes"></textarea>
                         <p class="form-error" data-error-for="notes" hidden></p>

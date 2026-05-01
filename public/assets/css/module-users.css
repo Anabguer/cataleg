@@ -945,6 +945,14 @@
     grid-column: 1 / -1;
 }
 
+.form-grid--four-cols {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
 .form-grid--one-col {
     display: grid;
     grid-template-columns: 1fr;
@@ -960,6 +968,26 @@
 
 .users-modal-form .form-group {
     margin-bottom: var(--space-3);
+}
+
+.management-positions-observations {
+    margin-top: 0;
+}
+
+.management-positions-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 24px;
+    margin-bottom: 8px;
+    grid-column: 1 / -1;
+}
+
+.management-positions-checkboxes .form-check {
+    margin: 0;
+}
+
+.management-positions-checkboxes .management-position-active-check {
+    grid-column: 1 / 2;
 }
 
 .users-modal-form .form-label {
@@ -1014,8 +1042,7 @@
     margin-bottom: 6px;
 }
 
-.people-seniority-grid,
-.people-seniority-accum__row {
+.people-seniority-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 8px;
@@ -1027,9 +1054,21 @@
     padding-top: 10px;
 }
 
+.people-seniority-totals .form-group .form-label {
+    min-height: 36px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.people-seniority-totals input {
+    text-align: right;
+}
+
 @media (max-width: 900px) {
-    .people-seniority-grid,
-    .people-seniority-accum__row {
+    .people-seniority-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .form-grid--four-cols {
         grid-template-columns: repeat(2, 1fr);
     }
 }
@@ -1772,4 +1811,90 @@
 
 .module-users .data-table--personal-transitory-cpt .maintenance-ptb-new__hint--err {
     color: #b42318;
+}
+
+/* --- Llocs de treball (modal per pestanyes) --- */
+.module-users .job-positions-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.module-users .job-positions-tabs__btn {
+    appearance: none;
+    border: 1px solid var(--color-border);
+    background: #fff;
+    color: var(--color-text);
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.2;
+}
+
+.module-users .job-positions-tabs__btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.module-users .job-positions-tabs__btn.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-alpha-08);
+    color: #c50;
+}
+
+.module-users .job-positions-tab-panel[hidden] {
+    display: none !important;
+}
+
+.module-users .job-positions-tab-panel.is-active:not([hidden]) {
+    display: block;
+}
+
+.module-users .job-positions-modal-shell .form-input--money {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.module-users .job-positions-ocupants .data-table--compact {
+    margin-bottom: 0.5rem;
+}
+
+/* Modal manteniment (fora de .module-users): grups/importes llocs — 4 columnes per fila */
+.users-modal-form .jp-comp-section {
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
+.users-modal-form .jp-comp-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.2fr) minmax(120px, 0.8fr) minmax(0, 1.2fr) minmax(120px, 0.8fr) !important;
+    gap: 12px;
+    width: 100%;
+    grid-column: 1 / -1;
+    align-items: end;
+}
+
+.users-modal-form .jp-comp-row > .form-group {
+    min-width: 0;
+    width: 100%;
+}
+
+.users-modal-form .jp-comp-row select,
+.users-modal-form .jp-comp-row input {
+    width: 100%;
+}
+
+.users-modal-form .jp-comp-row input {
+    text-align: right;
+}
+
+@media (max-width: 1200px) {
+    .users-modal-form .jp-comp-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
 }

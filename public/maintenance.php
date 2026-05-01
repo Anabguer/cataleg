@@ -43,6 +43,15 @@ $peopleFilters = [
     'f_legal_relation_id' => get_string('f_legal_relation_id'),
     'f_is_active' => get_string('f_is_active'),
 ];
+$jobPositionsFilters = [
+    'f_job_code' => get_string('f_job_code'),
+    'f_job_title' => get_string('f_job_title'),
+    'f_org_dependency_id' => get_string('f_org_dependency_id'),
+    'f_is_active' => get_string('f_is_active'),
+    'f_scale_id' => get_string('f_scale_id'),
+    'f_legal_relation_id' => get_string('f_legal_relation_id'),
+    'f_is_to_be_amortized' => get_string('f_is_to_be_amortized'),
+];
 $sort = maintenance_sort_normalize($module, get_string('sort_by'), get_string('sort_dir'));
 $perPage = (int) get_string('per_page');
 if ($perPage < 1) {
@@ -58,7 +67,11 @@ $total = 0;
 $totalPages = 1;
 $offset = 0;
 if ($config['implemented'] ?? false) {
-    $activeFilters = $module === 'management_positions' ? $managementPositionsFilters : ($module === 'people' ? $peopleFilters : []);
+    $activeFilters = $module === 'management_positions'
+        ? $managementPositionsFilters
+        : ($module === 'people'
+            ? $peopleFilters
+            : ($module === 'job_positions' ? $jobPositionsFilters : []));
     $total = maintenance_count($db, $module, $year, $q, $activeFilters);
     $pn = maintenance_normalize_pagination($page, $perPage, $total);
     $page = $pn['page'];
@@ -87,6 +100,14 @@ $organicLevel2 = maintenance_org_units_level_2_options($db, $year);
 $jobPositions = maintenance_job_positions_options($db, $year);
 $programsForSelect = maintenance_programs_options_for_select($db, $year);
 $jobPositionsCm = maintenance_job_positions_cm_options($db, $year);
+$jobPositionsPeoplePicker = $module === 'job_positions' ? maintenance_job_positions_people_picker_options($db, $year) : [];
+$jobPositionLegalModes = $module === 'job_positions' ? maintenance_job_position_legal_relation_modes_for_year($db, $year) : [];
+$jobPositionLegalOptions = $module === 'job_positions' ? maintenance_job_position_legal_relation_options() : [];
+$jobPositionSpecialCompAmounts = $module === 'job_positions' ? maintenance_job_positions_special_comp_amount_map($db, $year) : [];
+$jobPositionGeneralCompAmounts = $module === 'job_positions' ? maintenance_job_positions_general_comp_amount_map($db, $year) : [];
+$jobPositionSalaryGroupAmounts = $module === 'job_positions' ? maintenance_job_positions_salary_group_amount_map($db, $year) : [];
+$jobPositionOrganicLevelAmounts = $module === 'job_positions' ? maintenance_job_positions_organic_level_amount_map($db, $year) : [];
+$jobPositionTypes = $module === 'job_positions' ? maintenance_job_position_type_options($db, $year) : [];
 $pageTitle = (string) $config['title'];
 $activeNav = $module;
 $extraCss = ['css/module-users.css'];
@@ -122,6 +143,15 @@ $maintenancePageInlineConfig = [
     'jobPositionsCm' => $jobPositionsCm,
     'managementPositionsFilters' => management_positions_normalize_filters($managementPositionsFilters),
     'peopleFilters' => maintenance_people_normalize_filters($peopleFilters),
+    'jobPositionsFilters' => maintenance_job_positions_normalize_filters($jobPositionsFilters),
+    'jobPositionsPeoplePicker' => $jobPositionsPeoplePicker,
+    'jobPositionLegalModes' => $jobPositionLegalModes,
+    'jobPositionLegalOptions' => $jobPositionLegalOptions,
+    'jobPositionSpecialCompAmounts' => $jobPositionSpecialCompAmounts,
+    'jobPositionGeneralCompAmounts' => $jobPositionGeneralCompAmounts,
+    'jobPositionSalaryGroupAmounts' => $jobPositionSalaryGroupAmounts,
+    'jobPositionOrganicLevelAmounts' => $jobPositionOrganicLevelAmounts,
+    'jobPositionTypes' => $jobPositionTypes,
 ];
 
 require APP_ROOT . '/includes/header.php';

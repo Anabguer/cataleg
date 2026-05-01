@@ -42,6 +42,7 @@
         if(mod==='maintenance_specific_compensation_general') return row && row.general_specific_compensation_id !== undefined ? row.general_specific_compensation_id : '';
         if(mod==='people') return row && row.person_id !== undefined ? row.person_id : '';
         if(mod==='management_positions') return row && row.position_id !== undefined ? row.position_id : '';
+        if(mod==='job_positions') return row && row.job_position_id !== undefined ? String(row.job_position_id) : '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_id !== undefined ? row.subprogram_id : '';
         return row && (row.scale_id || row.subscale_id || row.category_id || '');
     }
@@ -72,6 +73,7 @@
         if(mod==='maintenance_specific_compensation_general') return row && row.general_specific_compensation_name !== undefined ? row.general_specific_compensation_name : '';
         if(mod==='people') return row && row.first_name !== undefined ? row.first_name : '';
         if(mod==='management_positions') return row && row.position_name !== undefined ? row.position_name : '';
+        if(mod==='job_positions') return row && row.job_title !== undefined ? row.job_title : '';
         if(mod==='maintenance_social_security_coefficients') return '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_name !== undefined ? row.subprogram_name : '';
         return row && (row.scale_name || row.subscale_name || row.category_name || '');
@@ -100,8 +102,9 @@
     function formatJobPosSelectLabel(it) {
         var id = String(it.id || '').trim();
         var name = String(it.name || '');
-        if (!/^\d+$/.test(id)) return id + ' - ' + name;
-        var p = id.length > 6 ? id.slice(-6) : ('000000' + id).slice(-6);
+        var code = id;
+        if (!/^\d+$/.test(code)) return code + ' - ' + name;
+        var p = code.length > 6 ? code.slice(0, 6) : ('000000' + code).slice(-6);
         var disp = p.slice(0, 4) + '.' + p.slice(4, 6);
         return disp + ' - ' + name;
     }
@@ -223,6 +226,523 @@
         var s = String(v == null ? '' : v).trim();
         if (!/^\d+$/.test(s)) return s;
         return ('00000' + String(parseInt(s, 10))).slice(-5);
+    }
+    function formatIsoOrDbDateForDisplay(v) {
+        if (v === null || v === undefined) return '';
+        var s = String(v).trim();
+        if (s === '' || s.indexOf('0000-00-00') === 0) return '';
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+            var p = s.slice(0, 10).split('-');
+            return p[2] + '/' + p[1] + '/' + p[0];
+        }
+        return s;
+    }
+    function jobPositionLegalModeFromSelect() {
+        var sel = document.querySelector('#jp_legal_relation_id');
+        var id = sel ? String(sel.value || '').trim() : '';
+        var map = cfg().jobPositionLegalModes || {};
+        return map[id] || 'none';
+    }
+    function syncJobPositionCategoryCascade(resetCat) {
+        if (module() !== 'job_positions') return;
+        var scale = document.querySelector('#jp_civil_service_scale_id');
+        var sub = document.querySelector('#jp_civil_service_subscale_id');
+        var cls = document.querySelector('#jp_civil_service_class_id');
+        var cat = document.querySelector('#jp_civil_service_category_id');
+        if (!scale || !sub || !cls || !cat) return;
+        var sid = String(scale.value || '');
+        var ssid = String(sub.value || '');
+        var cid = String(cls.value || '');
+        Array.prototype.forEach.call(sub.options, function (o) {
+            if (!o.value) return;
+            o.hidden = sid !== '' && o.getAttribute('data-scale-id') !== sid;
+        });
+        if (sub.selectedOptions[0] && sub.selectedOptions[0].hidden) sub.value = '';
+        ssid = String(sub.value || '');
+        Array.prototype.forEach.call(cls.options, function (o) {
+            if (!o.value) return;
+            var okScale = sid === '' || o.getAttribute('data-scale-id') === sid;
+            var okSub = ssid === '' || o.getAttribute('data-subscale-id') === ssid;
+            o.hidden = !(okScale && okSub);
+        });
+        if (cls.selectedOptions[0] && cls.selectedOptions[0].hidden) cls.value = '';
+        cid = String(cls.value || '');
+        if (resetCat) cat.value = '';
+        Array.prototype.forEach.call(cat.options, function (o) {
+            if (!o.value) return;
+            var okScale = sid === '' || o.getAttribute('data-scale-id') === sid;
+            var okClass = cid === '' || o.getAttribute('data-class-id') === cid;
+            o.hidden = !(okScale && okClass);
+        });
+        if (cat.selectedOptions[0] && cat.selectedOptions[0].hidden) cat.value = '';
+    }
+    /**
+     * Ordena la càrrega escala → subescala → classe → categoria (la categoria depèn de la classe).
+     * Cal cridar-la després d’omplir `legal_relation_id` i abans de `setupJobPositionFields` o just després
+     * d’assignar els valors del registre, sense assignar els quatre selects de cop sense passar la cascada.
+     */
+    function applyJobPositionCascades(r) {
+        if (module() !== 'job_positions' || !r) return;
+        var scale = document.querySelector('#jp_civil_service_scale_id');
+        var sub = document.querySelector('#jp_civil_service_subscale_id');
+        var cls = document.querySelector('#jp_civil_service_class_id');
+        var cat = document.querySelector('#jp_civil_service_category_id');
+        if (!scale || !sub || !cls || !cat) return;
+        var sv = String(r.civil_service_scale_id != null ? r.civil_service_scale_id : '').trim();
+        var subv = String(r.civil_service_subscale_id != null ? r.civil_service_subscale_id : '').trim();
+        var clv = String(r.civil_service_class_id != null ? r.civil_service_class_id : '').trim();
+        var catv = String(r.civil_service_category_id != null ? r.civil_service_category_id : '').trim();
+        if (sv !== '') ensureSelectOption(scale, sv, sv);
+        scale.value = sv;
+        syncJobPositionCategoryCascade(false);
+        if (subv !== '') {
+            ensureSelectOption(sub, subv, subv);
+            sub.value = subv;
+        } else {
+            sub.value = '';
+        }
+        syncJobPositionCategoryCascade(false);
+        if (clv !== '') {
+            ensureSelectOption(cls, clv, clv);
+            cls.value = clv;
+        } else {
+            cls.value = '';
+        }
+        syncJobPositionCategoryCascade(false);
+        if (catv !== '') {
+            ensureSelectOption(cat, catv, catv);
+            cat.value = catv;
+        } else {
+            cat.value = '';
+        }
+        syncJobPositionCategoryCascade(false);
+    }
+    function syncJobPositionLegalRelationFields() {
+        if (module() !== 'job_positions') return;
+        var mode = jobPositionLegalModeFromSelect();
+        var scale = document.querySelector('#jp_civil_service_scale_id');
+        var sub = document.querySelector('#jp_civil_service_subscale_id');
+        var cls = document.querySelector('#jp_civil_service_class_id');
+        var cat = document.querySelector('#jp_civil_service_category_id');
+        var lab = document.querySelector('#jp_labor_category');
+        var civilOn = mode === 'civil';
+        var laborOn = mode === 'labor';
+        [scale, sub, cls, cat].forEach(function (el) {
+            if (!el) return;
+            el.disabled = !!currentModalReadonly || !civilOn;
+            if (!civilOn) el.value = '';
+        });
+        if (lab) {
+            lab.disabled = !!currentModalReadonly || !laborOn;
+            if (!laborOn) lab.value = '';
+        }
+        if (civilOn) syncJobPositionCategoryCascade(false);
+    }
+    function syncJobPositionActiveDerived() {
+        if (module() !== 'job_positions') return;
+        var del = document.querySelector('[data-field="deleted_at"]');
+        var chk = document.querySelector('[data-field="jp_is_active_derived"]');
+        if (!chk) return;
+        var raw = del ? String(del.value || '').trim() : '';
+        var hasEnd = false;
+        if (raw !== '') {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) hasEnd = true;
+            else if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) hasEnd = true;
+        }
+        chk.checked = !hasEnd;
+    }
+    /** Codi visible NNNN.NN i, en alta, hidden compacte NNNNNN a partir de Departament + Número. */
+    function syncJobPositionCatalogCode() {
+        if (module() !== 'job_positions') return;
+        var dept = document.querySelector('[data-job-positions-dept]');
+        var num = document.querySelector('[data-job-positions-num]');
+        var codeEl = document.querySelector('[data-job-positions-full-code]');
+        if (!codeEl) return;
+        var dRaw = dept ? String(dept.value || '').trim() : '';
+        var nRaw = num ? String(num.value || '').trim() : '';
+        if (dRaw === '' || nRaw === '') {
+            codeEl.value = '';
+            return;
+        }
+        var dDigits = dRaw.replace(/\D/g, '');
+        var nDigits = nRaw.replace(/\D/g, '');
+        if (dDigits === '' || nDigits === '') {
+            codeEl.value = '';
+            return;
+        }
+        var d4 = dDigits.length > 4 ? dDigits.slice(-4) : dDigits.padStart(4, '0');
+        var n2 = nDigits.length >= 2 ? nDigits.slice(-2) : nDigits.padStart(2, '0');
+        if (!/^\d{2}$/.test(n2)) {
+            codeEl.value = '';
+            return;
+        }
+        codeEl.value = d4 + '.' + n2;
+    }
+    function syncJobPositionHiddenIdWithCatalog() {
+        if (module() !== 'job_positions') return;
+        var orig = document.querySelector('[data-field="original_id"]');
+        if (orig && String(orig.value || '').trim() !== '') return;
+        var cat = document.querySelector('[data-job-positions-full-code]');
+        var hid = document.querySelector('#jp_job_position_id');
+        if (!hid || !cat) return;
+        var parts = String(cat.value || '').trim().split('.');
+        if (parts.length !== 2) {
+            hid.value = '';
+            return;
+        }
+        var d4 = (parts[0] || '').replace(/\D/g, '').padStart(4, '0');
+        var n2 = (parts[1] || '').replace(/\D/g, '').padStart(2, '0');
+        if (d4.length > 4) d4 = d4.slice(-4);
+        if (n2.length > 2) n2 = n2.slice(-2);
+        hid.value = d4 + n2;
+    }
+    function syncJobPositionSalaryGroupAmountPair(sel, inp) {
+        if (module() !== 'job_positions') return;
+        var s = typeof sel === 'string' ? document.querySelector(sel) : sel;
+        var i = typeof inp === 'string' ? document.querySelector(inp) : inp;
+        if (!s || !i) return;
+        var map = cfg().jobPositionSalaryGroupAmounts || {};
+        var id = String(s.value || '').trim();
+        if (id === '') {
+            i.value = '';
+            return;
+        }
+        var raw = map[id];
+        if (raw === undefined || raw === null || String(raw).trim() === '') {
+            i.value = '';
+            return;
+        }
+        i.value = formatMoneyForInput(raw);
+    }
+    function syncJobPositionOrganicLevelAmount() {
+        if (module() !== 'job_positions') return;
+        var sel = document.querySelector('#jp_organic_level');
+        var inp = document.querySelector('[data-job-positions-organic-amount]');
+        if (!sel || !inp) return;
+        var map = cfg().jobPositionOrganicLevelAmounts || {};
+        var id = String(sel.value || '').trim();
+        if (id === '') {
+            inp.value = '';
+            return;
+        }
+        var raw = map[id];
+        if (raw === undefined || raw === null || String(raw).trim() === '') {
+            inp.value = '';
+            return;
+        }
+        inp.value = formatMoneyForInput(raw);
+    }
+    function syncJobPositionSalaryAmountFields() {
+        if (module() !== 'job_positions') return;
+        syncJobPositionSalaryGroupAmountPair('#jp_classification_group', '[data-job-positions-classification-group-amount]');
+        syncJobPositionSalaryGroupAmountPair('#jp_classification_group_slash', '[data-job-positions-classification-slash-amount]');
+        syncJobPositionSalaryGroupAmountPair('#jp_classification_group_new', '[data-job-positions-classification-new-amount]');
+        syncJobPositionOrganicLevelAmount();
+    }
+    function syncJobPositionSpecialCompAmount() {
+        if (module() !== 'job_positions') return;
+        var sel = document.querySelector('[data-job-positions-special-select]');
+        var inp = document.querySelector('[data-job-positions-special-amount]');
+        if (!sel || !inp) return;
+        var map = cfg().jobPositionSpecialCompAmounts || {};
+        var id = String(sel.value || '').trim();
+        if (id === '') {
+            inp.value = '';
+            return;
+        }
+        var raw = map[id];
+        if (raw === undefined || raw === null || String(raw).trim() === '') {
+            return;
+        }
+        inp.value = formatMoneyForInput(raw);
+    }
+    function syncJobPositionGeneralCompAmount() {
+        if (module() !== 'job_positions') return;
+        var sel = document.querySelector('#jp_general_specific_compensation_id');
+        var inp = document.querySelector('[data-job-positions-general-amount]');
+        if (!sel || !inp) return;
+        var map = cfg().jobPositionGeneralCompAmounts || {};
+        var id = String(sel.value || '').trim();
+        if (id === '') {
+            inp.value = '';
+            return;
+        }
+        var raw = map[id];
+        if (raw === undefined || raw === null || String(raw).trim() === '') {
+            return;
+        }
+        inp.value = formatMoneyForInput(raw);
+    }
+    function setJobPositionIdentificationLocked(locked) {
+        if (module() !== 'job_positions') return;
+        var dept = document.querySelector('[data-job-positions-dept]');
+        var num = document.querySelector('[data-job-positions-num]');
+        if (dept && !currentModalReadonly) dept.disabled = false;
+        if (num && !currentModalReadonly) num.disabled = false;
+    }
+    function updateJobPositionTitleMirrors() {
+        if (module() !== 'job_positions') return;
+        var src = document.querySelector('[data-job-positions-title-source]');
+        var t = src ? String(src.value || '').trim() : '';
+        document.querySelectorAll('[data-job-positions-title-mirror]').forEach(function (el) {
+            el.value = t;
+        });
+    }
+    function resetJobPositionTabsToFirst() {
+        if (module() !== 'job_positions') return;
+        var root = document.querySelector('[data-job-positions-modal="1"]');
+        if (!root) return;
+        var firstKey = 'ident';
+        root.querySelectorAll('[data-job-positions-tab]').forEach(function (b) {
+            var key = b.getAttribute('data-job-positions-tab');
+            var on = key === firstKey;
+            b.classList.toggle('is-active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        root.querySelectorAll('[data-job-positions-panel]').forEach(function (panel) {
+            var key = panel.getAttribute('data-job-positions-panel');
+            var on = key === firstKey;
+            panel.classList.toggle('is-active', on);
+            panel.hidden = !on;
+        });
+    }
+    function setupJobPositionTabs() {
+        if (module() !== 'job_positions') return;
+        var root = document.querySelector('[data-job-positions-modal="1"]');
+        if (!root || root.getAttribute('data-tabs-bound') === '1') return;
+        root.setAttribute('data-tabs-bound', '1');
+        root.querySelectorAll('[data-job-positions-tab]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var key = btn.getAttribute('data-job-positions-tab');
+                root.querySelectorAll('[data-job-positions-tab]').forEach(function (b) {
+                    var on = b.getAttribute('data-job-positions-tab') === key;
+                    b.classList.toggle('is-active', on);
+                    b.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+                root.querySelectorAll('[data-job-positions-panel]').forEach(function (panel) {
+                    var on = panel.getAttribute('data-job-positions-panel') === key;
+                    panel.classList.toggle('is-active', on);
+                    panel.hidden = !on;
+                });
+            });
+        });
+    }
+    function jobPositionsAssignedGetRows() {
+        var tb = document.querySelector('[data-job-positions-assigned-rows]');
+        if (!tb) return [];
+        var out = [];
+        tb.querySelectorAll('tr[data-person-id]').forEach(function (tr) {
+            var pid = tr.getAttribute('data-person-id');
+            if (pid) out.push({ person_id: pid, label: tr.getAttribute('data-person-label') || '' });
+        });
+        return out;
+    }
+    function jobPositionsAssignedSetRows(rows, readOnly) {
+        var tb = document.querySelector('[data-job-positions-assigned-rows]');
+        if (!tb) return;
+        tb.innerHTML = '';
+        (rows || []).forEach(function (r) {
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-person-id', String(r.person_id));
+            tr.setAttribute('data-person-label', String(r.label || ''));
+            var td1 = document.createElement('td');
+            td1.textContent = r.label || String(r.person_id);
+            var td2 = document.createElement('td');
+            if (!readOnly) {
+                var rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'btn btn--ghost btn--sm';
+                rm.textContent = 'Eliminar';
+                rm.setAttribute('data-job-positions-assigned-remove', '');
+                td2.appendChild(rm);
+            }
+            tr.appendChild(td1);
+            tr.appendChild(td2);
+            tb.appendChild(tr);
+        });
+    }
+    function setJobPositionAssignedPeopleReadOnly(readOnly) {
+        if (module() !== 'job_positions') return;
+        var addBtn = document.querySelector('[data-job-positions-assigned-add]');
+        if (addBtn) {
+            addBtn.hidden = !!readOnly;
+            addBtn.disabled = !!readOnly;
+            if (readOnly) addBtn.setAttribute('aria-disabled', 'true');
+            else addBtn.removeAttribute('aria-disabled');
+        }
+        var rows = jobPositionsAssignedGetRows();
+        jobPositionsAssignedSetRows(rows, readOnly);
+    }
+    function openJobPositionAddOccupantModal() {
+        if (module() !== 'job_positions') return;
+        if (currentMaintenanceModalMode === 'view' || currentModalReadonly) return;
+        var picker = cfg().jobPositionsPeoplePicker || [];
+        var existing = {};
+        jobPositionsAssignedGetRows().forEach(function (r) { existing[String(r.person_id)] = true; });
+        var opts = picker.filter(function (p) { return !existing[String(p.person_id)]; });
+        if (typeof window.showActionModal !== 'function') return;
+        var html = '<div class="form-group" style="margin-top:8px;"><label class="form-label" for="jp_pick_person">Persona</label><select class="form-select" id="jp_pick_person"><option value="">—</option>';
+        opts.forEach(function (p) {
+            var lab = String(p.label || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            html += '<option value="' + String(p.person_id) + '">' + lab + '</option>';
+        });
+        html += '</select><p class="form-error" id="jp_pick_person_err" hidden></p></div>';
+        window.showActionModal({
+            title: 'Afegir ocupant',
+            message: 'Selecciona una persona',
+            type: 'confirm',
+            size: 'md',
+            contentHtml: html,
+            buttons: [
+                { label: 'Cancel·lar', className: 'modal__btn--no', dataClose: true },
+                {
+                    label: 'Afegir',
+                    className: 'modal__btn--si',
+                    closeOnClick: false,
+                    onClick: function (close, btn) {
+                        var root = btn && btn.closest ? btn.closest('.js-app-modal') : document.querySelector('.js-app-modal');
+                        var sel = root ? root.querySelector('#jp_pick_person') : null;
+                        var err = root ? root.querySelector('#jp_pick_person_err') : null;
+                        var v = sel ? String(sel.value || '').trim() : '';
+                        if (v === '') {
+                            if (err) { err.hidden = false; err.textContent = 'Cal seleccionar una persona.'; }
+                            return;
+                        }
+                        if (existing[v]) {
+                            if (err) { err.hidden = false; err.textContent = 'Aquesta persona ja és ocupant.'; }
+                            return;
+                        }
+                        var label = '';
+                        if (sel && sel.selectedOptions[0]) label = sel.selectedOptions[0].textContent || '';
+                        var rows = jobPositionsAssignedGetRows();
+                        rows.push({ person_id: v, label: label });
+                        jobPositionsAssignedSetRows(rows, currentModalReadonly || currentMaintenanceModalMode === 'view');
+                        close();
+                    }
+                }
+            ]
+        });
+    }
+    function setupJobPositionFields() {
+        if (module() !== 'job_positions') return;
+        setupJobPositionTabs();
+        var shell = document.querySelector('.job-positions-ocupants');
+        if (shell && shell.getAttribute('data-jp-ocupants-delegation') !== '1') {
+            shell.setAttribute('data-jp-ocupants-delegation', '1');
+            shell.addEventListener('click', function (e) {
+                if (module() !== 'job_positions' || currentModalReadonly || currentMaintenanceModalMode === 'view') return;
+                var t = e.target;
+                if (!t || !t.closest) return;
+                var rm = t.closest('[data-job-positions-assigned-remove]');
+                if (!rm) return;
+                var tr = rm.closest('tr[data-person-id]');
+                if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
+            });
+        }
+        var legal = document.querySelector('#jp_legal_relation_id');
+        if (legal && legal.getAttribute('data-jp-legal-bound') !== '1') {
+            legal.setAttribute('data-jp-legal-bound', '1');
+            legal.addEventListener('change', function () {
+                syncJobPositionLegalRelationFields();
+            });
+        }
+        var scale = document.querySelector('#jp_civil_service_scale_id');
+        var sub = document.querySelector('#jp_civil_service_subscale_id');
+        var cls = document.querySelector('#jp_civil_service_class_id');
+        if (scale && scale.getAttribute('data-jp-cascade-bound') !== '1') {
+            scale.setAttribute('data-jp-cascade-bound', '1');
+            scale.addEventListener('change', function () {
+                syncJobPositionCategoryCascade(true);
+                syncJobPositionLegalRelationFields();
+            });
+        }
+        if (sub && sub.getAttribute('data-jp-cascade-bound') !== '1') {
+            sub.setAttribute('data-jp-cascade-bound', '1');
+            sub.addEventListener('change', function () { syncJobPositionCategoryCascade(true); });
+        }
+        if (cls && cls.getAttribute('data-jp-cascade-bound') !== '1') {
+            cls.setAttribute('data-jp-cascade-bound', '1');
+            cls.addEventListener('change', function () { syncJobPositionCategoryCascade(true); });
+        }
+        var delAt = document.querySelector('[data-job-positions-deleted-at]');
+        if (delAt && delAt.getAttribute('data-jp-del-bound') !== '1') {
+            delAt.setAttribute('data-jp-del-bound', '1');
+            delAt.addEventListener('change', syncJobPositionActiveDerived);
+            delAt.addEventListener('input', syncJobPositionActiveDerived);
+        }
+        var titleSrc = document.querySelector('[data-job-positions-title-source]');
+        if (titleSrc && titleSrc.getAttribute('data-jp-title-bound') !== '1') {
+            titleSrc.setAttribute('data-jp-title-bound', '1');
+            titleSrc.addEventListener('input', updateJobPositionTitleMirrors);
+            titleSrc.addEventListener('change', updateJobPositionTitleMirrors);
+        }
+        var addBtn = document.querySelector('[data-job-positions-assigned-add]');
+        if (addBtn && addBtn.getAttribute('data-jp-add-bound') !== '1') {
+            addBtn.setAttribute('data-jp-add-bound', '1');
+            addBtn.addEventListener('click', function () {
+                if (currentMaintenanceModalMode === 'view' || currentModalReadonly) return;
+                openJobPositionAddOccupantModal();
+            });
+        }
+        var deptJp = document.querySelector('[data-job-positions-dept]');
+        if (deptJp && deptJp.getAttribute('data-jp-dept-bound') !== '1') {
+            deptJp.setAttribute('data-jp-dept-bound', '1');
+            deptJp.addEventListener('change', function () {
+                syncJobPositionCatalogCode();
+                syncJobPositionHiddenIdWithCatalog();
+            });
+        }
+        var numJp = document.querySelector('[data-job-positions-num]');
+        if (numJp && numJp.getAttribute('data-jp-num-bound') !== '1') {
+            numJp.setAttribute('data-jp-num-bound', '1');
+            numJp.addEventListener('input', function () {
+                syncJobPositionCatalogCode();
+                syncJobPositionHiddenIdWithCatalog();
+            });
+            numJp.addEventListener('change', function () {
+                syncJobPositionCatalogCode();
+                syncJobPositionHiddenIdWithCatalog();
+            });
+        }
+        var specSelJp = document.querySelector('[data-job-positions-special-select]');
+        if (specSelJp && specSelJp.getAttribute('data-jp-spec-bound') !== '1') {
+            specSelJp.setAttribute('data-jp-spec-bound', '1');
+            specSelJp.addEventListener('change', syncJobPositionSpecialCompAmount);
+        }
+        var genSelJp = document.querySelector('#jp_general_specific_compensation_id');
+        if (genSelJp && genSelJp.getAttribute('data-jp-gen-bound') !== '1') {
+            genSelJp.setAttribute('data-jp-gen-bound', '1');
+            genSelJp.addEventListener('change', syncJobPositionGeneralCompAmount);
+        }
+        var jpCg = document.querySelector('#jp_classification_group');
+        if (jpCg && jpCg.getAttribute('data-jp-sal-bound') !== '1') {
+            jpCg.setAttribute('data-jp-sal-bound', '1');
+            jpCg.addEventListener('change', function () { syncJobPositionSalaryGroupAmountPair('#jp_classification_group', '[data-job-positions-classification-group-amount]'); });
+        }
+        var jpCgs = document.querySelector('#jp_classification_group_slash');
+        if (jpCgs && jpCgs.getAttribute('data-jp-sal-bound') !== '1') {
+            jpCgs.setAttribute('data-jp-sal-bound', '1');
+            jpCgs.addEventListener('change', function () { syncJobPositionSalaryGroupAmountPair('#jp_classification_group_slash', '[data-job-positions-classification-slash-amount]'); });
+        }
+        var jpCgn = document.querySelector('#jp_classification_group_new');
+        if (jpCgn && jpCgn.getAttribute('data-jp-sal-bound') !== '1') {
+            jpCgn.setAttribute('data-jp-sal-bound', '1');
+            jpCgn.addEventListener('change', function () { syncJobPositionSalaryGroupAmountPair('#jp_classification_group_new', '[data-job-positions-classification-new-amount]'); });
+        }
+        var jpOl = document.querySelector('#jp_organic_level');
+        if (jpOl && jpOl.getAttribute('data-jp-sal-bound') !== '1') {
+            jpOl.setAttribute('data-jp-sal-bound', '1');
+            jpOl.addEventListener('change', syncJobPositionOrganicLevelAmount);
+        }
+        syncJobPositionLegalRelationFields();
+        syncJobPositionCategoryCascade(false);
+        syncJobPositionActiveDerived();
+        updateJobPositionTitleMirrors();
+        syncJobPositionSpecialCompAmount();
+        syncJobPositionGeneralCompAmount();
+        syncJobPositionSalaryAmountFields();
+        syncJobPositionCatalogCode();
+        syncJobPositionHiddenIdWithCatalog();
     }
     function parseVisualPercent100(value) {
         var t = String(value || '').trim();
@@ -987,6 +1507,9 @@
             syncPeopleAdministrativeStatusByLegalRelation();
             calculatePeopleSeniority();
         }
+        if (mod === 'job_positions') {
+            setupJobPositionFields();
+        }
     }
     function fillSelect(sel, items, valKey, txtFn){
         if(!sel) return;
@@ -1077,6 +1600,14 @@
             syncPeopleAdministrativeStatusByLegalRelation();
             calculatePeopleSeniority();
         }
+        if (module() === 'job_positions') {
+            jobPositionsAssignedSetRows([], false);
+            resetJobPositionTabsToFirst();
+            var jid0 = document.querySelector('#jp_job_position_id');
+            if (jid0) jid0.value = '';
+            setupJobPositionFields();
+            setJobPositionIdentificationLocked(false);
+        }
         applyCascades();
     }
     function setReadOnlyMode(readOnly, form) {
@@ -1143,6 +1674,34 @@
             syncPeopleAdministrativeStatusByLegalRelation();
             setPeopleSeniorityComputedReadOnly();
         }
+        if (module() === 'job_positions') {
+            var jpAct = f.querySelector('[data-field="jp_is_active_derived"]');
+            if (jpAct) {
+                jpAct.disabled = true;
+            }
+            var jpSpecAmt = f.querySelector('[data-job-positions-special-amount]');
+            if (jpSpecAmt) {
+                jpSpecAmt.readOnly = true;
+                jpSpecAmt.disabled = !!currentModalReadonly;
+            }
+            var jpGenAmt = f.querySelector('[data-job-positions-general-amount]');
+            if (jpGenAmt) {
+                jpGenAmt.readOnly = true;
+                jpGenAmt.disabled = !!currentModalReadonly;
+            }
+            ['data-job-positions-classification-group-amount', 'data-job-positions-classification-slash-amount', 'data-job-positions-classification-new-amount', 'data-job-positions-organic-amount'].forEach(function (attr) {
+                var el = f.querySelector('[' + attr + ']');
+                if (el) {
+                    el.readOnly = true;
+                    el.disabled = !!currentModalReadonly;
+                }
+            });
+            syncJobPositionLegalRelationFields();
+            syncJobPositionActiveDerived();
+            setJobPositionAssignedPeopleReadOnly(currentModalReadonly);
+            var jpOrig = $('[data-field="original_id"]', f);
+            setJobPositionIdentificationLocked(!!(jpOrig && String(jpOrig.value || '').trim() !== ''));
+        }
     }
     function setMode(create, readOnly){
         currentMaintenanceModalMode = readOnly ? 'view' : (create ? 'new' : 'edit');
@@ -1151,7 +1710,7 @@
         if(s) s.textContent=readOnly?'Consulta en mode només lectura':(create?'Introdueix les dades del nou registre':'Modifica la informació del registre');
         if (module() === 'management_positions') toggleCopyManagementPositionButton();
     }
-    function openCreate(){ if(!cfg().canCreate || !cfg().implemented) return; var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(true,false); setReadOnlyMode(false,f); if(module()==='maintenance_programs') updateProgramComputedCode(); if(module()==='maintenance_subprograms') updateSubprogramComputedCode(); openModal(); }
+    function openCreate(){ if(!cfg().canCreate || !cfg().implemented) return; var f=$('#maintenance-modal-form'); if(!f) return; reset(f); setMode(true,false); setReadOnlyMode(false,f); if(module()==='maintenance_programs') updateProgramComputedCode(); if(module()==='maintenance_subprograms') updateSubprogramComputedCode(); if(module()==='job_positions'){ setupJobPositionFields(); setJobPositionIdentificationLocked(false); } openModal(); }
     function openRecord(id, readOnly){
         if(!cfg().implemented) return;
         if(readOnly){ if(cfg().canView===false) return; } else { if(!cfg().canEdit) return; }
@@ -1432,6 +1991,123 @@
                 openModal();
                 return;
             }
+            if (module() === 'job_positions') {
+                var jpShell = f.querySelector('[data-job-positions-modal="1"]');
+                function jobPosField(dataField) {
+                    return jpShell ? jpShell.querySelector('[data-field="' + dataField + '"]') : null;
+                }
+                $('[data-field="original_id"]', f).value = String(r.job_position_id != null ? r.job_position_id : '');
+                var jpid = String(r.job_position_id || '').trim();
+                var idElJp = document.querySelector('#jp_job_position_id');
+                if (idElJp) idElJp.value = jpid;
+                $('[data-field="job_title"]', f).value = String(r.job_title || '');
+                $('[data-field="org_unit_level_3_id"]', f).value = String(r.org_unit_level_3_id != null ? r.org_unit_level_3_id : '');
+                $('[data-field="job_number"]', f).value = String(r.job_number || '');
+                syncJobPositionCatalogCode();
+                var catType = String(r.catalog_code || '');
+                var catSelJp = jobPosField('catalog_code');
+                if (catSelJp) {
+                    ensureSelectOption(catSelJp, catType, catType);
+                    catSelJp.value = catType;
+                }
+                var orgDepSel = jobPosField('org_dependency_id');
+                var orgDepVal = String(r.org_dependency_id || '').trim();
+                if (orgDepSel) {
+                    ensureSelectOption(orgDepSel, orgDepVal, orgDepVal);
+                    orgDepSel.value = orgDepVal;
+                }
+                var legalJp = jobPosField('legal_relation_id');
+                if (legalJp) legalJp.value = String(r.legal_relation_id != null ? r.legal_relation_id : '');
+                applyJobPositionCascades(r);
+                var labJp = jobPosField('labor_category');
+                if (labJp) labJp.value = String(r.labor_category || '');
+                var grpMain = String(r.classification_group || '').trim();
+                var grpSlash = String(r.classification_group_slash || '').trim();
+                var grpNew = String(r.classification_group_new || '').trim();
+                var olvRaw = String(r.organic_level || '').trim();
+                var selCg = jobPosField('classification_group');
+                var selCgs = jobPosField('classification_group_slash');
+                var selCgn = jobPosField('classification_group_new');
+                var selOl = jobPosField('organic_level');
+                if (selCg) {
+                    ensureSelectOption(selCg, grpMain, grpMain);
+                    selCg.value = grpMain;
+                }
+                if (selCgs) {
+                    ensureSelectOption(selCgs, grpSlash, grpSlash);
+                    selCgs.value = grpSlash;
+                }
+                if (selCgn) {
+                    ensureSelectOption(selCgn, grpNew, grpNew);
+                    selCgn.value = grpNew;
+                }
+                if (selOl) {
+                    ensureSelectOption(selOl, olvRaw, olvRaw);
+                    selOl.value = olvRaw;
+                }
+                $('[data-field="special_specific_compensation_id"]', f).value = String(r.special_specific_compensation_id != null ? r.special_specific_compensation_id : '');
+                $('[data-field="general_specific_compensation_id"]', f).value = String(r.general_specific_compensation_id != null ? r.general_specific_compensation_id : '');
+                $('[data-field="general_specific_compensation_amount"]', f).value = formatMoneyForInput(r.general_specific_compensation_amount);
+                $('[data-field="special_specific_compensation_amount"]', f).value = formatMoneyForInput(r.special_specific_compensation_amount);
+                $('[data-field="job_type_id"]', f).value = String(r.job_type_id || '');
+                $('[data-field="contribution_epigraph_id"]', f).value = String(r.contribution_epigraph_id != null ? r.contribution_epigraph_id : '');
+                $('[data-field="contribution_group_id"]', f).value = String(r.contribution_group_id != null ? r.contribution_group_id : '');
+                $('[data-field="created_at"]', f).value = formatIsoOrDbDateForDisplay(r.created_at);
+                $('[data-field="creation_reason"]', f).value = String(r.creation_reason || '');
+                $('[data-field="deleted_at"]', f).value = formatIsoOrDbDateForDisplay(r.deleted_at);
+                $('[data-field="deletion_reason"]', f).value = String(r.deletion_reason || '');
+                $('[data-field="deletion_file_reference"]', f).value = String(r.deletion_file_reference || '');
+                $('[data-field="creation_file_reference"]', f).value = String(r.creation_file_reference || '');
+                $('[data-field="job_evaluation"]', f).value = r.job_evaluation == null ? '' : String(r.job_evaluation);
+                var bAmJp = $('[data-field="is_to_be_amortized"]', f);
+                if (bAmJp) bAmJp.checked = String(r.is_to_be_amortized || '0') === '1';
+                $('[data-field="workday_type"]', f).value = String(r.workday_type || '');
+                $('[data-field="working_time_dedication"]', f).value = String(r.working_time_dedication || '');
+                $('[data-field="schedule_text"]', f).value = String(r.schedule_text || '');
+                var bn1 = $('[data-field="has_night_schedule"]', f); if (bn1) bn1.checked = String(r.has_night_schedule || '0') === '1';
+                var bh1 = $('[data-field="has_holiday_schedule"]', f); if (bh1) bh1.checked = String(r.has_holiday_schedule || '0') === '1';
+                var bs1 = $('[data-field="has_shift_schedule"]', f); if (bs1) bs1.checked = String(r.has_shift_schedule || '0') === '1';
+                var bsp = $('[data-field="has_special_dedication"]', f); if (bsp) bsp.checked = String(r.has_special_dedication || '0') === '1';
+                $('[data-field="special_dedication_type"]', f).value = String(r.special_dedication_type || '');
+                $('[data-field="availability_id"]', f).value = String(r.availability_id != null ? r.availability_id : '');
+                $('[data-field="mission"]', f).value = String(r.mission || '');
+                $('[data-field="generic_functions"]', f).value = String(r.generic_functions || '');
+                $('[data-field="specific_functions"]', f).value = String(r.specific_functions || '');
+                $('[data-field="qualification_requirements"]', f).value = String(r.qualification_requirements || '');
+                $('[data-field="other_requirements"]', f).value = String(r.other_requirements || '');
+                $('[data-field="training_requirements"]', f).value = String(r.training_requirements || '');
+                $('[data-field="experience_requirements"]', f).value = String(r.experience_requirements || '');
+                $('[data-field="other_merits"]', f).value = String(r.other_merits || '');
+                $('[data-field="provision_method_id"]', f).value = String(r.provision_method_id != null ? r.provision_method_id : '');
+                $('[data-field="effort"]', f).value = String(r.effort || '');
+                $('[data-field="hardship"]', f).value = String(r.hardship || '');
+                $('[data-field="danger"]', f).value = String(r.danger || '');
+                $('[data-field="incompatibilities"]', f).value = String(r.incompatibilities || '');
+                $('[data-field="provincial_notes"]', f).value = String(r.provincial_notes || '');
+                $('[data-field="work_center_id"]', f).value = String(r.work_center_id != null ? r.work_center_id : '');
+                $('[data-field="notes"]', f).value = String(r.notes || '');
+                var ap = Array.isArray(r.assigned_people) ? r.assigned_people : [];
+                var apRows = ap.map(function (p) {
+                    var pid = String(p.person_id != null ? p.person_id : '');
+                    var parts = [p.last_name_1, p.last_name_2, p.first_name].filter(function (x) { return x; });
+                    var lab = parts.join(' ');
+                    var disp = pid.length ? (('00000' + pid).slice(-5)) : '';
+                    lab = disp + (lab ? ' — ' + lab : '');
+                    return { person_id: pid, label: lab };
+                });
+                jobPositionsAssignedSetRows(apRows, !!readOnly);
+                setupJobPositionFields();
+                syncJobPositionActiveDerived();
+                updateJobPositionTitleMirrors();
+                resetJobPositionTabsToFirst();
+                setReadOnlyMode(!!readOnly, f);
+                setJobPositionAssignedPeopleReadOnly(!!readOnly);
+                syncJobPositionSpecialCompAmount();
+                syncJobPositionGeneralCompAmount();
+                syncJobPositionSalaryAmountFields();
+                openModal();
+                return;
+            }
             var idCell = rowIdFromData(r);
             var nameCell = rowNameFromData(r);
             if (Object.prototype.hasOwnProperty.call(r, 'org_unit_level_3_id')) {
@@ -1515,9 +2191,31 @@
         ev.preventDefault();
         if (currentModalReadonly) { return; }
         var f=$('#maintenance-modal-form'); if(!f) return;
+        var jpDeptEl = null;
+        var jpNumEl = null;
+        var jpDeptWasDis = false;
+        var jpNumWasDis = false;
+        if (module() === 'job_positions') {
+            jpDeptEl = f.querySelector('[data-job-positions-dept]');
+            jpNumEl = f.querySelector('[data-job-positions-num]');
+            if (jpDeptEl && jpDeptEl.disabled) {
+                jpDeptEl.disabled = false;
+                jpDeptWasDis = true;
+            }
+            if (jpNumEl && jpNumEl.disabled) {
+                jpNumEl.disabled = false;
+                jpNumWasDis = true;
+            }
+            syncJobPositionCatalogCode();
+            syncJobPositionHiddenIdWithCatalog();
+        }
         clearErrors(f);
         var csrf=cfg().csrfToken||'';
         var fd=new FormData(f);
+        if (module() === 'job_positions') {
+            if (jpDeptWasDis && jpDeptEl) jpDeptEl.disabled = true;
+            if (jpNumWasDis && jpNumEl) jpNumEl.disabled = true;
+        }
         if (module() === 'maintenance_programs') {
             var sff = (fd.get('subfunction_id') || '').toString().trim();
             var pnn = (fd.get('program_number') || '').toString().trim();
@@ -1808,6 +2506,33 @@
                 if (!pd.ok || pd.value === null) { showErrors(f, { subprogram_people: 'La dedicació dels subprogrames ha d\'estar entre 0 i 100.' }); return; }
             }
         }
+        if (module() === 'job_positions') {
+            var deptJpV = (fd.get('org_unit_level_3_id') || '').toString().trim();
+            var numJpV = (fd.get('job_number') || '').toString().trim();
+            var codeDispJpV = (fd.get('job_position_code_display') || '').toString().trim();
+            var catJp = (fd.get('job_position_id') || '').toString().trim();
+            var jtitle = (fd.get('job_title') || '').toString().trim();
+            if (deptJpV === '') { showErrors(f, { org_unit_level_3_id: 'El departament és obligatori.' }); return; }
+            if (numJpV === '') { showErrors(f, { job_number: 'El número és obligatori.' }); return; }
+            if (codeDispJpV === '') { showErrors(f, { job_position_code_display: 'El camp Codi complet del lloc és obligatori.' }); return; }
+            if (catJp === '') { showErrors(f, { job_position_code_display: 'El camp Codi complet del lloc és obligatori.' }); return; }
+            if (jtitle === '') { showErrors(f, { job_title: 'La denominació és obligatòria.' }); return; }
+            var modeJp = jobPositionLegalModeFromSelect();
+            if (modeJp === 'civil') {
+                if ((fd.get('civil_service_scale_id') || '').toString().trim() === '') { showErrors(f, { civil_service_scale_id: 'L’escala és obligatòria.' }); return; }
+                if ((fd.get('civil_service_subscale_id') || '').toString().trim() === '') { showErrors(f, { civil_service_subscale_id: 'La subescala és obligatòria.' }); return; }
+                if ((fd.get('civil_service_class_id') || '').toString().trim() === '') { showErrors(f, { civil_service_class_id: 'La classe és obligatòria.' }); return; }
+                if ((fd.get('civil_service_category_id') || '').toString().trim() === '') { showErrors(f, { civil_service_category_id: 'La categoria és obligatòria.' }); return; }
+            } else if (modeJp === 'labor') {
+                if ((fd.get('labor_category') || '').toString().trim() === '') { showErrors(f, { labor_category: 'La categoria laboral és obligatòria.' }); return; }
+            }
+            var specJp = normalizeMoneyInput((fd.get('special_specific_compensation_amount') || '').toString());
+            if (specJp === null) { showErrors(f, { special_specific_compensation_amount: 'Import invàlid.' }); return; }
+            var caJp = (fd.get('created_at') || '').toString().trim();
+            var daJp = (fd.get('deleted_at') || '').toString().trim();
+            if (caJp !== '' && !/^\d{2}\/\d{2}\/\d{4}$/.test(caJp) && !/^\d{4}-\d{2}-\d{2}$/.test(caJp)) { showErrors(f, { created_at: 'La data no és vàlida.' }); return; }
+            if (daJp !== '' && !/^\d{2}\/\d{2}\/\d{4}$/.test(daJp) && !/^\d{4}-\d{2}-\d{2}$/.test(daJp)) { showErrors(f, { deleted_at: 'La data no és vàlida.' }); return; }
+        }
         var payload={
             action:'save', module:module(), csrf_token:csrf,
             original_id:(fd.get('original_id')||'').toString(),
@@ -1928,6 +2653,67 @@
             ,group_e_current_year_triennia:(fd.get('group_e_current_year_triennia')||'').toString()
             ,subprogram_people:peopleSubprogramGetRows()
         };
+        if (module() === 'job_positions') {
+            var specSave = normalizeMoneyInput((fd.get('special_specific_compensation_amount') || '').toString());
+            payload.id = (fd.get('job_position_id') || '').toString();
+            payload.job_position_id = payload.id;
+            payload.name = (fd.get('job_title') || '').toString();
+            payload.job_title = payload.name;
+            payload.org_unit_level_3_id = (fd.get('org_unit_level_3_id') || '').toString();
+            payload.job_number = (fd.get('job_number') || '').toString();
+            payload.catalog_code = (fd.get('catalog_code') || '').toString();
+            payload.org_dependency_id = (fd.get('org_dependency_id') || '').toString();
+            payload.legal_relation_id = (fd.get('legal_relation_id') || '').toString();
+            payload.civil_service_scale_id = (fd.get('civil_service_scale_id') || '').toString();
+            payload.civil_service_subscale_id = (fd.get('civil_service_subscale_id') || '').toString();
+            payload.civil_service_class_id = (fd.get('civil_service_class_id') || '').toString();
+            payload.civil_service_category_id = (fd.get('civil_service_category_id') || '').toString();
+            payload.labor_category = (fd.get('labor_category') || '').toString();
+            payload.classification_group = (fd.get('classification_group') || '').toString();
+            payload.classification_group_slash = (fd.get('classification_group_slash') || '').toString();
+            payload.organic_level = (fd.get('organic_level') || '').toString();
+            payload.classification_group_new = (fd.get('classification_group_new') || '').toString();
+            payload.special_specific_compensation_id = (fd.get('special_specific_compensation_id') || '').toString();
+            payload.general_specific_compensation_id = (fd.get('general_specific_compensation_id') || '').toString();
+            payload.special_specific_compensation_amount = specSave || '';
+            payload.job_type_id = (fd.get('job_type_id') || '').toString();
+            payload.contribution_epigraph_id = (fd.get('contribution_epigraph_id') || '').toString();
+            payload.contribution_group_id = (fd.get('contribution_group_id') || '').toString();
+            payload.created_at = (fd.get('created_at') || '').toString();
+            payload.creation_reason = (fd.get('creation_reason') || '').toString();
+            payload.creation_file_reference = (fd.get('creation_file_reference') || '').toString();
+            payload.deleted_at = (fd.get('deleted_at') || '').toString();
+            payload.deletion_reason = (fd.get('deletion_reason') || '').toString();
+            payload.deletion_file_reference = (fd.get('deletion_file_reference') || '').toString();
+            payload.job_evaluation = (fd.get('job_evaluation') || '').toString();
+            payload.is_to_be_amortized = (function () { var el = document.querySelector('#jp_is_to_be_amortized'); return el && el.checked ? 1 : 0; })();
+            payload.workday_type = (fd.get('workday_type') || '').toString();
+            payload.working_time_dedication = (fd.get('working_time_dedication') || '').toString();
+            payload.schedule_text = (fd.get('schedule_text') || '').toString();
+            payload.has_night_schedule = (function () { var el = document.querySelector('[data-field="has_night_schedule"]'); return el && el.checked ? 1 : 0; })();
+            payload.has_holiday_schedule = (function () { var el = document.querySelector('[data-field="has_holiday_schedule"]'); return el && el.checked ? 1 : 0; })();
+            payload.has_shift_schedule = (function () { var el = document.querySelector('[data-field="has_shift_schedule"]'); return el && el.checked ? 1 : 0; })();
+            payload.has_special_dedication = (function () { var el = document.querySelector('[data-field="has_special_dedication"]'); return el && el.checked ? 1 : 0; })();
+            payload.special_dedication_type = (fd.get('special_dedication_type') || '').toString();
+            payload.availability_id = (fd.get('availability_id') || '').toString();
+            payload.mission = (fd.get('mission') || '').toString();
+            payload.generic_functions = (fd.get('generic_functions') || '').toString();
+            payload.specific_functions = (fd.get('specific_functions') || '').toString();
+            payload.qualification_requirements = (fd.get('qualification_requirements') || '').toString();
+            payload.other_requirements = (fd.get('other_requirements') || '').toString();
+            payload.training_requirements = (fd.get('training_requirements') || '').toString();
+            payload.experience_requirements = (fd.get('experience_requirements') || '').toString();
+            payload.other_merits = (fd.get('other_merits') || '').toString();
+            payload.provision_method_id = (fd.get('provision_method_id') || '').toString();
+            payload.effort = (fd.get('effort') || '').toString();
+            payload.hardship = (fd.get('hardship') || '').toString();
+            payload.danger = (fd.get('danger') || '').toString();
+            payload.incompatibilities = (fd.get('incompatibilities') || '').toString();
+            payload.provincial_notes = (fd.get('provincial_notes') || '').toString();
+            payload.work_center_id = (fd.get('work_center_id') || '').toString();
+            payload.notes = (fd.get('notes') || '').toString();
+            payload.assigned_person_ids = jobPositionsAssignedGetRows().map(function (x) { return x.person_id; });
+        }
         fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)})
             .then(function(r){return r.json();})
             .then(function(d){ if(d.ok){ closeModal(); if(window.showAlert){ window.showAlert('success','Èxit',d.message||'Desat.'); setTimeout(function(){window.location.reload();},650);} else { window.location.reload(); } } else if(d.errors){ showErrors(f,d.errors); } })

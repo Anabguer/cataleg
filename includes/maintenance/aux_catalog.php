@@ -33,6 +33,7 @@ function maintenance_modules_config(): array
         'maintenance_personal_transitory_bonus' => ['title' => 'CPT personal (transitori)', 'table' => 'people', 'implemented' => true],
         'people' => ['title' => 'Catàleg de persones', 'table' => 'people', 'implemented' => true],
         'management_positions' => ['title' => 'Catàleg places', 'table' => 'positions', 'implemented' => true],
+        'job_positions' => ['title' => 'Llocs de Treball', 'table' => 'job_positions', 'implemented' => true],
         'maintenance_subprograms' => ['title' => 'Subprogrames', 'table' => 'subprograms', 'implemented' => true],
     ];
 }
@@ -54,7 +55,7 @@ function maintenance_sort_normalize(string $module, string $sortBy, string $sort
 /** Mòduls amb llistat SQL genèric (escales / subescales / classes / categories). */
 function maintenance_catalog_list_modules(): array
 {
-    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'maintenance_subprograms'];
+    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms'];
 }
 
 /** Mòduls de llistat amb persistència CRUD al catàleg (exclou llistats només lectura / accions massives sobre altres taules). */
@@ -208,10 +209,189 @@ function maintenance_programs_options_for_select(PDO $db, int $year): array
  */
 function maintenance_job_positions_cm_options(PDO $db, int $year): array
 {
-    $st = $db->prepare("SELECT job_position_id AS id, job_title AS name FROM job_positions WHERE catalog_year = :y AND job_type_id = 'CM' AND deleted_at IS NULL ORDER BY job_position_id ASC");
+    $st = $db->prepare("SELECT job_position_id AS id, job_title AS name, catalog_code FROM job_positions WHERE catalog_year = :y AND job_type_id = 'CM' AND deleted_at IS NULL ORDER BY job_title ASC, job_position_id ASC");
     $st->execute(['y' => $year]);
 
     return $st->fetchAll() ?: [];
+}
+
+/**
+ * Tots els llocs de comandament (CM) per al selector «Responsable» a la modal de llocs.
+ * Sense filtrar per baixa: inclou registres amb `deleted_at` (p. ex. codi històric).
+ * Ordenat per `job_position_id`.
+ *
+ * @return list<array{job_position_id:string,job_title:string}>
+ */
+function maintenance_job_positions_responsible_cm_options(PDO $db, int $year): array
+{
+    $st = $db->prepare("SELECT job_position_id, job_title FROM job_positions WHERE catalog_year = :y AND UPPER(TRIM(job_type_id)) = 'CM' ORDER BY job_position_id ASC");
+    $st->execute(['y' => $year]);
+
+    return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+}
+
+/**
+ * Imports de complements específics especials per any (per omplir el camp import a la modal de llocs).
+ *
+ * @return array<string, string> mapa special_specific_compensation_id (string) => import amb punt decimal
+ */
+function maintenance_job_positions_special_comp_amount_map(PDO $db, int $year): array
+{
+    $st = $db->prepare('SELECT special_specific_compensation_id, amount FROM specific_compensation_special WHERE catalog_year = :y');
+    $st->execute(['y' => $year]);
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $r) {
+        $sid = (string) ($r['special_specific_compensation_id'] ?? '');
+        if ($sid === '') {
+            continue;
+        }
+        $a = $r['amount'] ?? null;
+        if ($a === null || $a === '') {
+            $out[$sid] = '';
+        } else {
+            $out[$sid] = is_numeric($a) ? (string) $a : trim((string) $a);
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Imports de complements específics generals per any (modal de llocs).
+ *
+ * @return array<string, string> mapa general_specific_compensation_id (string) => import amb punt decimal
+ */
+function maintenance_job_positions_general_comp_amount_map(PDO $db, int $year): array
+{
+    $st = $db->prepare('SELECT general_specific_compensation_id, amount FROM specific_compensation_general WHERE catalog_year = :y');
+    $st->execute(['y' => $year]);
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $r) {
+        $sid = (string) ($r['general_specific_compensation_id'] ?? '');
+        if ($sid === '') {
+            continue;
+        }
+        $a = $r['amount'] ?? null;
+        if ($a === null || $a === '') {
+            $out[$sid] = '';
+        } else {
+            $out[$sid] = is_numeric($a) ? (string) $a : trim((string) $a);
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Imports de grups de sou (salary_base_by_group) per a la modal de llocs.
+ *
+ * @return array<string, string> classification_group (string) => import amb punt decimal
+ */
+function maintenance_job_positions_salary_group_amount_map(PDO $db, int $year): array
+{
+    $st = $db->prepare('SELECT classification_group, base_salary FROM salary_base_by_group WHERE catalog_year = :y');
+    $st->execute(['y' => $year]);
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $r) {
+        $g = trim((string) ($r['classification_group'] ?? ''));
+        if ($g === '') {
+            continue;
+        }
+        $a = $r['base_salary'] ?? null;
+        if ($a === null || $a === '') {
+            $out[$g] = '';
+        } else {
+            $out[$g] = is_numeric($a) ? (string) $a : trim((string) $a);
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Imports de nivell orgànic (destination_allowances) per a la modal de llocs.
+ *
+ * @return array<string, string> organic_level (string) => import amb punt decimal
+ */
+function maintenance_job_positions_organic_level_amount_map(PDO $db, int $year): array
+{
+    $st = $db->prepare('SELECT organic_level, destination_allowance, destination_allowance_new FROM destination_allowances WHERE catalog_year = :y');
+    $st->execute(['y' => $year]);
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $r) {
+        $olv = trim((string) ($r['organic_level'] ?? ''));
+        if ($olv === '') {
+            continue;
+        }
+        $pick = $r['destination_allowance_new'] ?? $r['destination_allowance'] ?? null;
+        if ($pick === null || $pick === '') {
+            $out[$olv] = '';
+        } else {
+            $out[$olv] = is_numeric($pick) ? (string) $pick : trim((string) $pick);
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Tipus de lloc (codi + denominació coneguda) per al selector de llocs.
+ *
+ * @return list<array{id:string,label:string}>
+ */
+function maintenance_job_position_type_options(PDO $db, int $year): array
+{
+    $labels = [
+        'CM' => 'Comandament',
+    ];
+    $st = $db->prepare("SELECT DISTINCT TRIM(job_type_id) AS jid FROM job_positions WHERE catalog_year = :y AND deleted_at IS NULL AND job_type_id IS NOT NULL AND TRIM(job_type_id) <> ''");
+    $st->execute(['y' => $year]);
+    $seen = [];
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) ?: [] as $jid) {
+        $jid = trim((string) $jid);
+        if ($jid !== '') {
+            $seen[$jid] = true;
+        }
+    }
+    foreach (array_keys($labels) as $k) {
+        $seen[$k] = true;
+    }
+    $ids = array_keys($seen);
+    usort($ids, static fn (string $a, string $b): int => strcmp($a, $b));
+    $out = [];
+    foreach ($ids as $id) {
+        $dn = $labels[$id] ?? '';
+        $out[] = [
+            'id' => $id,
+            'label' => $dn !== '' ? ($id . ' — ' . $dn) : $id,
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * Opcions fixes de relació jurídica de llocs de treball.
+ *
+ * @return list<array{id:string,name:string,label:string}>
+ */
+function maintenance_job_position_legal_relation_options(): array
+{
+    $rows = [
+        ['id' => 'E', 'name' => 'Eventual'],
+        ['id' => 'F', 'name' => 'Funcionari/a'],
+        ['id' => 'I', 'name' => 'Funcionari/a Interí/na per programa temporal'],
+        ['id' => 'L', 'name' => 'Laboral'],
+        ['id' => 'P', 'name' => 'Funcionari/a Pràctiques'],
+        ['id' => 'T', 'name' => 'Laboral temporal'],
+        ['id' => 'D', 'name' => 'Directiu'],
+    ];
+    foreach ($rows as &$r) {
+        $r['label'] = $r['id'] . ' - ' . $r['name'];
+    }
+    unset($r);
+
+    return $rows;
 }
 
 /**
@@ -465,6 +645,157 @@ function management_positions_filters_clause(array $filters): array
 }
 
 /**
+ * Mode d’agrupació de relació jurídica per a llocs de treball (regles D/E/I/P, F, L/T sobre els camps de funcionari/laboral).
+ * Retorna: civil | labor | none
+ */
+function maintenance_job_position_legal_relation_mode(?string $legalRelationId): string
+{
+    if ($legalRelationId === null) {
+        return 'none';
+    }
+    $id = strtoupper(trim($legalRelationId));
+    if ($id === '') {
+        return 'none';
+    }
+    if ($id === 'F' || $id === 'I' || $id === 'P') {
+        return 'civil';
+    }
+    if ($id === 'L' || $id === 'T') {
+        return 'labor';
+    }
+
+    return 'none';
+}
+
+/**
+ * @return array<string, string> mapa legal_relation_id (string) => civil|labor|none
+ */
+function maintenance_job_position_legal_relation_modes_for_year(PDO $db, int $year): array
+{
+    $out = [];
+    foreach (maintenance_job_position_legal_relation_options() as $it) {
+        $rid = strtoupper(trim((string) ($it['id'] ?? '')));
+        if ($rid === '') {
+            continue;
+        }
+        $out[$rid] = maintenance_job_position_legal_relation_mode($rid);
+    }
+
+    return $out;
+}
+
+/**
+ * @param array<string,string> $raw
+ * @return array<string,string>
+ */
+function maintenance_job_positions_normalize_filters(array $raw): array
+{
+    $out = [];
+    foreach (['f_job_code', 'f_job_title', 'f_org_dependency_id', 'f_is_active', 'f_scale_id', 'f_legal_relation_id', 'f_is_to_be_amortized'] as $k) {
+        $out[$k] = trim((string) ($raw[$k] ?? ''));
+    }
+    if (!in_array($out['f_is_active'], ['', '1', '0'], true)) {
+        $out['f_is_active'] = '';
+    }
+    if (!in_array($out['f_is_to_be_amortized'], ['', '1', '0'], true)) {
+        $out['f_is_to_be_amortized'] = '';
+    }
+
+    return $out;
+}
+
+/**
+ * @param array<string,string> $filters
+ * @return array{sql:string,params:array<string,mixed>}
+ */
+function maintenance_job_positions_filters_clause(array $filters): array
+{
+    $sql = '';
+    $params = [];
+    if ($filters['f_job_code'] !== '') {
+        $sql .= ' AND (t.job_position_id LIKE :jp_f_code OR t.catalog_code LIKE :jp_f_code2)';
+        $v = '%' . $filters['f_job_code'] . '%';
+        $params['jp_f_code'] = $v;
+        $params['jp_f_code2'] = $v;
+    }
+    if ($filters['f_job_title'] !== '') {
+        $sql .= ' AND t.job_title LIKE :jp_f_title';
+        $params['jp_f_title'] = '%' . $filters['f_job_title'] . '%';
+    }
+    if ($filters['f_org_dependency_id'] !== '') {
+        $term = '%' . $filters['f_org_dependency_id'] . '%';
+        $sql .= ' AND (
+            t.org_dependency_id LIKE :jp_f_dep
+            OR EXISTS (
+                SELECT 1 FROM job_positions jpf
+                WHERE jpf.catalog_year = t.catalog_year
+                  AND jpf.job_position_id = t.org_dependency_id
+                  AND jpf.job_type_id = \'CM\'
+                  AND jpf.deleted_at IS NULL
+                  AND (
+                    jpf.job_title LIKE :jp_f_dep_tit
+                    OR jpf.catalog_code LIKE :jp_f_dep_cc
+                    OR CAST(jpf.job_position_id AS CHAR) LIKE :jp_f_dep_jid
+                  )
+            )
+        )';
+        $params['jp_f_dep'] = $term;
+        $params['jp_f_dep_tit'] = $term;
+        $params['jp_f_dep_cc'] = $term;
+        $params['jp_f_dep_jid'] = $term;
+    }
+    if ($filters['f_is_active'] !== '') {
+        if ($filters['f_is_active'] === '1') {
+            $sql .= ' AND t.deleted_at IS NULL';
+        } else {
+            $sql .= ' AND t.deleted_at IS NOT NULL';
+        }
+    }
+    if ($filters['f_scale_id'] !== '') {
+        $sql .= ' AND CAST(t.civil_service_scale_id AS CHAR) = :jp_f_scale';
+        $params['jp_f_scale'] = $filters['f_scale_id'];
+    }
+    if ($filters['f_legal_relation_id'] !== '') {
+        $sql .= ' AND CAST(t.legal_relation_id AS CHAR) = :jp_f_lr';
+        $params['jp_f_lr'] = $filters['f_legal_relation_id'];
+    }
+    if ($filters['f_is_to_be_amortized'] !== '') {
+        $sql .= ' AND t.is_to_be_amortized = :jp_f_amort';
+        $params['jp_f_amort'] = (int) $filters['f_is_to_be_amortized'];
+    }
+
+    return ['sql' => $sql, 'params' => $params];
+}
+
+/**
+ * @return list<array{person_id:int, label:string}>
+ */
+function maintenance_job_positions_people_picker_options(PDO $db, int $year): array
+{
+    $st = $db->prepare('SELECT person_id, last_name_1, last_name_2, first_name FROM people WHERE catalog_year = :y ORDER BY last_name_1 ASC, last_name_2 ASC, first_name ASC, person_id ASC');
+    $st->execute(['y' => $year]);
+    $rows = $st->fetchAll() ?: [];
+    $out = [];
+    foreach ($rows as $r) {
+        $pid = (int) ($r['person_id'] ?? 0);
+        if ($pid < 1) {
+            continue;
+        }
+        $name = trim((string) implode(' ', array_filter([
+            trim((string) ($r['last_name_1'] ?? '')),
+            trim((string) ($r['last_name_2'] ?? '')),
+            trim((string) ($r['first_name'] ?? '')),
+        ], static fn ($x) => $x !== '')));
+        $out[] = [
+            'person_id' => $pid,
+            'label' => str_pad((string) $pid, 5, '0', STR_PAD_LEFT) . ($name !== '' ? ' — ' . $name : ''),
+        ];
+    }
+
+    return $out;
+}
+
+/**
  * Percentatge visual (100 => 1.0000).
  *
  * @return array{ok:true,value:?string}|array{ok:false,error:string}
@@ -606,6 +937,14 @@ function maintenance_count(PDO $db, string $module, int $year, string $q, array 
     } elseif ($module === 'maintenance_personal_transitory_bonus') {
         $sql = 'SELECT COUNT(*) AS c FROM people p
                 WHERE p.catalog_year = :y AND p.is_active = 1 AND p.personal_transitory_bonus <> 0' . $search['sql'];
+    } elseif ($module === 'job_positions') {
+        $f = maintenance_job_positions_filters_clause(maintenance_job_positions_normalize_filters($filters));
+        $params += $f['params'];
+        $sql = 'SELECT COUNT(*) AS c FROM job_positions t
+                LEFT JOIN civil_service_scales s ON s.catalog_year=t.catalog_year AND s.scale_id=t.civil_service_scale_id
+                LEFT JOIN legal_relations lr ON lr.catalog_year=t.catalog_year AND lr.legal_relation_id=t.legal_relation_id
+                LEFT JOIN job_positions jp_dep ON jp_dep.catalog_year = t.catalog_year AND jp_dep.job_position_id = t.org_dependency_id AND jp_dep.job_type_id = \'CM\' AND jp_dep.deleted_at IS NULL
+                WHERE t.catalog_year = :y' . $search['sql'] . $f['sql'];
     } elseif ($module === 'people') {
         $f = maintenance_people_filters_clause(maintenance_people_normalize_filters($filters));
         $params += $f['params'];
@@ -1111,6 +1450,33 @@ function maintenance_list(PDO $db, string $module, int $year, string $q, string 
         $params += $f['params'];
         $sql .= $f['sql'];
         $sql .= ' ORDER BY ' . $order . ', t.position_id ASC ' . db_sql_limit_offset($limit, $offset);
+    } elseif ($module === 'job_positions') {
+        $order = match ($sortBy) {
+            'job_title' => 't.job_title ' . $dir,
+            'org_dependency_id' => 'COALESCE(jp_dep.job_title, \'\') ' . $dir . ', jp_dep.job_position_id ASC',
+            'scale_name' => 's.scale_name ' . $dir,
+            'legal_relation_name' => 'lr.legal_relation_name ' . $dir,
+            'is_active' => '(t.deleted_at IS NULL) ' . $dir,
+            'is_to_be_amortized' => 't.is_to_be_amortized ' . $dir,
+            default => 't.job_position_id ' . $dir,
+        };
+        $sql = 'SELECT t.job_position_id, t.job_title, t.org_dependency_id, t.deleted_at, t.is_to_be_amortized,
+                s.scale_name, lr.legal_relation_name,
+                CASE WHEN t.deleted_at IS NULL THEN 1 ELSE 0 END AS is_active,
+                TRIM(CAST(jp_dep.job_position_id AS CHAR)) AS responsible_job_code_raw,
+                TRIM(COALESCE(jp_dep.job_title, \'\')) AS responsible_job_title
+                FROM job_positions t
+                LEFT JOIN civil_service_scales s ON s.catalog_year=t.catalog_year AND s.scale_id=t.civil_service_scale_id
+                LEFT JOIN legal_relations lr ON lr.catalog_year=t.catalog_year AND lr.legal_relation_id=t.legal_relation_id
+                LEFT JOIN job_positions jp_dep ON jp_dep.catalog_year = t.catalog_year AND jp_dep.job_position_id = t.org_dependency_id AND jp_dep.job_type_id = \'CM\' AND jp_dep.deleted_at IS NULL
+                WHERE t.catalog_year = :y';
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params += $search['params'];
+        $sql .= $search['sql'];
+        $f = maintenance_job_positions_filters_clause(maintenance_job_positions_normalize_filters($filters));
+        $params += $f['params'];
+        $sql .= $f['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.job_position_id ASC ' . db_sql_limit_offset($limit, $offset);
     } else {
         return [];
     }
@@ -1208,6 +1574,30 @@ function maintenance_get_by_id(PDO $db, string $module, int $year, string $id): 
                 LEFT JOIN civil_service_classes c ON c.catalog_year=t.catalog_year AND c.scale_id=t.scale_id AND c.subscale_id=t.subscale_id AND c.class_id=t.class_id
                 LEFT JOIN civil_service_categories cat ON cat.catalog_year=t.catalog_year AND cat.scale_id=t.scale_id AND cat.subscale_id=t.subscale_id AND cat.class_id=t.class_id AND cat.category_id=t.category_id
                 WHERE t.catalog_year = :y AND t.position_id = :id LIMIT 1';
+    } elseif ($module === 'job_positions') {
+        $sql = 'SELECT t.*,
+                s.scale_name, ss.subscale_name, c.class_name, cat.category_name,
+                lr.legal_relation_name,
+                ou3.org_unit_level_3_name AS department_name,
+                sp.special_specific_compensation_name,
+                g.general_specific_compensation_name,
+                g.amount AS general_specific_compensation_amount,
+                wc.work_center_name,
+                av.availability_name,
+                pm.provision_method_name
+                FROM job_positions t
+                LEFT JOIN civil_service_scales s ON s.catalog_year=t.catalog_year AND s.scale_id=t.civil_service_scale_id
+                LEFT JOIN civil_service_subscales ss ON ss.catalog_year=t.catalog_year AND ss.scale_id=t.civil_service_scale_id AND ss.subscale_id=t.civil_service_subscale_id
+                LEFT JOIN civil_service_classes c ON c.catalog_year=t.catalog_year AND c.scale_id=t.civil_service_scale_id AND c.subscale_id=t.civil_service_subscale_id AND c.class_id=t.civil_service_class_id
+                LEFT JOIN civil_service_categories cat ON cat.catalog_year=t.catalog_year AND cat.scale_id=t.civil_service_scale_id AND cat.subscale_id=t.civil_service_subscale_id AND cat.class_id=t.civil_service_class_id AND cat.category_id=t.civil_service_category_id
+                LEFT JOIN legal_relations lr ON lr.catalog_year=t.catalog_year AND lr.legal_relation_id=t.legal_relation_id
+                LEFT JOIN org_units_level_3 ou3 ON ou3.catalog_year=t.catalog_year AND ou3.org_unit_level_3_id=t.org_unit_level_3_id
+                LEFT JOIN specific_compensation_special sp ON sp.catalog_year=t.catalog_year AND sp.special_specific_compensation_id=t.special_specific_compensation_id
+                LEFT JOIN specific_compensation_general g ON g.catalog_year=t.catalog_year AND g.general_specific_compensation_id=t.general_specific_compensation_id
+                LEFT JOIN work_centers wc ON wc.catalog_year=t.catalog_year AND wc.work_center_id=t.work_center_id
+                LEFT JOIN availability_options av ON av.catalog_year=t.catalog_year AND av.availability_id=t.availability_id
+                LEFT JOIN provision_methods pm ON pm.catalog_year=t.catalog_year AND pm.provision_method_id=t.provision_method_id
+                WHERE t.catalog_year = :y AND t.job_position_id = :id LIMIT 1';
     } else {
         return null;
     }
@@ -1221,6 +1611,16 @@ function maintenance_get_by_id(PDO $db, string $module, int $year, string $id): 
             ORDER BY subprogram_id ASC');
         $stSp->execute(['y' => $year, 'pid' => (int) ($row['person_id'] ?? 0)]);
         $row['subprogram_people'] = $stSp->fetchAll() ?: [];
+    }
+    if ($row && $module === 'job_positions') {
+        $jid = (string) ($row['job_position_id'] ?? '');
+        $stP = $db->prepare('SELECT person_id, last_name_1, last_name_2, first_name
+            FROM people
+            WHERE catalog_year = :y AND job_position_id = :jid
+            ORDER BY last_name_1 ASC, last_name_2 ASC, first_name ASC, person_id ASC');
+        $stP->execute(['y' => $year, 'jid' => $jid]);
+        $row['assigned_people'] = $stP->fetchAll() ?: [];
+        $row['is_active'] = !empty($row['deleted_at']) ? 0 : 1;
     }
     return $row ?: null;
 }
@@ -1290,6 +1690,8 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
         $sql = 'SELECT person_id FROM people WHERE catalog_year = :y AND person_id = :id';
     } elseif ($module === 'management_positions') {
         $sql = 'SELECT position_id FROM positions WHERE catalog_year = :y AND position_id = :id';
+    } elseif ($module === 'job_positions') {
+        $sql = 'SELECT job_position_id FROM job_positions WHERE catalog_year = :y AND job_position_id = :id';
     } else {
         return false;
     }
@@ -1301,6 +1703,7 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
             'maintenance_categories' => 'category_id',
             'maintenance_subprograms' => 'subprogram_id',
             'management_positions' => 'position_id',
+            'job_positions' => 'job_position_id',
             'maintenance_programs' => 'program_id',
             'maintenance_social_security_companies' => 'company_id',
             'maintenance_social_security_coefficients' => 'contribution_epigraph_id',
@@ -2059,6 +2462,280 @@ function maintenance_save(PDO $db, string $module, int $year, int|string|null $o
             'an' => $amountNewParsed['value'],
             'dn' => $decreaseNewParsed['value'],
         ]);
+        return;
+    }
+    if ($module === 'job_positions') {
+        $catalogCode = trim((string) ($data['catalog_code'] ?? ''));
+        $jid = trim((string) (($data['job_position_id'] ?? '') !== '' ? $data['job_position_id'] : ($data['id'] ?? '')));
+        $jobTitle = trim((string) ($data['job_title'] ?? ''));
+        $errors = [];
+        $originalIdText = $originalId !== null ? trim((string) $originalId) : null;
+        if ($jid === '' || strlen($jid) > 30) {
+            $errors['job_position_id'] = $jid === '' ? 'El codi del lloc és obligatori.' : 'El codi del lloc és massa llarg (màx. 30 caràcters).';
+        }
+        if ($jobTitle === '') {
+            $errors['job_title'] = 'La denominació és obligatòria.';
+        }
+        if ($originalIdText !== null && $originalIdText !== '' && $jid !== $originalIdText) {
+            $errors['job_position_id'] = 'No es pot canviar el codi del lloc; només la resta de dades.';
+        }
+        $allowedCatalogTypes = ['', '01', '02', '03', '04', '05'];
+        if (!in_array($catalogCode, $allowedCatalogTypes, true)) {
+            $errors['catalog_code'] = 'El tipus de catàleg no és vàlid.';
+        }
+        $legalRaw = strtoupper(trim((string) ($data['legal_relation_id'] ?? '')));
+        $legalId = $legalRaw !== '' ? $legalRaw : null;
+        $allowedLegal = ['E', 'F', 'I', 'L', 'P', 'T', 'D'];
+        if ($legalId !== null && !in_array($legalId, $allowedLegal, true)) {
+            $errors['legal_relation_id'] = 'La relació jurídica no és vàlida.';
+        }
+        $mode = maintenance_job_position_legal_relation_mode($legalId);
+        $scaleId = trim((string) ($data['civil_service_scale_id'] ?? ''));
+        $subscaleId = trim((string) ($data['civil_service_subscale_id'] ?? ''));
+        $classId = trim((string) ($data['civil_service_class_id'] ?? ''));
+        $categoryId = trim((string) ($data['civil_service_category_id'] ?? ''));
+        $laborCat = trim((string) ($data['labor_category'] ?? ''));
+        if ($mode === 'civil') {
+            $laborCat = '';
+            if ($scaleId === '') {
+                $errors['civil_service_scale_id'] = 'L’escala és obligatòria per a aquesta relació jurídica.';
+            }
+            if ($subscaleId === '') {
+                $errors['civil_service_subscale_id'] = 'La subescala és obligatòria.';
+            }
+            if ($classId === '') {
+                $errors['civil_service_class_id'] = 'La classe és obligatòria.';
+            }
+            if ($categoryId === '') {
+                $errors['civil_service_category_id'] = 'La categoria és obligatòria.';
+            }
+        } elseif ($mode === 'labor') {
+            $scaleId = $subscaleId = $classId = $categoryId = '';
+            if ($laborCat === '') {
+                $errors['labor_category'] = 'La categoria laboral és obligatòria per a aquesta relació jurídica.';
+            }
+        } else {
+            $scaleId = $subscaleId = $classId = $categoryId = '';
+            $laborCat = '';
+        }
+        $orgDepPick = null_if_empty((string) ($data['org_dependency_id'] ?? ''));
+        if ($orgDepPick !== null) {
+            $stOd = $db->prepare("SELECT 1 FROM job_positions WHERE catalog_year = :y AND job_position_id = :jid AND UPPER(TRIM(job_type_id)) = 'CM' LIMIT 1");
+            $stOd->execute(['y' => $year, 'jid' => $orgDepPick]);
+            if (!$stOd->fetch()) {
+                $errors['org_dependency_id'] = 'El responsable ha de ser un lloc de comandament (CM).';
+            }
+        }
+        $createdAt = maintenance_parse_optional_date_input((string) ($data['created_at'] ?? ''), 'creació');
+        if (!$createdAt['ok']) {
+            $errors['created_at'] = $createdAt['error'];
+        }
+        $deletedAt = maintenance_parse_optional_date_input((string) ($data['deleted_at'] ?? ''), 'baixa');
+        if (!$deletedAt['ok']) {
+            $errors['deleted_at'] = $deletedAt['error'];
+        }
+        $specIdPick = trim((string) ($data['special_specific_compensation_id'] ?? ''));
+        $specAmt = ['ok' => true, 'value' => null];
+        if ($specIdPick !== '') {
+            $stSpecRow = $db->prepare('SELECT amount FROM specific_compensation_special WHERE catalog_year = :y AND special_specific_compensation_id = :sid LIMIT 1');
+            $stSpecRow->execute(['y' => $year, 'sid' => (int) $specIdPick]);
+            $specRow = $stSpecRow->fetch();
+            if (!$specRow) {
+                $errors['special_specific_compensation_id'] = 'El complement específic especial no existeix.';
+            } else {
+                $rawAm = $specRow['amount'] ?? null;
+                $specAmt['value'] = ($rawAm !== null && $rawAm !== '' && is_numeric($rawAm)) ? (string) $rawAm : null;
+            }
+        }
+        $jobEvalRaw = trim((string) ($data['job_evaluation'] ?? ''));
+        $jobEval = null;
+        if ($jobEvalRaw !== '') {
+            if (!preg_match('/^-?\d+$/', $jobEvalRaw)) {
+                $errors['job_evaluation'] = 'La valoració ha de ser un enter.';
+            } else {
+                $jobEval = (int) $jobEvalRaw;
+            }
+        }
+        if ($mode === 'civil' && $errors === []) {
+            $stSub = $db->prepare('SELECT 1 FROM civil_service_subscales WHERE catalog_year=:y AND scale_id=:sc AND subscale_id=:sid LIMIT 1');
+            $stSub->execute(['y' => $year, 'sc' => (int) $scaleId, 'sid' => (int) $subscaleId]);
+            if (!$stSub->fetch()) {
+                $errors['civil_service_subscale_id'] = 'La subescala no correspon a l’escala.';
+            }
+            $stCls = $db->prepare('SELECT 1 FROM civil_service_classes WHERE catalog_year=:y AND scale_id=:sc AND subscale_id=:sid AND class_id=:cid LIMIT 1');
+            $stCls->execute(['y' => $year, 'sc' => (int) $scaleId, 'sid' => (int) $subscaleId, 'cid' => (int) $classId]);
+            if (!$stCls->fetch()) {
+                $errors['civil_service_class_id'] = 'La classe no correspon a escala/subescala.';
+            }
+            $stCat = $db->prepare('SELECT 1 FROM civil_service_categories WHERE catalog_year=:y AND scale_id=:sc AND subscale_id=:sid AND class_id=:cid AND category_id=:cat LIMIT 1');
+            $stCat->execute(['y' => $year, 'sc' => (int) $scaleId, 'sid' => (int) $subscaleId, 'cid' => (int) $classId, 'cat' => (int) $categoryId]);
+            if (!$stCat->fetch()) {
+                $errors['civil_service_category_id'] = 'La categoria no correspon a la classe seleccionada.';
+            }
+        }
+        $apRaw = $data['assigned_person_ids'] ?? [];
+        if (!is_array($apRaw)) {
+            $apRaw = [];
+        }
+        $wantedPersonIds = [];
+        foreach ($apRaw as $item) {
+            $ps = is_array($item) ? trim((string) ($item['person_id'] ?? '')) : trim((string) $item);
+            if ($ps === '') {
+                continue;
+            }
+            if (!preg_match('/^\d+$/', $ps)) {
+                $errors['assigned_people'] = 'Identificadors de persona invàlids.';
+                break;
+            }
+            $wantedPersonIds[(int) $ps] = true;
+        }
+        $wantedList = array_keys($wantedPersonIds);
+        sort($wantedList);
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        if (maintenance_id_exists($db, $module, $year, $jid, $originalIdText)) {
+            throw new InvalidArgumentException(json_encode(['job_position_id' => 'Ja existeix aquest codi de lloc en aquest exercici.'], JSON_THROW_ON_ERROR));
+        }
+        foreach ($wantedList as $wpid) {
+            $stPe = $db->prepare('SELECT 1 FROM people WHERE catalog_year=:y AND person_id=:pid LIMIT 1');
+            $stPe->execute(['y' => $year, 'pid' => $wpid]);
+            if (!$stPe->fetch()) {
+                throw new InvalidArgumentException(json_encode(['assigned_people' => 'Hi ha persones inexistents a la llista d’ocupants.'], JSON_THROW_ON_ERROR));
+            }
+        }
+        $payload = [
+            'y' => $year,
+            'jid' => $jid,
+            'org_unit_level_3_id' => null_if_empty((string) ($data['org_unit_level_3_id'] ?? '')),
+            'job_number' => null_if_empty((string) ($data['job_number'] ?? '')),
+            'job_title' => $jobTitle,
+            'org_dependency_id' => null_if_empty((string) ($data['org_dependency_id'] ?? '')),
+            'contribution_epigraph_id' => null_if_empty((string) ($data['contribution_epigraph_id'] ?? '')),
+            'contribution_group_id' => null_if_empty((string) ($data['contribution_group_id'] ?? '')),
+            'legal_relation_id' => $legalId,
+            'civil_service_scale_id' => $scaleId !== '' ? (int) $scaleId : null,
+            'civil_service_subscale_id' => $subscaleId !== '' ? (int) $subscaleId : null,
+            'civil_service_class_id' => $classId !== '' ? (int) $classId : null,
+            'civil_service_category_id' => $categoryId !== '' ? (int) $categoryId : null,
+            'labor_category' => $laborCat !== '' ? $laborCat : null,
+            'job_type_id' => null_if_empty((string) ($data['job_type_id'] ?? '')),
+            'classification_group' => null_if_empty((string) ($data['classification_group'] ?? '')),
+            'classification_group_new' => null_if_empty((string) ($data['classification_group_new'] ?? '')),
+            'organic_level' => null_if_empty((string) ($data['organic_level'] ?? '')),
+            'general_specific_compensation_id' => ($v = trim((string) ($data['general_specific_compensation_id'] ?? ''))) !== '' ? (int) $v : null,
+            'special_specific_compensation_id' => ($v = trim((string) ($data['special_specific_compensation_id'] ?? ''))) !== '' ? (int) $v : null,
+            'special_specific_compensation_amount' => $specAmt['value'],
+            'notes' => null_if_empty((string) ($data['notes'] ?? '')),
+            'catalog_code' => $catalogCode !== '' ? $catalogCode : null,
+            'workday_type' => null_if_empty((string) ($data['workday_type'] ?? '')),
+            'working_time_dedication' => null_if_empty((string) ($data['working_time_dedication'] ?? '')),
+            'schedule_text' => null_if_empty((string) ($data['schedule_text'] ?? '')),
+            'has_night_schedule' => !empty($data['has_night_schedule']) ? 1 : 0,
+            'has_holiday_schedule' => !empty($data['has_holiday_schedule']) ? 1 : 0,
+            'has_shift_schedule' => !empty($data['has_shift_schedule']) ? 1 : 0,
+            'has_special_dedication' => !empty($data['has_special_dedication']) ? 1 : 0,
+            'special_dedication_type' => null_if_empty((string) ($data['special_dedication_type'] ?? '')),
+            'availability_id' => null_if_empty((string) ($data['availability_id'] ?? '')),
+            'mission' => null_if_empty((string) ($data['mission'] ?? '')),
+            'generic_functions' => null_if_empty((string) ($data['generic_functions'] ?? '')),
+            'specific_functions' => null_if_empty((string) ($data['specific_functions'] ?? '')),
+            'qualification_requirements' => null_if_empty((string) ($data['qualification_requirements'] ?? '')),
+            'other_requirements' => null_if_empty((string) ($data['other_requirements'] ?? '')),
+            'training_requirements' => null_if_empty((string) ($data['training_requirements'] ?? '')),
+            'experience_requirements' => null_if_empty((string) ($data['experience_requirements'] ?? '')),
+            'other_merits' => null_if_empty((string) ($data['other_merits'] ?? '')),
+            'provision_method_id' => null_if_empty((string) ($data['provision_method_id'] ?? '')),
+            'effort' => null_if_empty((string) ($data['effort'] ?? '')),
+            'hardship' => null_if_empty((string) ($data['hardship'] ?? '')),
+            'danger' => null_if_empty((string) ($data['danger'] ?? '')),
+            'incompatibilities' => null_if_empty((string) ($data['incompatibilities'] ?? '')),
+            'provincial_notes' => null_if_empty((string) ($data['provincial_notes'] ?? '')),
+            'work_center_id' => ($v = trim((string) ($data['work_center_id'] ?? ''))) !== '' ? (int) $v : null,
+            'created_at' => $createdAt['value'],
+            'creation_reason' => null_if_empty((string) ($data['creation_reason'] ?? '')),
+            'creation_file_reference' => null_if_empty((string) ($data['creation_file_reference'] ?? '')),
+            'deleted_at' => $deletedAt['value'],
+            'deletion_reason' => null_if_empty((string) ($data['deletion_reason'] ?? '')),
+            'deletion_file_reference' => null_if_empty((string) ($data['deletion_file_reference'] ?? '')),
+            'job_evaluation' => $jobEval,
+            'is_to_be_amortized' => !empty($data['is_to_be_amortized']) ? 1 : 0,
+            'classification_group_slash' => null_if_empty((string) ($data['classification_group_slash'] ?? '')),
+        ];
+        $db->beginTransaction();
+        try {
+            if ($originalIdText === null || $originalIdText === '') {
+                $st = $db->prepare('INSERT INTO job_positions (
+                    catalog_year, job_position_id, org_unit_level_3_id, job_number, job_title, org_dependency_id,
+                    contribution_epigraph_id, contribution_group_id, legal_relation_id,
+                    civil_service_scale_id, civil_service_subscale_id, civil_service_class_id, civil_service_category_id,
+                    labor_category, job_type_id, classification_group, classification_group_new, organic_level,
+                    general_specific_compensation_id, special_specific_compensation_id, special_specific_compensation_amount,
+                    notes, catalog_code, workday_type, working_time_dedication, schedule_text,
+                    has_night_schedule, has_holiday_schedule, has_shift_schedule, has_special_dedication,
+                    special_dedication_type, availability_id, mission, generic_functions, specific_functions,
+                    qualification_requirements, other_requirements, training_requirements, experience_requirements, other_merits,
+                    provision_method_id, effort, hardship, danger, incompatibilities, provincial_notes, work_center_id,
+                    created_at, creation_reason, creation_file_reference, deleted_at, deletion_reason, deletion_file_reference,
+                    job_evaluation, is_to_be_amortized, classification_group_slash
+                ) VALUES (
+                    :y, :jid, :org_unit_level_3_id, :job_number, :job_title, :org_dependency_id,
+                    :contribution_epigraph_id, :contribution_group_id, :legal_relation_id,
+                    :civil_service_scale_id, :civil_service_subscale_id, :civil_service_class_id, :civil_service_category_id,
+                    :labor_category, :job_type_id, :classification_group, :classification_group_new, :organic_level,
+                    :general_specific_compensation_id, :special_specific_compensation_id, :special_specific_compensation_amount,
+                    :notes, :catalog_code, :workday_type, :working_time_dedication, :schedule_text,
+                    :has_night_schedule, :has_holiday_schedule, :has_shift_schedule, :has_special_dedication,
+                    :special_dedication_type, :availability_id, :mission, :generic_functions, :specific_functions,
+                    :qualification_requirements, :other_requirements, :training_requirements, :experience_requirements, :other_merits,
+                    :provision_method_id, :effort, :hardship, :danger, :incompatibilities, :provincial_notes, :work_center_id,
+                    :created_at, :creation_reason, :creation_file_reference, :deleted_at, :deletion_reason, :deletion_file_reference,
+                    :job_evaluation, :is_to_be_amortized, :classification_group_slash
+                )');
+                $st->execute($payload);
+            } else {
+                $payload['orig_jid'] = $originalIdText;
+                $st = $db->prepare('UPDATE job_positions SET
+                    job_position_id=:jid, org_unit_level_3_id=:org_unit_level_3_id, job_number=:job_number, job_title=:job_title, org_dependency_id=:org_dependency_id,
+                    contribution_epigraph_id=:contribution_epigraph_id, contribution_group_id=:contribution_group_id, legal_relation_id=:legal_relation_id,
+                    civil_service_scale_id=:civil_service_scale_id, civil_service_subscale_id=:civil_service_subscale_id, civil_service_class_id=:civil_service_class_id, civil_service_category_id=:civil_service_category_id,
+                    labor_category=:labor_category, job_type_id=:job_type_id, classification_group=:classification_group, classification_group_new=:classification_group_new, organic_level=:organic_level,
+                    general_specific_compensation_id=:general_specific_compensation_id, special_specific_compensation_id=:special_specific_compensation_id, special_specific_compensation_amount=:special_specific_compensation_amount,
+                    notes=:notes, catalog_code=:catalog_code, workday_type=:workday_type, working_time_dedication=:working_time_dedication, schedule_text=:schedule_text,
+                    has_night_schedule=:has_night_schedule, has_holiday_schedule=:has_holiday_schedule, has_shift_schedule=:has_shift_schedule, has_special_dedication=:has_special_dedication,
+                    special_dedication_type=:special_dedication_type, availability_id=:availability_id, mission=:mission, generic_functions=:generic_functions, specific_functions=:specific_functions,
+                    qualification_requirements=:qualification_requirements, other_requirements=:other_requirements, training_requirements=:training_requirements, experience_requirements=:experience_requirements, other_merits=:other_merits,
+                    provision_method_id=:provision_method_id, effort=:effort, hardship=:hardship, danger=:danger, incompatibilities=:incompatibilities, provincial_notes=:provincial_notes, work_center_id=:work_center_id,
+                    created_at=:created_at, creation_reason=:creation_reason, creation_file_reference=:creation_file_reference, deleted_at=:deleted_at, deletion_reason=:deletion_reason, deletion_file_reference=:deletion_file_reference,
+                    job_evaluation=:job_evaluation, is_to_be_amortized=:is_to_be_amortized, classification_group_slash=:classification_group_slash
+                    WHERE catalog_year=:y AND job_position_id=:orig_jid');
+                $st->execute($payload);
+            }
+            $stRel = $db->prepare('SELECT person_id FROM people WHERE catalog_year=:y AND job_position_id=:jid');
+            $stRel->execute(['y' => $year, 'jid' => $jid]);
+            $currentAssigned = [];
+            foreach ($stRel->fetchAll(PDO::FETCH_COLUMN) ?: [] as $cp) {
+                $currentAssigned[(int) $cp] = true;
+            }
+            $wantedSet = array_fill_keys($wantedList, true);
+            foreach (array_keys($currentAssigned) as $cpid) {
+                if (!isset($wantedSet[$cpid])) {
+                    $stClr = $db->prepare('UPDATE people SET job_position_id=NULL WHERE catalog_year=:y AND person_id=:pid AND job_position_id=:jid');
+                    $stClr->execute(['y' => $year, 'pid' => $cpid, 'jid' => $jid]);
+                }
+            }
+            foreach ($wantedList as $wpid) {
+                $stAs = $db->prepare('UPDATE people SET job_position_id=:jid WHERE catalog_year=:y AND person_id=:pid');
+                $stAs->execute(['y' => $year, 'jid' => $jid, 'pid' => $wpid]);
+            }
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+
         return;
     }
     if ($module === 'people') {
@@ -2830,6 +3507,35 @@ function maintenance_delete(PDO $db, string $module, int $year, string $id): voi
             throw new RuntimeException('No es pot eliminar la plaça perquè hi ha persones vinculades.');
         }
         $st = $db->prepare('DELETE FROM positions WHERE catalog_year=:y AND position_id=:id LIMIT 1');
+    } elseif ($module === 'job_positions') {
+        $jid = trim($id);
+        $stc = $db->prepare('SELECT COUNT(*) AS c FROM programs WHERE catalog_year=:y AND responsible_person_code=:jid');
+        $stc->execute(['y' => $year, 'jid' => $jid]);
+        if ((int) (($stc->fetch())['c'] ?? 0) > 0) {
+            throw new RuntimeException('No es pot eliminar el lloc perquè consta com a responsable d’algun programa.');
+        }
+        $stc2 = $db->prepare('SELECT COUNT(*) AS c FROM subprograms WHERE catalog_year=:y AND (technical_manager_code=:jid OR elected_manager_code=:jid)');
+        $stc2->execute(['y' => $year, 'jid' => $jid]);
+        if ((int) (($stc2->fetch())['c'] ?? 0) > 0) {
+            throw new RuntimeException('No es pot eliminar el lloc perquè consta com a responsable tècnic o electe en algun subprograma.');
+        }
+        $db->beginTransaction();
+        try {
+            $stClr = $db->prepare('UPDATE people SET job_position_id=NULL WHERE catalog_year=:y AND job_position_id=:jid');
+            $stClr->execute(['y' => $year, 'jid' => $jid]);
+            $st = $db->prepare('DELETE FROM job_positions WHERE catalog_year=:y AND job_position_id=:id LIMIT 1');
+            $st->execute(['y' => $year, 'id' => $jid]);
+            if ($st->rowCount() === 0) {
+                throw new RuntimeException('Registre no trobat.');
+            }
+            $db->commit();
+            return;
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     } elseif ($module === 'maintenance_organic_level_1') {
         $st = $db->prepare('DELETE FROM org_units_level_1 WHERE catalog_year=:y AND org_unit_level_1_id=:id LIMIT 1');
     } elseif ($module === 'maintenance_organic_level_2') {
