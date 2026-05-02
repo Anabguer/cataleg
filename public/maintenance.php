@@ -52,6 +52,13 @@ $jobPositionsFilters = [
     'f_legal_relation_id' => get_string('f_legal_relation_id'),
     'f_is_to_be_amortized' => get_string('f_is_to_be_amortized'),
 ];
+$reportsFilters = [
+    'f_report_group' => get_string('f_report_group'),
+    'f_report_code' => get_string('f_report_code'),
+    'f_report_name' => get_string('f_report_name'),
+    'f_show_in_general_selector' => get_string('f_show_in_general_selector'),
+    'f_is_active' => get_string('f_is_active'),
+];
 $sort = maintenance_sort_normalize($module, get_string('sort_by'), get_string('sort_dir'));
 $perPage = (int) get_string('per_page');
 if ($perPage < 1) {
@@ -71,7 +78,9 @@ if ($config['implemented'] ?? false) {
         ? $managementPositionsFilters
         : ($module === 'people'
             ? $peopleFilters
-            : ($module === 'job_positions' ? $jobPositionsFilters : []));
+            : ($module === 'job_positions'
+                ? $jobPositionsFilters
+                : ($module === 'reports' ? maintenance_reports_normalize_filters($reportsFilters) : [])));
     $total = maintenance_count($db, $module, $year, $q, $activeFilters);
     $pn = maintenance_normalize_pagination($page, $perPage, $total);
     $page = $pn['page'];
@@ -136,6 +145,7 @@ $maintenancePageInlineConfig = [
     'socialSecurityCompanies' => $socialSecurityCompanies,
     'peoplePersonalGrades' => $peoplePersonalGrades,
     'peopleSeniorityPayByGroup' => $peopleSeniorityPayByGroup,
+    'peoplePersonalGradeAmounts' => $module === 'people' ? maintenance_people_personal_grade_amount_map($db, $year) : [],
     'organicLevel1' => $organicLevel1,
     'organicLevel2' => $organicLevel2,
     'jobPositions' => $jobPositions,
@@ -144,6 +154,7 @@ $maintenancePageInlineConfig = [
     'managementPositionsFilters' => management_positions_normalize_filters($managementPositionsFilters),
     'peopleFilters' => maintenance_people_normalize_filters($peopleFilters),
     'jobPositionsFilters' => maintenance_job_positions_normalize_filters($jobPositionsFilters),
+    'reportsFilters' => maintenance_reports_normalize_filters($reportsFilters),
     'jobPositionsPeoplePicker' => $jobPositionsPeoplePicker,
     'jobPositionLegalModes' => $jobPositionLegalModes,
     'jobPositionLegalOptions' => $jobPositionLegalOptions,

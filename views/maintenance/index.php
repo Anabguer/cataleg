@@ -19,11 +19,12 @@ $tableColspan = count($listCols) + ($module === 'maintenance_personal_transitory
 $mpFilters = (array) ($maintenancePageInlineConfig['managementPositionsFilters'] ?? []);
 $peopleFilters = (array) ($maintenancePageInlineConfig['peopleFilters'] ?? []);
 $jpFilters = (array) ($maintenancePageInlineConfig['jobPositionsFilters'] ?? []);
-$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : ($module === 'job_positions' ? $jpFilters : [])));
+$reportsFilters = (array) ($maintenancePageInlineConfig['reportsFilters'] ?? []);
+$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : ($module === 'job_positions' ? $jpFilters : ($module === 'reports' ? $reportsFilters : []))));
 
 $pageHeader = page_header_with_escut([
     'title' => (string) $config['title'],
-    'subtitle' => (($module === 'management_positions' || $module === 'people' || $module === 'job_positions') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year,
+    'subtitle' => (($module === 'management_positions' || $module === 'people' || $module === 'job_positions' || $module === 'reports') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year,
 ]);
 
 ob_start();
@@ -245,6 +246,36 @@ ob_start();
             </select>
         </div>
     <?php endif; ?>
+    <?php if ($module === 'reports'): ?>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_rs_group">Grup</label>
+            <input class="form-input" id="f_rs_group" name="f_report_group" value="<?= e((string) ($reportsFilters['f_report_group'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_rs_code">Codi informe</label>
+            <input class="form-input" id="f_rs_code" name="f_report_code" value="<?= e((string) ($reportsFilters['f_report_code'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_rs_name">Nom informe</label>
+            <input class="form-input" id="f_rs_name" name="f_report_name" value="<?= e((string) ($reportsFilters['f_report_name'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_rs_show_sel">Selector general</label>
+            <select class="form-select" id="f_rs_show_sel" name="f_show_in_general_selector">
+                <option value="">Tots</option>
+                <option value="1"<?= (string) ($reportsFilters['f_show_in_general_selector'] ?? '') === '1' ? ' selected' : '' ?>>Sí</option>
+                <option value="0"<?= (string) ($reportsFilters['f_show_in_general_selector'] ?? '') === '0' ? ' selected' : '' ?>>No</option>
+            </select>
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_rs_active">Actiu</label>
+            <select class="form-select" id="f_rs_active" name="f_is_active">
+                <option value="">Tots</option>
+                <option value="1"<?= (string) ($reportsFilters['f_is_active'] ?? '') === '1' ? ' selected' : '' ?>>Sí</option>
+                <option value="0"<?= (string) ($reportsFilters['f_is_active'] ?? '') === '0' ? ' selected' : '' ?>>No</option>
+            </select>
+        </div>
+    <?php endif; ?>
     <div class="users-filter-actions">
         <button type="submit" class="btn btn--filter-icon btn--filter-apply" title="Aplicar filtres" aria-label="Aplicar filtres">
             <img src="<?= e(asset_url('img/icon_filter_apply.svg')) ?>" alt="" width="48" height="48">
@@ -259,7 +290,7 @@ $filterCardInner = ob_get_clean();
 
 ob_start();
 ?>
-<table class="data-table<?= $module === 'maintenance_subprograms' ? ' data-table--subprograms' : '' ?><?= $module === 'maintenance_personal_transitory_bonus' ? ' data-table--personal-transitory-cpt' : '' ?>">
+<table class="data-table<?= $module === 'maintenance_subprograms' ? ' data-table--subprograms' : '' ?><?= $module === 'maintenance_personal_transitory_bonus' ? ' data-table--personal-transitory-cpt' : '' ?><?= $module === 'job_positions' ? ' data-table--job-positions' : '' ?><?= $module === 'management_positions' ? ' data-table--management-positions' : '' ?><?= $module === 'people' ? ' data-table--people' : '' ?><?= $module === 'parameters' ? ' data-table--parameters' : '' ?><?= $module === 'reports' ? ' data-table--reports' : '' ?>">
     <thead>
     <tr>
         <?php foreach ($listCols as $col): ?>
@@ -385,6 +416,10 @@ ob_start();
                 $rid = (string) (int) ($r['position_id'] ?? 0);
             } elseif ($module === 'job_positions') {
                 $rid = trim((string) ($r['job_position_id'] ?? ''));
+            } elseif ($module === 'parameters') {
+                $rid = trim((string) ($r['catalog_year'] ?? $r['id'] ?? ''));
+            } elseif ($module === 'reports') {
+                $rid = (string) (int) ($r['id'] ?? 0);
             } else {
                 $rid = trim((string) ($r['scale_id'] ?? $r['subscale_id'] ?? $r['category_id'] ?? $r['class_id'] ?? $r['administrative_status_id'] ?? $r['position_class_id'] ?? $r['legal_relation_id'] ?? $r['access_type_id'] ?? $r['access_system_id'] ?? $r['work_center_id'] ?? $r['availability_id'] ?? $r['provision_method_id'] ?? $r['org_unit_level_1_id'] ?? $r['org_unit_level_2_id'] ?? $r['org_unit_level_3_id'] ?? $r['program_id'] ?? $r['subprogram_id'] ?? $r['position_id'] ?? ''));
             }

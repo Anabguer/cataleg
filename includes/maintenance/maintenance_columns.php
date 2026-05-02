@@ -149,6 +149,49 @@ function maintenance_format_decimal_4_display(mixed $value): string
 }
 
 /**
+ * MEI emmagatzemat com a decimal real (p. ex. 0,75 = 0,75%); presentació amb coma, fins a 4 decimals.
+ */
+function maintenance_format_mei_fraction_display(mixed $value): string
+{
+    if ($value === null || $value === '') {
+        return '';
+    }
+    $s = trim((string) $value);
+    if ($s === '' || !is_numeric($s)) {
+        return '';
+    }
+
+    return number_format((float) $s, 4, ',', '');
+}
+
+/**
+ * Parseja % MEI opcional: decimal real 0..9,9999 (DECIMAL(5,4)), sense multiplicar per 100.
+ *
+ * @return array{ok:true, value:?string}|array{ok:false, error:string}
+ */
+function maintenance_parse_optional_mei_fraction(string $raw): array
+{
+    $t = trim($raw);
+    if ($t === '') {
+        return ['ok' => true, 'value' => null];
+    }
+    $t = str_replace(["\xC2\xA0", ' ', '%'], '', $t);
+    $t = str_replace(',', '.', $t);
+    if ($t === '' || preg_match('/[^0-9.]/', $t)) {
+        return ['ok' => false, 'error' => 'Valor MEI invàlid.'];
+    }
+    if (!preg_match('/^\d+(?:\.\d{1,4})?$/', $t)) {
+        return ['ok' => false, 'error' => 'Valor MEI invàlid (màxim 4 decimals).'];
+    }
+    $n = (float) $t;
+    if (!is_finite($n) || $n < 0.0 || $n > 9.9999) {
+        return ['ok' => false, 'error' => 'El MEI ha d’estar entre 0 i 9,9999.'];
+    }
+
+    return ['ok' => true, 'value' => number_format($n, 4, '.', '')];
+}
+
+/**
  * Mostra imports com a moneda europea amb 2 decimals i símbol d'euro a la dreta.
  */
 function maintenance_format_currency_eur_2_display(mixed $value): string
@@ -252,12 +295,24 @@ function maintenance_list_sort_keys(string $module): array
         'maintenance_specific_compensation_general' => ['general_specific_compensation_id', 'general_specific_compensation_name', 'amount', 'decrease_amount', 'amount_new', 'decrease_amount_new'],
         'maintenance_personal_transitory_bonus' => ['last_name_1', 'last_name_2', 'first_name', 'personal_transitory_bonus', 'personal_transitory_bonus_new'],
         'people' => ['person_id', 'last_name_1', 'last_name_2', 'first_name', 'national_id_number', 'email', 'job_position_id', 'position_id', 'legal_relation_name', 'is_active'],
-        'management_positions' => ['position_id', 'position_name', 'position_class_name', 'scale_name', 'subscale_name', 'class_name', 'category_name', 'is_active'],
-        'job_positions' => ['job_position_id', 'job_title', 'org_dependency_id', 'scale_name', 'legal_relation_name', 'is_active', 'is_to_be_amortized'],
+        'management_positions' => [
+            'position_id', 'position_name', 'position_class_name', 'scale_name', 'subscale_name', 'class_name', 'category_name',
+            'is_active', 'is_offerable', 'is_to_be_amortized', 'is_internal_promotion',
+        ],
+        'job_positions' => [
+            'job_position_id', 'job_title', 'org_dependency_id', 'scale_name', 'legal_relation_name',
+            'is_active', 'is_to_be_amortized',
+            'has_night_schedule', 'has_holiday_schedule', 'has_shift_schedule', 'has_special_dedication',
+        ],
         'maintenance_subprograms' => [
             'subprogram_program_id', 'subprogram_program_name', 'subprogram_number', 'subprogram_code', 'subprogram_name',
             'technical_manager_code', 'technical_job_title',
             'is_mandatory_service', 'has_corporate_agreements',
+        ],
+        'parameters' => ['catalog_year', 'mei_percentage'],
+        'reports' => [
+            'report_group_order', 'report_group', 'report_code', 'report_name', 'report_version',
+            'show_in_general_selector', 'is_active',
         ],
         default => ['id', 'name'],
     };
@@ -277,7 +332,7 @@ function maintenance_list_sort_keys(string $module): array
  */
 function maintenance_table_columns(string $module, bool $implemented): array
 {
-    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms'], true);
+    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms', 'parameters', 'reports'], true);
 
     if ($module === 'maintenance_scales') {
         return [
@@ -500,10 +555,12 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'job_position_id', 'label' => 'Lloc de treball', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'job_position_name']],
             ['sort_key' => 'position_id', 'label' => 'Plaça', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'position_name']],
             ['sort_key' => 'legal_relation_name', 'label' => 'Relació jurídica', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'legal_relation_name']],
-            ['sort_key' => 'is_active', 'label' => 'Activa', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center']],
+            ['sort_key' => 'is_active', 'label' => 'Activa', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center', 'class' => 'table-col--people-bool', 'header_class' => 'table-col--people-bool']],
         ];
     }
     if ($module === 'management_positions') {
+        $mpBool = 'table-col--mp-bool';
+
         return [
             ['sort_key' => 'position_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'padded_id', 'field' => 'position_id', 'pad' => 4, 'strong' => true]],
             ['sort_key' => 'position_name', 'label' => 'Denominació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'position_name']],
@@ -512,18 +569,27 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'subscale_name', 'label' => 'Subescala', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'subscale_name']],
             ['sort_key' => 'class_name', 'label' => 'Classe', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'class_name']],
             ['sort_key' => 'category_name', 'label' => 'Categoria', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'category_name']],
-            ['sort_key' => 'is_active', 'label' => 'Activa', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center']],
+            ['sort_key' => 'is_active', 'label' => 'Activa', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center', 'class' => $mpBool, 'header_class' => $mpBool]],
+            ['sort_key' => 'is_offerable', 'label' => 'Ofertable', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_offerable', 'align' => 'center', 'class' => $mpBool, 'header_class' => $mpBool]],
+            ['sort_key' => 'is_to_be_amortized', 'label' => 'Amortitzar', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_to_be_amortized', 'align' => 'center', 'class' => $mpBool, 'header_class' => $mpBool]],
+            ['sort_key' => 'is_internal_promotion', 'label' => 'Promoció interna', 'sortable' => $sortList, 'header_title' => 'Promoció interna', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_internal_promotion', 'align' => 'center', 'class' => $mpBool, 'header_class' => $mpBool]],
         ];
     }
     if ($module === 'job_positions') {
+        $jpBool = 'table-col--jp-bool';
+
         return [
             ['sort_key' => 'job_position_id', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'job_code_dot', 'field' => 'job_position_id', 'strong' => true]],
             ['sort_key' => 'job_title', 'label' => 'Denominació', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'job_title']],
-            ['sort_key' => 'org_dependency_id', 'label' => 'Responsable', 'sortable' => $sortList, 'cell' => ['type' => 'job_position_cm_line', 'code_field' => 'responsible_job_code_raw', 'title_field' => 'responsible_job_title']],
+            ['sort_key' => 'org_dependency_id', 'label' => 'Responsable', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'responsible_display']],
             ['sort_key' => 'scale_name', 'label' => 'Escala', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'scale_name']],
-            ['sort_key' => 'legal_relation_name', 'label' => 'Relació jurídica', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'legal_relation_name']],
-            ['sort_key' => 'is_active', 'label' => 'Actiu', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center']],
-            ['sort_key' => 'is_to_be_amortized', 'label' => 'Amortitzat', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_to_be_amortized', 'align' => 'center']],
+            ['sort_key' => 'legal_relation_name', 'label' => 'Relació jurídica', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'legal_relation_display']],
+            ['sort_key' => 'is_active', 'label' => 'Actiu', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center', 'class' => $jpBool, 'header_class' => $jpBool]],
+            ['sort_key' => 'is_to_be_amortized', 'label' => 'Amortitzat', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_to_be_amortized', 'align' => 'center', 'class' => $jpBool, 'header_class' => $jpBool]],
+            ['sort_key' => 'has_night_schedule', 'label' => 'Nocturnitat', 'sortable' => $sortList, 'header_title' => 'Nocturnitat', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'has_night_schedule', 'align' => 'center', 'class' => $jpBool, 'header_class' => $jpBool]],
+            ['sort_key' => 'has_holiday_schedule', 'label' => 'Festivitat', 'sortable' => $sortList, 'header_title' => 'Festivitat', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'has_holiday_schedule', 'align' => 'center', 'class' => $jpBool, 'header_class' => $jpBool]],
+            ['sort_key' => 'has_shift_schedule', 'label' => 'Torns', 'sortable' => $sortList, 'header_title' => 'Torns', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'has_shift_schedule', 'align' => 'center', 'class' => $jpBool, 'header_class' => $jpBool]],
+            ['sort_key' => 'has_special_dedication', 'label' => 'Ded. esp.', 'sortable' => $sortList, 'header_title' => 'Dedicació especial', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'has_special_dedication', 'align' => 'center', 'class' => $jpBool, 'header_class' => $jpBool]],
         ];
     }
     if ($module === 'maintenance_subprograms') {
@@ -539,6 +605,25 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'technical_job_title', 'label' => 'Responsable tècnic', 'sortable' => $sortList, 'cell' => ['type' => 'text_truncate', 'field' => 'technical_job_title', 'truncate_class' => 'table__text-truncate--maint-sub', 'class' => 'table-col--responsable-tecnic', 'header_class' => 'table-col--responsable-tecnic']],
             ['sort_key' => 'is_mandatory_service', 'label' => 'Obligatori', 'sortable' => $sortList, 'header_title' => 'Servei obligatori', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_mandatory_service', 'class' => $subCompact, 'header_class' => $subCompact]],
             ['sort_key' => 'has_corporate_agreements', 'label' => 'Acords', 'sortable' => $sortList, 'header_title' => 'Acords corporatius', 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'has_corporate_agreements', 'class' => $subCompact, 'header_class' => $subCompact]],
+        ];
+    }
+    if ($module === 'parameters') {
+        return [
+            ['sort_key' => 'catalog_year', 'label' => 'Any catàleg', 'sortable' => $sortList, 'cell' => ['type' => 'raw_id', 'field' => 'catalog_year', 'strong' => true, 'search_pad' => 4]],
+            ['sort_key' => 'mei_percentage', 'label' => '% MEI', 'sortable' => $sortList, 'cell' => ['type' => 'mei_fraction', 'field' => 'mei_percentage', 'align' => 'right']],
+        ];
+    }
+    if ($module === 'reports') {
+        $reportsBool = 'table-col--reports-bool';
+
+        return [
+            ['sort_key' => 'report_group', 'label' => 'Grup', 'sortable' => $sortList, 'cell' => ['type' => 'text_truncate', 'field' => 'report_group', 'truncate_class' => 'table__text-truncate']],
+            ['sort_key' => 'report_group_order', 'label' => 'Ordre grup', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'report_group_order', 'align' => 'right']],
+            ['sort_key' => 'report_code', 'label' => 'Codi informe', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'report_code', 'strong' => true]],
+            ['sort_key' => 'report_name', 'label' => 'Nom informe', 'sortable' => $sortList, 'cell' => ['type' => 'text_truncate', 'field' => 'report_name', 'truncate_class' => 'table__text-truncate']],
+            ['sort_key' => 'report_version', 'label' => 'Versió', 'sortable' => $sortList, 'cell' => ['type' => 'text_truncate', 'field' => 'report_version', 'truncate_class' => 'table__text-truncate']],
+            ['sort_key' => 'show_in_general_selector', 'label' => 'Selector general', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'show_in_general_selector', 'align' => 'center', 'class' => $reportsBool, 'header_class' => $reportsBool]],
+            ['sort_key' => 'is_active', 'label' => 'Actiu', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center', 'class' => $reportsBool, 'header_class' => $reportsBool]],
         ];
     }
 
@@ -581,6 +666,8 @@ function maintenance_default_sort_key(string $module): string
         'management_positions' => 'position_id',
         'job_positions' => 'job_position_id',
         'maintenance_subprograms' => 'subprogram_program_id',
+        'parameters' => 'catalog_year',
+        'reports' => 'report_group_order',
         default => 'id',
     };
 }
@@ -715,6 +802,13 @@ function maintenance_sort_key_legacy_map(string $module): array
             'subprogram_id' => 'subprogram_code',
             'name' => 'subprogram_name',
         ],
+        'parameters' => [
+            'id' => 'catalog_year',
+        ],
+        'reports' => [
+            'id' => 'id',
+            'name' => 'report_name',
+        ],
         default => ['id' => 'id', 'name' => 'name'],
     };
 }
@@ -760,9 +854,27 @@ function maintenance_column_cell_html(array $colDef, array $row): string
         if ($codeRaw !== '' && preg_match('/^\d{6}$/', $codeRaw) === 1) {
             $codeShown = maintenance_format_job_position_code_display($codeRaw);
         }
-        $line = $codeShown !== '' ? ($codeShown . ' - ' . $titleRaw) : $titleRaw;
+        $line = $codeShown !== '' ? ($codeShown . ' — ' . $titleRaw) : $titleRaw;
 
         return e($line);
+    }
+
+    if ($type === 'legal_relation_abbr_line') {
+        $idF = (string) ($cell['id_field'] ?? '');
+        $nameF = (string) ($cell['name_field'] ?? '');
+        $idRaw = trim((string) ($row[$idF] ?? ''));
+        $nameRaw = trim((string) ($row[$nameF] ?? ''));
+        if ($idRaw === '' && $nameRaw === '') {
+            return '';
+        }
+        if ($nameRaw === '') {
+            return e($idRaw);
+        }
+        if ($idRaw === '') {
+            return e($nameRaw);
+        }
+
+        return e($idRaw . ' — ' . $nameRaw);
     }
 
     if ($type === 'padded_id') {
@@ -833,6 +945,10 @@ function maintenance_column_cell_html(array $colDef, array $row): string
 
     if ($type === 'decimal_4') {
         return e(maintenance_format_decimal_4_display($raw));
+    }
+
+    if ($type === 'mei_fraction') {
+        return e(maintenance_format_mei_fraction_display($raw));
     }
 
     if ($type === 'percent_4') {
@@ -1008,6 +1124,9 @@ function maintenance_search_qualified_field(string $module, string $field): ?str
             'legal_relation_name' => 'lr.legal_relation_name',
             default => 'p.' . $field,
         };
+    }
+    if ($module === 'parameters') {
+        return 't.' . $field;
     }
 
     return null;
@@ -1552,6 +1671,7 @@ function maintenance_job_positions_list_q_search_clause(string $q): array
         't.catalog_code',
         't.job_title',
         't.org_dependency_id',
+        't.legal_relation_id',
         'jp_dep.job_title',
         'jp_dep.catalog_code',
         's.scale_name',
@@ -1625,6 +1745,30 @@ function maintenance_list_q_search_clause(string $module, string $q): array
     $q = trim($q);
     if ($q === '') {
         return ['sql' => '', 'params' => []];
+    }
+    if ($module === 'parameters') {
+        $qLike = '%' . $q . '%';
+
+        return [
+            'sql' => ' AND (CAST(t.catalog_year AS CHAR) LIKE :mq_params_cy OR CAST(t.mei_percentage AS CHAR) LIKE :mq_params_mei)',
+            'params' => ['mq_params_cy' => $qLike, 'mq_params_mei' => $qLike],
+        ];
+    }
+    if ($module === 'reports') {
+        $qLike = '%' . $q . '%';
+
+        return [
+            'sql' => ' AND (t.report_group LIKE :mq_rs_g OR t.report_code LIKE :mq_rs_c OR t.report_name LIKE :mq_rs_n OR t.report_description LIKE :mq_rs_d OR CAST(t.report_group_order AS CHAR) LIKE :mq_rs_go OR COALESCE(t.report_version, \'\') LIKE :mq_rs_v OR COALESCE(t.report_explanation, \'\') LIKE :mq_rs_e)',
+            'params' => [
+                'mq_rs_g' => $qLike,
+                'mq_rs_c' => $qLike,
+                'mq_rs_n' => $qLike,
+                'mq_rs_d' => $qLike,
+                'mq_rs_go' => $qLike,
+                'mq_rs_v' => $qLike,
+                'mq_rs_e' => $qLike,
+            ],
+        ];
     }
     if ($module === 'maintenance_programs') {
         return maintenance_programs_list_q_search_clause($q);

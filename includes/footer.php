@@ -161,6 +161,12 @@ if (isset($maintenancePageInlineConfig) && is_array($maintenancePageInlineConfig
         JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
     ) . ';</script>' . "\n";
 }
+if (isset($reportSelectorPageInlineConfig) && is_array($reportSelectorPageInlineConfig)) {
+    echo '<script>window.APP_REPORT_SELECTOR = ' . json_encode(
+        $reportSelectorPageInlineConfig,
+        JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+    ) . ';</script>' . "\n";
+}
 ?>
 <script src="<?= e(asset_url('js/app.js')) ?>" defer></script>
 <?php if (!empty($extraScripts) && is_array($extraScripts)): ?>

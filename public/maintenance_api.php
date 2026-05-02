@@ -100,7 +100,15 @@ try {
         }
         try {
             $originalIdRaw = (string) ($in['original_id'] ?? '');
-            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'management_positions', 'people', 'job_positions'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
+            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'management_positions', 'people', 'job_positions', 'parameters'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
+            if ($module === 'people') {
+                error_log('PEOPLE PAYLOAD: ' . json_encode([
+                    'id' => $in['id'] ?? null,
+                    'original_id' => $in['original_id'] ?? null,
+                    'legacy_person_id' => $in['legacy_person_id'] ?? null,
+                    'subprogram_people' => $in['subprogram_people'] ?? null,
+                ], JSON_UNESCAPED_UNICODE));
+            }
             maintenance_save(db(), $module, $year, $originalForSave, [
                 'id' => (string) ($in['id'] ?? ''),
                 'name' => (string) ($in['name'] ?? ''),
@@ -222,6 +230,16 @@ try {
                 'group_e_current_year_triennia' => (string) ($in['group_e_current_year_triennia'] ?? ''),
                 'group_e_current_year_percentage' => (string) ($in['group_e_current_year_percentage'] ?? ''),
                 'subprogram_people' => $in['subprogram_people'] ?? [],
+                'mei_percentage' => (string) ($in['mei_percentage'] ?? ''),
+                'report_group' => (string) ($in['report_group'] ?? ''),
+                'report_group_order' => (string) ($in['report_group_order'] ?? ''),
+                'report_code' => (string) ($in['report_code'] ?? ''),
+                'report_name' => (string) ($in['report_name'] ?? ''),
+                'report_description' => (string) ($in['report_description'] ?? ''),
+                'report_explanation' => (string) ($in['report_explanation'] ?? ''),
+                'report_version' => (string) ($in['report_version'] ?? ''),
+                'show_in_general_selector' => $in['show_in_general_selector'] ?? 0,
+                'is_active' => $in['is_active'] ?? 0,
                 'job_title' => (string) ($in['job_title'] ?? ''),
                 'org_unit_level_3_id' => (string) ($in['org_unit_level_3_id'] ?? ''),
                 'job_number' => (string) ($in['job_number'] ?? ''),
@@ -273,9 +291,29 @@ try {
             if ($errs !== null) {
                 maintenance_api_json(false, ['errors' => $errs], 422);
             } elseif (db_is_integrity_constraint_violation($e)) {
-                maintenance_api_json(false, ['errors' => ['_general' => 'No es pot desar per restricció d’integritat.']], 422);
+                $peopleIntegritySubprogramMsg = null;
+                if (($module ?? '') === 'people' && $e instanceof PDOException) {
+                    $driverCode = (int) ($e->errorInfo[1] ?? 0);
+                    if ($driverCode === 1062) {
+                        $peopleIntegritySubprogramMsg = 'No es poden repetir subprogrames a la llista.';
+                    } elseif ($driverCode === 1452) {
+                        $peopleIntegritySubprogramMsg = 'El subprograma seleccionat no existeix en aquest exercici.';
+                    }
+                }
+                if ($peopleIntegritySubprogramMsg !== null) {
+                    maintenance_api_json(false, ['errors' => ['subprogram_people' => $peopleIntegritySubprogramMsg]], 422);
+                } else {
+                    maintenance_api_json(false, ['errors' => ['_general' => 'No es pot desar per restricció d’integritat.']], 422);
+                }
             } else {
-                maintenance_api_json(false, ['errors' => ['_general' => $e->getMessage()]], 500);
+                if (($module ?? '') === 'people') {
+                    error_log('PEOPLE SAVE ERROR: ' . $e->getMessage());
+                    error_log($e->getTraceAsString());
+                } else {
+                    error_log('MAINTENANCE SAVE ERROR: ' . $e->getMessage());
+                    error_log($e->getTraceAsString());
+                }
+                maintenance_api_json(false, ['errors' => ['_general' => 'S\'ha produït un error en desar. Consulta el log del servidor per al detall tècnic.']], 500);
             }
         }
         exit;

@@ -937,6 +937,23 @@
     grid-column: 1 / -1;
 }
 
+/* Empresa + Grau personal + Import (people): una fila sencera; import amagat si no és mòdul people (sense JS extra). */
+.people-grade-row {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.people-grade-row:has([data-maintenance-field="personal_grade"][hidden]) > .people-grade-amount-col {
+    display: none !important;
+}
+
+@media (max-width: 720px) {
+    /* components.css posa .form-grid a 1 col; mantenim 3 columnes igualades en aquesta fila. */
+    .people-grade-row.form-grid--three-cols {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 .form-grid--two-cols {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1013,6 +1030,20 @@
 }
 
 .users-modal-form .form-input--money {
+    text-align: right;
+}
+
+.users-modal-form .people-personal-grade-amount-label {
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.users-modal-form .people-personal-grade-amount {
+    text-align: right;
+}
+
+.people-personal-grade-amount,
+[data-people-personal-grade-amount] {
     text-align: right;
 }
 
@@ -1756,6 +1787,105 @@
     flex-wrap: nowrap;
 }
 
+/* Llistat Catàleg de llocs: píldores Sí/No com subprograma (només taula) */
+.module-users .data-table--job-positions .maintenance-chip--bool-yes {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid #b8dcc8;
+    background: var(--module-users-success-bg);
+    color: var(--module-users-success);
+}
+
+.module-users .data-table--job-positions .maintenance-chip--bool-no {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid #e5e7eb;
+    background: #f3f4f6;
+    color: var(--color-muted);
+}
+
+.module-users .data-table--job-positions .maintenance-chip__text {
+    display: inline-block;
+}
+
+/* Llistat Catàleg de places (management_positions): píldores Sí/No com subprograma */
+.module-users .data-table--management-positions .maintenance-chip--bool-yes {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid #b8dcc8;
+    background: var(--module-users-success-bg);
+    color: var(--module-users-success);
+}
+
+.module-users .data-table--management-positions .maintenance-chip--bool-no {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid #e5e7eb;
+    background: #f3f4f6;
+    color: var(--color-muted);
+}
+
+.module-users .data-table--management-positions .maintenance-chip__text {
+    display: inline-block;
+}
+
+/* Llistat Catàleg de persones: píldores Sí/No com subprograma */
+.module-users .data-table--people .maintenance-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.module-users .data-table--people .maintenance-chip--bool-yes {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid #b8dcc8;
+    background: var(--module-users-success-bg);
+    color: var(--module-users-success);
+}
+
+.module-users .data-table--people .maintenance-chip--bool-no {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid #e5e7eb;
+    background: #f3f4f6;
+    color: var(--color-muted);
+}
+
+.module-users .data-table--people .maintenance-chip__text {
+    display: inline-block;
+}
+
 /* --- CPT personal (transitori): taula compacta i centrada --- */
 .module-users .data-table--personal-transitory-cpt {
     width: auto;
@@ -1814,7 +1944,8 @@
 }
 
 /* --- Llocs de treball (modal per pestanyes) --- */
-.module-users .job-positions-tabs {
+.module-users .job-positions-tabs,
+.users-modal-form .job-positions-modal-shell .job-positions-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
@@ -1823,28 +1954,39 @@
     border-bottom: 1px solid var(--color-border);
 }
 
-.module-users .job-positions-tabs__btn {
+.module-users .job-positions-tabs__btn,
+.users-modal-form .job-positions-modal-shell .job-positions-tabs__btn {
     appearance: none;
     border: 1px solid var(--color-border);
-    background: #fff;
-    color: var(--color-text);
-    border-radius: 6px;
-    padding: 0.35rem 0.65rem;
+    border-bottom-width: 2px;
+    background: #f8fafc;
+    color: var(--color-muted);
+    border-radius: 6px 6px 0 0;
+    padding: 0.4rem 0.75rem;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     line-height: 1.2;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.module-users .job-positions-tabs__btn:hover {
+.module-users .job-positions-tabs__btn:hover,
+.users-modal-form .job-positions-modal-shell .job-positions-tabs__btn:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
+    background: #fff;
 }
 
-.module-users .job-positions-tabs__btn.is-active {
+.module-users .job-positions-tabs__btn.is-active,
+.users-modal-form .job-positions-modal-shell .job-positions-tabs__btn.is-active {
     border-color: var(--color-primary);
-    background: var(--color-primary-alpha-08);
-    color: #c50;
+    border-bottom-color: #fff;
+    margin-bottom: -1px;
+    padding-bottom: calc(0.4rem + 1px);
+    background: #fff;
+    color: #0f172a;
+    font-weight: 700;
+    box-shadow: 0 -2px 0 0 var(--color-primary) inset;
 }
 
 .module-users .job-positions-tab-panel[hidden] {
@@ -1860,8 +2002,113 @@
     font-variant-numeric: tabular-nums;
 }
 
-.module-users .job-positions-ocupants .data-table--compact {
+.module-users .job-positions-ocupants .data-table--compact,
+.users-modal-form .job-positions-ocupants .data-table--compact {
     margin-bottom: 0.5rem;
+}
+
+/* Ocupants del lloc: taula compacta (només aquest bloc) */
+.module-users .job-positions-occupants-table,
+.users-modal-form .job-positions-occupants-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.module-users .job-positions-occupants-table td,
+.module-users .job-positions-occupants-table th,
+.users-modal-form .job-positions-occupants-table td,
+.users-modal-form .job-positions-occupants-table th {
+    padding: 4px 8px;
+    vertical-align: middle;
+}
+
+.module-users .job-positions-occupants-table tr,
+.users-modal-form .job-positions-occupants-table tr {
+    height: auto;
+}
+
+.module-users .job-positions-occupants-table input,
+.module-users .job-positions-occupants-table select,
+.users-modal-form .job-positions-occupants-table input,
+.users-modal-form .job-positions-occupants-table select {
+    padding: 2px 4px;
+    height: 26px;
+}
+
+.module-users .job-positions-occupants-table .form-group,
+.users-modal-form .job-positions-occupants-table .form-group {
+    margin-bottom: 0;
+}
+
+.module-users .job-positions-occupants-table button,
+.users-modal-form .job-positions-occupants-table button {
+    padding: 2px 6px;
+}
+
+/* Compactació subprogramas (people): mateix criteri que ocupants */
+.module-users .people-subprograms-table,
+.users-modal-form .people-subprograms-table {
+    border-collapse: collapse;
+}
+
+.module-users .people-subprograms-table th,
+.module-users .people-subprograms-table td,
+.users-modal-form .people-subprograms-table th,
+.users-modal-form .people-subprograms-table td {
+    padding: 4px 8px;
+    vertical-align: middle;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.module-users .people-subprograms-table tr,
+.users-modal-form .people-subprograms-table tr {
+    height: auto;
+}
+
+.module-users .people-subprograms-table input,
+.module-users .people-subprograms-table select,
+.users-modal-form .people-subprograms-table input,
+.users-modal-form .people-subprograms-table select {
+    height: 28px;
+    padding: 2px 6px;
+    font-size: 13px;
+}
+
+.module-users .people-subprograms-table .form-group,
+.users-modal-form .people-subprograms-table .form-group {
+    margin-bottom: 0;
+}
+
+.module-users .people-subprograms-table button,
+.users-modal-form .people-subprograms-table button {
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+.module-users .data-table--parameters th,
+.module-users .data-table--parameters td,
+.users-modal-form .data-table--parameters th,
+.users-modal-form .data-table--parameters td {
+    vertical-align: middle;
+}
+
+.users-modal-form .job-positions-ocupants__table th,
+.users-modal-form .job-positions-ocupants__table td {
+    white-space: nowrap;
+}
+
+.users-modal-form .job-positions-ocupants__table td:nth-child(2) {
+    white-space: normal;
+    max-width: 14rem;
+}
+
+.users-modal-form .job-positions-modal-shell input[readonly][data-job-positions-full-code] {
+    background: #f1f5f9;
+    color: var(--color-muted);
+    cursor: default;
 }
 
 /* Modal manteniment (fora de .module-users): grups/importes llocs — 4 columnes per fila */
@@ -1897,4 +2144,35 @@
     .users-modal-form .jp-comp-row {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
+}
+
+/* Informes (reports): modal a ample complet, files independents */
+.users-modal-form .reports-modal {
+    display: contents;
+}
+
+.users-modal-form .reports-modal[hidden] {
+    display: none !important;
+}
+
+.users-modal-form .reports-modal .reports-row {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.users-modal-form .reports-modal .reports-row .form-group {
+    min-width: 0;
+}
+
+.users-modal-form .reports-modal .reports-textarea {
+    min-height: 120px;
+    width: 100%;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.users-modal-form .reports-modal .reports-explanation {
+    min-height: 180px;
 }

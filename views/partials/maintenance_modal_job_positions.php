@@ -63,65 +63,71 @@ $jpJobTypes = maintenance_job_position_type_options($db, (int) $year);
                     <input class="form-input" id="jp_job_position_code_display" name="job_position_code_display" type="text" readonly required tabindex="-1" data-job-positions-full-code data-job-position-code-display maxlength="30" autocomplete="off">
                     <p class="form-error" data-error-for="job_position_code_display" hidden></p>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_org_dependency_id">Responsable</label>
-                    <select class="form-select" id="jp_org_dependency_id" name="org_dependency_id" data-field="org_dependency_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpCmRespRows as $it): ?>
-                            <?php
-                            $rid = trim((string) ($it['job_position_id'] ?? ''));
-                            $codeDisp = maintenance_format_job_position_code_display($rid);
-                            $rname = trim((string) ($it['job_title'] ?? ''));
-                            $rlab = $codeDisp !== '' ? ($codeDisp . ' — ' . $rname) : $rname;
-                            ?>
-                            <option value="<?= e($rid) ?>"><?= e($rlab) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="form-grid form-grid--two-cols">
+                    <div class="form-group">
+                        <label class="form-label" for="jp_org_dependency_id">Responsable</label>
+                        <select class="form-select" id="jp_org_dependency_id" name="org_dependency_id" data-field="org_dependency_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpCmRespRows as $it): ?>
+                                <?php
+                                $rid = trim((string) ($it['job_position_id'] ?? ''));
+                                $codeDisp = maintenance_format_job_position_code_display($rid);
+                                $rname = trim((string) ($it['job_title'] ?? ''));
+                                $rlab = $codeDisp !== '' ? ($codeDisp . ' — ' . $rname) : $rname;
+                                ?>
+                                <option value="<?= e($rid) ?>"><?= e($rlab) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="jp_legal_relation_id">Relació jurídica</label>
+                        <select class="form-select" id="jp_legal_relation_id" name="legal_relation_id" data-field="legal_relation_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpLegal as $it): ?>
+                                <option value="<?= e((string) ($it['id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_legal_relation_id">Relació jurídica</label>
-                    <select class="form-select" id="jp_legal_relation_id" name="legal_relation_id" data-field="legal_relation_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpLegal as $it): ?>
-                            <option value="<?= e((string) ($it['id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="form-grid form-grid--two-cols">
+                    <div class="form-group">
+                        <label class="form-label" for="jp_civil_service_scale_id">Escala</label>
+                        <select class="form-select" id="jp_civil_service_scale_id" name="civil_service_scale_id" data-field="civil_service_scale_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpScales as $it): ?>
+                                <option value="<?= e((string) ($it['id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="jp_civil_service_subscale_id">Subescala</label>
+                        <select class="form-select" id="jp_civil_service_subscale_id" name="civil_service_subscale_id" data-field="civil_service_subscale_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpSubscales as $it): ?>
+                                <option value="<?= e((string) ($it['id'] ?? '')) ?>" data-scale-id="<?= e((string) ($it['scale_id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_civil_service_scale_id">Escala</label>
-                    <select class="form-select" id="jp_civil_service_scale_id" name="civil_service_scale_id" data-field="civil_service_scale_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpScales as $it): ?>
-                            <option value="<?= e((string) ($it['id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_civil_service_subscale_id">Subescala</label>
-                    <select class="form-select" id="jp_civil_service_subscale_id" name="civil_service_subscale_id" data-field="civil_service_subscale_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpSubscales as $it): ?>
-                            <option value="<?= e((string) ($it['id'] ?? '')) ?>" data-scale-id="<?= e((string) ($it['scale_id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_civil_service_class_id">Classe</label>
-                    <select class="form-select" id="jp_civil_service_class_id" name="civil_service_class_id" data-field="civil_service_class_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpClasses as $it): ?>
-                            <option value="<?= e((string) ($it['id'] ?? '')) ?>" data-scale-id="<?= e((string) ($it['scale_id'] ?? '')) ?>" data-subscale-id="<?= e((string) ($it['subscale_id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_civil_service_category_id">Categoria</label>
-                    <select class="form-select" id="jp_civil_service_category_id" name="civil_service_category_id" data-field="civil_service_category_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpCategories as $it): ?>
-                            <option value="<?= e((string) ($it['id'] ?? '')) ?>" data-scale-id="<?= e((string) ($it['scale_id'] ?? '')) ?>" data-subscale-id="<?= e((string) ($it['subscale_id'] ?? '')) ?>" data-class-id="<?= e((string) ($it['class_id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="form-grid form-grid--two-cols">
+                    <div class="form-group">
+                        <label class="form-label" for="jp_civil_service_class_id">Classe</label>
+                        <select class="form-select" id="jp_civil_service_class_id" name="civil_service_class_id" data-field="civil_service_class_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpClasses as $it): ?>
+                                <option value="<?= e((string) ($it['id'] ?? '')) ?>" data-scale-id="<?= e((string) ($it['scale_id'] ?? '')) ?>" data-subscale-id="<?= e((string) ($it['subscale_id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="jp_civil_service_category_id">Categoria</label>
+                        <select class="form-select" id="jp_civil_service_category_id" name="civil_service_category_id" data-field="civil_service_category_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpCategories as $it): ?>
+                                <option value="<?= e((string) ($it['id'] ?? '')) ?>" data-scale-id="<?= e((string) ($it['scale_id'] ?? '')) ?>" data-subscale-id="<?= e((string) ($it['subscale_id'] ?? '')) ?>" data-class-id="<?= e((string) ($it['class_id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group form-grid__full">
                     <label class="form-label" for="jp_labor_category">Categoria laboral</label>
@@ -247,28 +253,30 @@ $jpJobTypes = maintenance_job_position_type_options($db, (int) $year);
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_contribution_group_id">Grup de cotització</label>
-                    <select class="form-select" id="jp_contribution_group_id" name="contribution_group_id" data-field="contribution_group_id">
-                        <option value="">—</option>
-                        <?php foreach ($jpSsGroup as $it): ?>
-                            <option value="<?= e((string) ($it['id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="form-grid form-grid--three-cols">
+                    <div class="form-group">
+                        <label class="form-label" for="jp_contribution_group_id">Grup de cotització</label>
+                        <select class="form-select" id="jp_contribution_group_id" name="contribution_group_id" data-field="contribution_group_id">
+                            <option value="">—</option>
+                            <?php foreach ($jpSsGroup as $it): ?>
+                                <option value="<?= e((string) ($it['id'] ?? '')) ?>"><?= e((string) ($it['id'] ?? '') . ' — ' . (string) ($it['name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="jp_deleted_at">Data baixa</label>
+                        <input class="form-input" id="jp_deleted_at" name="deleted_at" type="text" placeholder="dd/mm/aaaa" data-field="deleted_at" data-job-positions-deleted-at>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="jp_deletion_file_reference">Expedient baixa</label>
+                        <input class="form-input" id="jp_deletion_file_reference" name="deletion_file_reference" type="text" data-field="deletion_file_reference">
+                    </div>
                 </div>
                 <input id="jp_created_at" name="created_at" type="hidden" data-field="created_at">
                 <textarea id="jp_creation_reason" name="creation_reason" hidden data-field="creation_reason"></textarea>
-                <div class="form-group">
-                    <label class="form-label" for="jp_deleted_at">Data baixa</label>
-                    <input class="form-input" id="jp_deleted_at" name="deleted_at" type="text" placeholder="dd/mm/aaaa" data-field="deleted_at" data-job-positions-deleted-at>
-                </div>
                 <div class="form-group form-grid__full">
                     <label class="form-label" for="jp_deletion_reason">Motiu baixa</label>
                     <textarea class="form-input" id="jp_deletion_reason" name="deletion_reason" rows="2" data-field="deletion_reason"></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="jp_deletion_file_reference">Expedient baixa</label>
-                    <input class="form-input" id="jp_deletion_file_reference" name="deletion_file_reference" type="text" data-field="deletion_file_reference">
                 </div>
                 <input id="jp_creation_file_reference" name="creation_file_reference" type="hidden" data-field="creation_file_reference">
                 <input id="jp_job_evaluation" name="job_evaluation" type="hidden" data-field="job_evaluation">
@@ -287,8 +295,16 @@ $jpJobTypes = maintenance_job_position_type_options($db, (int) $year);
             </div>
             <div class="form-group form-grid__full job-positions-ocupants">
                 <label class="form-label">Ocupants del lloc</label>
-                <table class="data-table data-table--compact">
-                    <thead><tr><th>Persona</th><th></th></tr></thead>
+                <table class="data-table data-table--compact job-positions-ocupants__table job-positions-occupants-table">
+                    <thead><tr>
+                        <th>Codi</th>
+                        <th>Nom</th>
+                        <th>% Dedicació</th>
+                        <th>% Pressupostat</th>
+                        <th>Situació</th>
+                        <th>Coef. Cotització</th>
+                        <th class="job-positions-ocupants__actions"></th>
+                    </tr></thead>
                     <tbody data-job-positions-assigned-rows></tbody>
                 </table>
                 <button type="button" class="btn btn--ghost btn--sm" data-job-positions-assigned-add>Afegir ocupant</button>

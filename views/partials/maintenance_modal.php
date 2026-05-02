@@ -28,14 +28,14 @@ declare(strict_types=1);
                 <div class="form-group form-grid__full js-maintenance-msg" hidden>
                     <div class="alert alert--error" role="alert" data-maintenance-form-error></div>
                 </div>
-                <?php if (($module ?? '') !== 'people' && ($module ?? '') !== 'job_positions'): ?>
+                <?php if (($module ?? '') !== 'people' && ($module ?? '') !== 'job_positions' && ($module ?? '') !== 'parameters' && ($module ?? '') !== 'reports'): ?>
                     <div class="form-group" data-maintenance-field="id">
                         <label class="form-label" for="maintenance_id" data-maintenance-label-id>Codi <span class="users-modal-form__req">*</span></label>
                         <input class="form-input" id="maintenance_id" name="id" type="number" min="1" required data-field="id">
                         <p class="form-error" data-error-for="id" hidden></p>
                     </div>
                 <?php endif; ?>
-                <?php if (($module ?? '') !== 'job_positions'): ?>
+                <?php if (($module ?? '') !== 'job_positions' && ($module ?? '') !== 'parameters' && ($module ?? '') !== 'reports'): ?>
                 <div class="form-group" data-maintenance-field="name">
                     <label class="form-label" for="maintenance_name" data-maintenance-label-name>Nom <span class="users-modal-form__req">*</span></label>
                     <input class="form-input" id="maintenance_name" name="name" type="text" required data-field="name">
@@ -469,6 +469,12 @@ declare(strict_types=1);
                 <?php if (($module ?? '') === 'job_positions'): ?>
                     <?php require __DIR__ . '/maintenance_modal_job_positions.php'; ?>
                 <?php endif; ?>
+                <?php if (($module ?? '') === 'parameters'): ?>
+                    <?php require __DIR__ . '/maintenance_modal_parameters.php'; ?>
+                <?php endif; ?>
+                <?php if (($module ?? '') === 'reports'): ?>
+                    <?php require __DIR__ . '/maintenance_modal_reports.php'; ?>
+                <?php endif; ?>
                 <?php if (($module ?? '') === 'people'): ?>
                 <div class="form-grid--three-cols">
                     <?php if (($module ?? '') === 'people'): ?>
@@ -581,7 +587,7 @@ declare(strict_types=1);
                         </select>
                     </div>
                 </div>
-                <div class="form-grid--two-cols">
+                <div class="form-grid form-grid--three-cols people-grade-row">
                     <div class="form-group" data-maintenance-field="company_id" hidden>
                         <label class="form-label" for="maintenance_company_id">Empresa</label>
                         <select class="form-select" id="maintenance_company_id" name="company_id" data-field="company_id">
@@ -593,6 +599,10 @@ declare(strict_types=1);
                         <select class="form-select" id="maintenance_personal_grade" name="personal_grade" data-field="personal_grade">
                             <option value="">Selecciona…</option>
                         </select>
+                    </div>
+                    <div class="form-group people-grade-amount-col">
+                        <label class="form-label people-personal-grade-amount-label" for="maintenance_personal_grade_amount">Import complement destinació</label>
+                        <input class="form-input form-input--money" id="maintenance_personal_grade_amount" type="text" readonly tabindex="-1" data-people-personal-grade-amount autocomplete="off" aria-readonly="true">
                     </div>
                 </div>
                 <div class="form-grid--two-cols">
@@ -801,7 +811,7 @@ declare(strict_types=1);
                 </div>
                 <div class="form-group form-grid__full" data-maintenance-field="subprogram_people" hidden>
                     <label class="form-label">Subprogrames</label>
-                    <table class="data-table data-table--compact">
+                    <table class="data-table data-table--compact people-subprograms-table">
                         <thead>
                         <tr><th>Subprograma</th><th>Dedicació %</th><th></th></tr>
                         </thead>

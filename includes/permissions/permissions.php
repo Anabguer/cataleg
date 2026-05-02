@@ -177,6 +177,7 @@ function permissions_form_group_definitions(): array
         'training_maintenance' => ['label' => 'Manteniment', 'nav' => 'Manteniments'],
         'social_security_companies' => ['label' => 'Empreses i Seguretat Social', 'nav' => 'Manteniments'],
         'training_management' => ['label' => 'Gestió', 'nav' => 'Gestió'],
+        'parameters' => ['label' => 'Paràmetres', 'nav' => 'Paràmetres'],
     ];
 }
 

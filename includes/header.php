@@ -13,6 +13,7 @@ $groupDefs = function_exists('permissions_form_group_definitions') ? permissions
     'training_maintenance' => ['label' => 'Manteniment', 'nav' => 'Manteniments'],
     'social_security_companies' => ['label' => 'Empreses i Seguretat Social', 'nav' => 'Manteniments'],
     'training_management' => ['label' => 'Gestió', 'nav' => 'Gestió'],
+    'parameters' => ['label' => 'Paràmetres', 'nav' => 'Paràmetres'],
 ];
 $normalizeGroup = static function (string $group) use ($groupDefs): string {
     $key = trim(strtolower($group));
@@ -27,6 +28,7 @@ $maintenanceItems = [];
 $salaryTablesGroups = [];
 $salaryTablesItems = [];
 $gestioItems = [];
+$parametersItems = [];
 
 foreach ($menuItems as $item) {
     $code = (string) ($item['code'] ?? '');
@@ -42,6 +44,14 @@ foreach ($menuItems as $item) {
     }
     if ($groupKey === 'training_management') {
         $gestioItems[] = [
+            'navKey' => $code,
+            'name' => (string) ($item['name'] ?? $code),
+            'route' => (string) ($item['route'] ?? ''),
+        ];
+        continue;
+    }
+    if ($groupKey === 'parameters') {
+        $parametersItems[] = [
             'navKey' => $code,
             'name' => (string) ($item['name'] ?? $code),
             'route' => (string) ($item['route'] ?? ''),
@@ -87,6 +97,7 @@ foreach ($salaryTablesGroups as $groupItems) {
     }
 }
 $salaryTablesActive = in_array($activeNav, $salaryTablesCodes, true);
+$parametersActive = in_array($activeNav, array_column($parametersItems, 'navKey'), true);
 ?>
 <!DOCTYPE html>
 <html lang="ca">
@@ -196,6 +207,24 @@ $salaryTablesActive = in_array($activeNav, $salaryTablesCodes, true);
                                 <?= e((string) $item['name']) ?>
                             </a>
                         <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            <?php if ($parametersItems !== []): ?>
+            <div class="app-nav__dropdown">
+                <button type="button" class="app-nav__link app-nav__link--button<?= $parametersActive ? ' is-active' : '' ?>" data-app-nav-dropdown-toggle>
+                    <?= e((string) ($groupDefs['parameters']['nav'] ?? 'Paràmetres')) ?>
+                </button>
+                <div class="app-nav__dropdown-menu" data-app-nav-dropdown-menu>
+                    <?php foreach ($parametersItems as $item): ?>
+                        <?php
+                        $href = app_url(ltrim((string) $item['route'], '/'));
+                        $isActive = $activeNav === (string) $item['navKey'];
+                        ?>
+                        <a class="app-nav__dropdown-link<?= $isActive ? ' is-active' : '' ?>" href="<?= e($href) ?>">
+                            <?= e((string) $item['name']) ?>
+                        </a>
                     <?php endforeach; ?>
                 </div>
             </div>

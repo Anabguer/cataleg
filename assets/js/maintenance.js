@@ -11,6 +11,33 @@
     function openModal() { var el = overlay(); if (!el) return; el.removeAttribute('hidden'); el.setAttribute('aria-hidden', 'false'); requestAnimationFrame(function(){ el.classList.add('is-visible'); }); lock(); var f = el.querySelector('input:not([type="hidden"])'); if (f) f.focus(); }
     function closeModal() { var el = overlay(); if (!el) return; var ae = document.activeElement; if (ae && el.contains(ae) && ae.blur) ae.blur(); setTimeout(function(){ el.classList.remove('is-visible'); el.setAttribute('hidden','hidden'); el.setAttribute('aria-hidden','true'); unlock(); },0); }
     function clearErrors(form){ form.querySelectorAll('[data-error-for]').forEach(function(p){p.hidden=true;p.textContent='';}); var w=form.querySelector('.js-maintenance-msg'); if(w) w.hidden=true; var g=form.querySelector('[data-maintenance-form-error]'); if(g) g.textContent=''; }
+    /** Errors API de desar: people + subprogram_people es mostren amb modal (showAlert), no només text inferior. */
+    function showMaintenanceSaveErrorResponse(form, errs, httpStatus) {
+        if (!errs) return;
+        httpStatus = httpStatus || 0;
+        if (module() === 'people' && errs.subprogram_people && window.showAlert) {
+            window.showAlert('warning', 'Avís', errs.subprogram_people);
+            var rest = {};
+            Object.keys(errs).forEach(function (k) {
+                if (k !== 'subprogram_people') rest[k] = errs[k];
+            });
+            if (Object.keys(rest).length) showErrors(form, rest);
+            else clearErrors(form);
+            return;
+        }
+        if (module() === 'people' && errs._general && window.showAlert) {
+            var isServer = httpStatus >= 500;
+            window.showAlert(isServer ? 'error' : 'warning', isServer ? 'Error' : 'Avís', errs._general);
+            var restG = {};
+            Object.keys(errs).forEach(function (k) {
+                if (k !== '_general') restG[k] = errs[k];
+            });
+            if (Object.keys(restG).length) showErrors(form, restG);
+            else clearErrors(form);
+            return;
+        }
+        showErrors(form, errs);
+    }
     function showErrors(form,e){ clearErrors(form); Object.keys(e||{}).forEach(function(k){ if(k==='_general'){ var w=form.querySelector('.js-maintenance-msg'), g=form.querySelector('[data-maintenance-form-error]'); if(w&&g){w.hidden=false; g.textContent=e[k];} return; } var p=form.querySelector('[data-error-for="'+k+'"]'); if(p){ p.hidden=false; p.textContent=e[k]; }}); }
     function module(){ return String(cfg().module || '').trim(); }
     function apiUrl(){ return (cfg().apiUrl || '') + '?module=' + encodeURIComponent(module()); }
@@ -44,6 +71,8 @@
         if(mod==='management_positions') return row && row.position_id !== undefined ? row.position_id : '';
         if(mod==='job_positions') return row && row.job_position_id !== undefined ? String(row.job_position_id) : '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_id !== undefined ? row.subprogram_id : '';
+        if(mod==='parameters') return row && (row.catalog_year != null && String(row.catalog_year).trim() !== '') ? String(row.catalog_year) : (row && row.id != null ? String(row.id) : '');
+        if(mod==='reports') return row && row.id != null ? String(row.id) : '';
         return row && (row.scale_id || row.subscale_id || row.category_id || '');
     }
     function rowNameFromData(row){
@@ -76,6 +105,7 @@
         if(mod==='job_positions') return row && row.job_title !== undefined ? row.job_title : '';
         if(mod==='maintenance_social_security_coefficients') return '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_name !== undefined ? row.subprogram_name : '';
+        if(mod==='reports') return row && row.report_name !== undefined ? row.report_name : '';
         return row && (row.scale_name || row.subscale_name || row.category_name || '');
     }
     function rowShortNameFromData(row){
@@ -377,6 +407,7 @@
             return;
         }
         codeEl.value = d4 + '.' + n2;
+        enforceJobPositionFullCodeReadonly();
     }
     function syncJobPositionHiddenIdWithCatalog() {
         if (module() !== 'job_positions') return;
@@ -527,13 +558,41 @@
             });
         });
     }
+    function jpOcupantPersonCode(pid) {
+        var s = String(pid || '').trim();
+        if (!s) return '';
+        return ('00000' + s).slice(-5);
+    }
+    function jpOcupantFullName(r) {
+        var parts = [r.last_name_1, r.last_name_2, r.first_name].filter(function (x) { return x; });
+        return parts.join(' ').trim();
+    }
+    function jpOcupantSituation(r) {
+        if (r.situation_label != null && String(r.situation_label).trim() !== '') return String(r.situation_label).trim();
+        var a = (r.administrative_status_name || '').trim();
+        if (a) return a;
+        return (r.status_text || '').trim();
+    }
     function jobPositionsAssignedGetRows() {
         var tb = document.querySelector('[data-job-positions-assigned-rows]');
         if (!tb) return [];
         var out = [];
         tb.querySelectorAll('tr[data-person-id]').forEach(function (tr) {
             var pid = tr.getAttribute('data-person-id');
-            if (pid) out.push({ person_id: pid, label: tr.getAttribute('data-person-label') || '' });
+            if (!pid) return;
+            out.push({
+                person_id: pid,
+                label: tr.getAttribute('data-person-label') || '',
+                last_name_1: tr.getAttribute('data-jp-ln1') || '',
+                last_name_2: tr.getAttribute('data-jp-ln2') || '',
+                first_name: tr.getAttribute('data-jp-fn') || '',
+                dedication: tr.getAttribute('data-jp-dedication') || '',
+                budgeted_amount: tr.getAttribute('data-jp-budgeted') || '',
+                social_security_contribution_coefficient: tr.getAttribute('data-jp-coeff') || '',
+                situation_label: tr.getAttribute('data-jp-situation') || '',
+                administrative_status_name: tr.getAttribute('data-jp-admst') || '',
+                status_text: tr.getAttribute('data-jp-sttxt') || ''
+            });
         });
         return out;
     }
@@ -542,22 +601,57 @@
         if (!tb) return;
         tb.innerHTML = '';
         (rows || []).forEach(function (r) {
+            var pid = String(r.person_id != null ? r.person_id : '');
             var tr = document.createElement('tr');
-            tr.setAttribute('data-person-id', String(r.person_id));
-            tr.setAttribute('data-person-label', String(r.label || ''));
-            var td1 = document.createElement('td');
-            td1.textContent = r.label || String(r.person_id);
-            var td2 = document.createElement('td');
+            tr.setAttribute('data-person-id', pid);
+            var parts = [r.last_name_1, r.last_name_2, r.first_name].filter(function (x) { return x; });
+            var lab = jpOcupantPersonCode(pid) + (parts.length ? (' — ' + parts.join(' ')) : '');
+            tr.setAttribute('data-person-label', String(r.label || lab));
+            tr.setAttribute('data-jp-ln1', String(r.last_name_1 != null ? r.last_name_1 : ''));
+            tr.setAttribute('data-jp-ln2', String(r.last_name_2 != null ? r.last_name_2 : ''));
+            tr.setAttribute('data-jp-fn', String(r.first_name != null ? r.first_name : ''));
+            tr.setAttribute('data-jp-dedication', r.dedication != null && String(r.dedication).trim() !== '' ? String(r.dedication) : '');
+            tr.setAttribute('data-jp-budgeted', r.budgeted_amount != null && String(r.budgeted_amount).trim() !== '' ? String(r.budgeted_amount) : '');
+            tr.setAttribute('data-jp-coeff', r.social_security_contribution_coefficient != null && String(r.social_security_contribution_coefficient).trim() !== '' ? String(r.social_security_contribution_coefficient) : '');
+            var sit = jpOcupantSituation(r);
+            tr.setAttribute('data-jp-situation', sit);
+            tr.setAttribute('data-jp-admst', String(r.administrative_status_name != null ? r.administrative_status_name : ''));
+            tr.setAttribute('data-jp-sttxt', String(r.status_text != null ? r.status_text : ''));
+            var tdC = document.createElement('td');
+            tdC.textContent = jpOcupantPersonCode(pid);
+            var tdN = document.createElement('td');
+            var nm = jpOcupantFullName(r);
+            if (!nm && r.label) {
+                var lx = String(r.label);
+                var ix = lx.indexOf('—');
+                nm = (ix >= 0 ? lx.slice(ix + 1) : lx).trim();
+            }
+            tdN.textContent = nm;
+            var tdDed = document.createElement('td');
+            tdDed.textContent = formatFractionPercent(r.dedication, 2);
+            var tdBud = document.createElement('td');
+            tdBud.textContent = formatVisualPercentFromFraction(r.budgeted_amount);
+            var tdSit = document.createElement('td');
+            tdSit.textContent = sit;
+            var tdCoef = document.createElement('td');
+            tdCoef.textContent = formatFractionPercent(r.social_security_contribution_coefficient, 4);
+            var tdAct = document.createElement('td');
+            tdAct.className = 'job-positions-ocupants__actions';
             if (!readOnly) {
                 var rm = document.createElement('button');
                 rm.type = 'button';
                 rm.className = 'btn btn--ghost btn--sm';
                 rm.textContent = 'Eliminar';
                 rm.setAttribute('data-job-positions-assigned-remove', '');
-                td2.appendChild(rm);
+                tdAct.appendChild(rm);
             }
-            tr.appendChild(td1);
-            tr.appendChild(td2);
+            tr.appendChild(tdC);
+            tr.appendChild(tdN);
+            tr.appendChild(tdDed);
+            tr.appendChild(tdBud);
+            tr.appendChild(tdSit);
+            tr.appendChild(tdCoef);
+            tr.appendChild(tdAct);
             tb.appendChild(tr);
         });
     }
@@ -612,10 +706,13 @@
                             if (err) { err.hidden = false; err.textContent = 'Aquesta persona ja és ocupant.'; }
                             return;
                         }
+                        var pick = opts.filter(function (p) { return String(p.person_id) === v; })[0] || {};
                         var label = '';
                         if (sel && sel.selectedOptions[0]) label = sel.selectedOptions[0].textContent || '';
                         var rows = jobPositionsAssignedGetRows();
-                        rows.push({ person_id: v, label: label });
+                        var row = { person_id: v, label: label };
+                        Object.keys(pick).forEach(function (k) { row[k] = pick[k]; });
+                        rows.push(row);
                         jobPositionsAssignedSetRows(rows, currentModalReadonly || currentMaintenanceModalMode === 'view');
                         close();
                     }
@@ -759,6 +856,37 @@
         if (!isFinite(n)) return '';
         return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
     }
+    /** subprogram_people.dedication: BBDD 0..100 o llegat 0..1 (fracció); UI sempre 0..100. */
+    function formatSubprogramPeopleDedicationDisplay(raw) {
+        if (raw === null || raw === undefined || String(raw).trim() === '') return '';
+        var n = parseFloat(String(raw).replace(/\s/g, '').replace(',', '.'));
+        if (!isFinite(n)) return '';
+        if (n > 1 && n <= 100) return formatVisualPercent100(n);
+        if (n > 0 && n <= 1) return formatVisualPercent100(n * 100);
+        if (n === 0) return formatVisualPercent100(0);
+        if (n > 100) return formatVisualPercent100(Math.min(n, 100));
+        return formatVisualPercent100(n);
+    }
+    function syncPeoplePersonalGradeAmount() {
+        if (module() !== 'people') return;
+        var sel = document.getElementById('maintenance_personal_grade');
+        var out = document.querySelector('[data-people-personal-grade-amount]');
+        if (!out) return;
+        var grade = sel ? String(sel.value || '').trim() : '';
+        var map = cfg().peoplePersonalGradeAmounts || {};
+        var raw = grade === '' ? undefined : map[grade];
+        if (raw === undefined && grade !== '') {
+            var n = parseInt(grade, 10);
+            if (!isNaN(n) && Object.prototype.hasOwnProperty.call(map, String(n))) {
+                raw = map[String(n)];
+            }
+        }
+        if (raw === undefined || raw === null || String(raw).trim() === '') {
+            out.value = '';
+            return;
+        }
+        out.value = formatMoneyForInput(raw);
+    }
     function formatFractionPercent(value, decimals) {
         var d = typeof decimals === 'number' ? decimals : 2;
         if (value === null || value === undefined || String(value).trim() === '') return '';
@@ -775,6 +903,23 @@
         var visualPercent = Number(raw);
         if (Number.isNaN(visualPercent) || visualPercent < 0 || visualPercent > 100) return { ok: false, error: 'El percentatge ha d’estar entre 0 i 100.' };
         return { ok: true, value: (visualPercent / 100).toFixed(6) };
+    }
+    /** MEI (paràmetres): decimal real emmagatzemat (0,75 = 0,75 %), sense ×100. */
+    function parseParametersMeiFraction(value) {
+        if (value === null || value === undefined) return { ok: true, value: null, error: '' };
+        var raw = String(value).replace('%', '').trim();
+        if (raw === '') return { ok: true, value: null, error: '' };
+        raw = raw.replace(/\u00A0/g, '').replace(/\s+/g, '').replace(',', '.');
+        if (!/^\d+(?:\.\d{1,4})?$/.test(raw)) return { ok: false, value: null, error: 'Valor MEI invàlid.' };
+        var n = parseFloat(raw);
+        if (!isFinite(n) || n < 0 || n > 9.9999) return { ok: false, value: null, error: 'El MEI ha d’estar entre 0 i 9,9999.' };
+        return { ok: true, value: n.toFixed(4), error: '' };
+    }
+    function formatMeiFractionForInput(raw) {
+        if (raw === null || raw === undefined || String(raw).trim() === '') return '';
+        var n = parseFloat(String(raw).replace(/\s/g, '').replace(',', '.'));
+        if (!isFinite(n)) return '';
+        return String(n).replace('.', ',');
     }
     function syncPeopleActive() {
         if (module() !== 'people') return;
@@ -816,7 +961,7 @@
             inp.type = 'text';
             inp.className = 'form-input';
             inp.setAttribute('data-people-subprogram-dedication', '1');
-            inp.value = formatVisualPercent100(it.dedication);
+            inp.value = formatSubprogramPeopleDedicationDisplay(it.dedication);
             inp.disabled = !!readOnly;
             td2.appendChild(inp);
             var td3 = document.createElement('td');
@@ -1268,7 +1413,7 @@
         var idLabel = $('[data-maintenance-label-id]');
         var nameLabel = $('[data-maintenance-label-name]');
         if (idLabel) {
-            idLabel.innerHTML = (mod === 'maintenance_social_security_coefficients' ? 'Epígraf' : (mod === 'maintenance_social_security_base_limits' ? 'Grup. Cot.' : ((mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_seniority_pay_by_group') ? 'Grup classificació' : (mod === 'maintenance_destination_allowances' ? 'Nivell orgànic' : 'Codi')))) + ' <span class="users-modal-form__req">*</span>';
+            idLabel.innerHTML = (mod === 'parameters' ? 'Any catàleg' : (mod === 'maintenance_social_security_coefficients' ? 'Epígraf' : (mod === 'maintenance_social_security_base_limits' ? 'Grup. Cot.' : ((mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_seniority_pay_by_group') ? 'Grup classificació' : (mod === 'maintenance_destination_allowances' ? 'Nivell orgànic' : 'Codi'))))) + ' <span class="users-modal-form__req">*</span>';
         }
         if (nameLabel) {
             var lbl = 'Nom';
@@ -1315,6 +1460,12 @@
                     idInput.setAttribute('maxlength', '4');
                     idInput.setAttribute('inputmode', 'numeric');
                     idInput.setAttribute('pattern', '[0-9]{1,4}');
+                } else if (mod === 'parameters') {
+                    idInput.setAttribute('min', '2000');
+                    idInput.setAttribute('max', '2100');
+                    idInput.setAttribute('step', '1');
+                    idInput.removeAttribute('pattern');
+                    idInput.setAttribute('inputmode', 'numeric');
                 } else if (mod === 'people') {
                     idInput.setAttribute('maxlength', '5');
                     idInput.setAttribute('inputmode', 'numeric');
@@ -1325,7 +1476,9 @@
                 idInput.setAttribute('min', '1');
             }
         }
-        show('id', mod !== 'maintenance_programs' && mod !== 'maintenance_subprograms');
+        show('id', mod !== 'maintenance_programs' && mod !== 'maintenance_subprograms' && mod !== 'parameters' && mod !== 'reports');
+        show('parameters_fields', mod === 'parameters');
+        show('reports_fields', mod === 'reports');
         show('subfunction_id', mod === 'maintenance_programs');
         show('program_number', mod === 'maintenance_programs');
         show('program_computed_code', mod === 'maintenance_programs');
@@ -1444,7 +1597,7 @@
         show('general_specific_compensation_name', mod === 'maintenance_specific_compensation_general');
         show('decrease_amount', mod === 'maintenance_specific_compensation_general');
         show('decrease_amount_new', mod === 'maintenance_specific_compensation_general');
-        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general' && mod !== 'management_positions' && mod !== 'people');
+        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general' && mod !== 'management_positions' && mod !== 'people' && mod !== 'parameters' && mod !== 'reports');
         if (nameInput) {
             if (mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general') nameInput.removeAttribute('required');
             else nameInput.setAttribute('required', 'required');
@@ -1485,7 +1638,12 @@
             fillSelect($('#maintenance_legal_relation_id'), cfg().legalRelations || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
             fillSelect($('#maintenance_administrative_status_id'), cfg().administrativeStatuses || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
             fillSelect($('#maintenance_company_id'), cfg().socialSecurityCompanies || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
-            fillSelect($('#maintenance_personal_grade'), cfg().peoplePersonalGrades || [], 'id', function(it){ return String(it.id)+' - '+String(it.name); });
+            fillSelect($('#maintenance_personal_grade'), cfg().peoplePersonalGrades || [], 'id', function(it){ return String(it.id); });
+            var pgSel = document.getElementById('maintenance_personal_grade');
+            if (pgSel && pgSel.getAttribute('data-pg-amt-bound') !== '1') {
+                pgSel.setAttribute('data-pg-amt-bound', '1');
+                pgSel.addEventListener('change', syncPeoplePersonalGradeAmount);
+            }
             var legal = document.querySelector('[data-field="legal_relation_id"]');
             if (legal && legal.getAttribute('data-people-legal-bound') !== '1') {
                 legal.setAttribute('data-people-legal-bound', '1');
@@ -1506,6 +1664,7 @@
             syncPeopleActive();
             syncPeopleAdministrativeStatusByLegalRelation();
             calculatePeopleSeniority();
+            syncPeoplePersonalGradeAmount();
         }
         if (mod === 'job_positions') {
             setupJobPositionFields();
@@ -1599,6 +1758,7 @@
             syncPeopleActive();
             syncPeopleAdministrativeStatusByLegalRelation();
             calculatePeopleSeniority();
+            syncPeoplePersonalGradeAmount();
         }
         if (module() === 'job_positions') {
             jobPositionsAssignedSetRows([], false);
@@ -1608,7 +1768,26 @@
             setupJobPositionFields();
             setJobPositionIdentificationLocked(false);
         }
+        if (module() === 'reports') {
+            var idRs = $('[data-field="id"]', form);
+            if (idRs) idRs.value = '';
+            var chRs1 = form.querySelector('[data-field="show_in_general_selector"]');
+            var chRs2 = form.querySelector('[data-field="is_active"]');
+            if (chRs1) chRs1.checked = true;
+            if (chRs2) chRs2.checked = true;
+            var rgo0 = $('[data-field="report_group_order"]', form);
+            if (rgo0) rgo0.value = '0';
+        }
         applyCascades();
+    }
+    function enforceJobPositionFullCodeReadonly() {
+        if (module() !== 'job_positions') return;
+        var fullCode = document.querySelector('[data-job-positions-full-code]');
+        if (fullCode) {
+            fullCode.readOnly = true;
+            fullCode.setAttribute('readonly', 'readonly');
+            fullCode.tabIndex = -1;
+        }
     }
     function setReadOnlyMode(readOnly, form) {
         currentModalReadonly = !!readOnly;
@@ -1673,6 +1852,12 @@
             setPeopleSubprogramsReadOnly(currentModalReadonly);
             syncPeopleAdministrativeStatusByLegalRelation();
             setPeopleSeniorityComputedReadOnly();
+            var pgAmt = f.querySelector('[data-people-personal-grade-amount]');
+            if (pgAmt) {
+                pgAmt.readOnly = true;
+                pgAmt.disabled = !!currentModalReadonly;
+            }
+            syncPeoplePersonalGradeAmount();
         }
         if (module() === 'job_positions') {
             var jpAct = f.querySelector('[data-field="jp_is_active_derived"]');
@@ -1701,6 +1886,7 @@
             setJobPositionAssignedPeopleReadOnly(currentModalReadonly);
             var jpOrig = $('[data-field="original_id"]', f);
             setJobPositionIdentificationLocked(!!(jpOrig && String(jpOrig.value || '').trim() !== ''));
+            enforceJobPositionFullCodeReadonly();
         }
     }
     function setMode(create, readOnly){
@@ -1836,6 +2022,36 @@
                 openModal();
                 return;
             }
+            if (module() === 'parameters') {
+                $('[data-field="original_id"]', f).value = String(r.catalog_year != null ? r.catalog_year : '');
+                $('[data-field="id"]', f).value = String(r.catalog_year != null ? r.catalog_year : '');
+                var meiEl = $('[data-field="mei_percentage"]', f);
+                if (meiEl) meiEl.value = formatMeiFractionForInput(r.mei_percentage);
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'reports') {
+                var pkRs = String(r.id != null ? r.id : '');
+                $('[data-field="original_id"]', f).value = pkRs;
+                $('[data-field="id"]', f).value = pkRs;
+                $('[data-field="report_group"]', f).value = String(r.report_group || '');
+                $('[data-field="report_group_order"]', f).value = String(r.report_group_order != null ? r.report_group_order : '0');
+                $('[data-field="report_code"]', f).value = String(r.report_code || '');
+                $('[data-field="report_name"]', f).value = String(r.report_name || '');
+                $('[data-field="report_version"]', f).value = String(r.report_version != null ? r.report_version : '');
+                $('[data-field="report_description"]', f).value = String(r.report_description != null ? r.report_description : '');
+                $('[data-field="report_explanation"]', f).value = String(r.report_explanation != null ? r.report_explanation : '');
+                var chkShow = $('[data-field="show_in_general_selector"]', f);
+                if (chkShow) chkShow.checked = Number(r.show_in_general_selector) === 1;
+                var chkAct = $('[data-field="is_active"]', f);
+                if (chkAct) chkAct.checked = Number(r.is_active) === 1;
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
             if (module() === 'maintenance_seniority_pay_by_group') {
                 $('[data-field="original_id"]', f).value = String(r.classification_group != null ? r.classification_group : '');
                 $('[data-field="id"]', f).value = String(r.classification_group || '');
@@ -1961,6 +2177,10 @@
                 $('[data-field="hired_at"]', f).value = String(r.hired_at || '');
                 $('[data-field="terminated_at"]', f).value = String(r.terminated_at || '');
                 $('[data-field="personal_grade"]', f).value = String(r.personal_grade || '');
+                syncPeoplePersonalGradeAmount();
+                requestAnimationFrame(function () {
+                    syncPeoplePersonalGradeAmount();
+                });
                 $('[data-field="group_a1_previous_triennia"]', f).value = r.group_a1_previous_triennia == null ? '' : String(r.group_a1_previous_triennia);
                 $('[data-field="group_a1_current_year_percentage"]', f).value = r.group_a1_current_year_percentage == null ? '' : String(r.group_a1_current_year_percentage);
                 $('[data-field="group_a1_current_year_triennia"]', f).value = r.group_a1_current_year_triennia == null ? '' : String(r.group_a1_current_year_triennia);
@@ -2090,10 +2310,20 @@
                 var apRows = ap.map(function (p) {
                     var pid = String(p.person_id != null ? p.person_id : '');
                     var parts = [p.last_name_1, p.last_name_2, p.first_name].filter(function (x) { return x; });
-                    var lab = parts.join(' ');
-                    var disp = pid.length ? (('00000' + pid).slice(-5)) : '';
-                    lab = disp + (lab ? ' — ' + lab : '');
-                    return { person_id: pid, label: lab };
+                    var lab = jpOcupantPersonCode(pid) + (parts.length ? (' — ' + parts.join(' ')) : '');
+                    return {
+                        person_id: pid,
+                        label: lab,
+                        last_name_1: p.last_name_1,
+                        last_name_2: p.last_name_2,
+                        first_name: p.first_name,
+                        dedication: p.dedication,
+                        budgeted_amount: p.budgeted_amount,
+                        social_security_contribution_coefficient: p.social_security_contribution_coefficient,
+                        administrative_status_name: p.administrative_status_name,
+                        status_text: p.status_text,
+                        situation_label: p.situation_label
+                    };
                 });
                 jobPositionsAssignedSetRows(apRows, !!readOnly);
                 setupJobPositionFields();
@@ -2533,6 +2763,18 @@
             if (caJp !== '' && !/^\d{2}\/\d{2}\/\d{4}$/.test(caJp) && !/^\d{4}-\d{2}-\d{2}$/.test(caJp)) { showErrors(f, { created_at: 'La data no és vàlida.' }); return; }
             if (daJp !== '' && !/^\d{2}\/\d{2}\/\d{4}$/.test(daJp) && !/^\d{4}-\d{2}-\d{2}$/.test(daJp)) { showErrors(f, { deleted_at: 'La data no és vàlida.' }); return; }
         }
+        if (module() === 'parameters') {
+            var cyP = (fd.get('id') || '').toString().trim();
+            if (!/^\d{4}$/.test(cyP)) { showErrors(f, { id: 'L’any de catàleg ha de ser de 4 xifres.' }); return; }
+            var pm = parseParametersMeiFraction((fd.get('mei_percentage') || '').toString());
+            if (!pm.ok) { showErrors(f, { mei_percentage: pm.error }); return; }
+            fd.set('mei_percentage', pm.value === null ? '' : String(pm.value));
+        }
+        if (module() === 'reports') {
+            if ((fd.get('report_group') || '').toString().trim() === '') { showErrors(f, { report_group: 'El grup és obligatori.' }); return; }
+            if ((fd.get('report_code') || '').toString().trim() === '') { showErrors(f, { report_code: 'El codi de l’informe és obligatori.' }); return; }
+            if ((fd.get('report_name') || '').toString().trim() === '') { showErrors(f, { report_name: 'El nom és obligatori.' }); return; }
+        }
         var payload={
             action:'save', module:module(), csrf_token:csrf,
             original_id:(fd.get('original_id')||'').toString(),
@@ -2652,6 +2894,16 @@
             ,group_e_current_year_percentage:(fd.get('group_e_current_year_percentage')||'').toString()
             ,group_e_current_year_triennia:(fd.get('group_e_current_year_triennia')||'').toString()
             ,subprogram_people:peopleSubprogramGetRows()
+            ,mei_percentage:(fd.get('mei_percentage')||'').toString()
+            ,report_group:(fd.get('report_group')||'').toString()
+            ,report_group_order:(fd.get('report_group_order')||'').toString()
+            ,report_code:(fd.get('report_code')||'').toString()
+            ,report_name:(fd.get('report_name')||'').toString()
+            ,report_description:(fd.get('report_description')||'').toString()
+            ,report_explanation:(fd.get('report_explanation')||'').toString()
+            ,report_version:(fd.get('report_version')||'').toString()
+            ,show_in_general_selector:(function(){ var el=f.querySelector('[data-field="show_in_general_selector"]'); return el && el.checked ? 1 : 0; })()
+            ,is_active:(function(){ var el=f.querySelector('[data-field="is_active"]'); return el && el.checked ? 1 : 0; })()
         };
         if (module() === 'job_positions') {
             var specSave = normalizeMoneyInput((fd.get('special_specific_compensation_amount') || '').toString());
@@ -2715,9 +2967,25 @@
             payload.assigned_person_ids = jobPositionsAssignedGetRows().map(function (x) { return x.person_id; });
         }
         fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)})
-            .then(function(r){return r.json();})
-            .then(function(d){ if(d.ok){ closeModal(); if(window.showAlert){ window.showAlert('success','Èxit',d.message||'Desat.'); setTimeout(function(){window.location.reload();},650);} else { window.location.reload(); } } else if(d.errors){ showErrors(f,d.errors); } })
-            .catch(function(){ if(window.showAlert) window.showAlert('error','Error','Error de xarxa.'); });
+            .then(function (r) {
+                var st = r.status;
+                return r.json().then(function (d) { return { status: st, d: d }; });
+            })
+            .then(function (x) {
+                var d = x.d;
+                if (d.ok) {
+                    closeModal();
+                    if (window.showAlert) {
+                        window.showAlert('success', 'Èxit', d.message || 'Desat.');
+                        setTimeout(function () { window.location.reload(); }, 650);
+                    } else {
+                        window.location.reload();
+                    }
+                } else if (d.errors) {
+                    showMaintenanceSaveErrorResponse(f, d.errors, x.status);
+                }
+            })
+            .catch(function () { if (window.showAlert) window.showAlert('error', 'Error', 'Error de xarxa.'); });
     }
     function confirmDelete(id){
         if(!cfg().canDelete || !cfg().implemented) return;

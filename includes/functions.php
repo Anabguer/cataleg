@@ -186,6 +186,8 @@ function db_is_integrity_constraint_violation(Throwable $e): bool
     $driverCode = isset($e->errorInfo[1]) ? (int) $e->errorInfo[1] : 0;
     // SQLSTATE 23000 = integrity constraint violation
     // MySQL/MariaDB 1451 = cannot delete/update parent: foreign key fails
+    // 1452 = cannot add/update child row (FK al desar)
+    // 1062 = duplicate entry (índex únic)
     // 1217 = cannot delete row referenced (algunes versions)
-    return $sqlState === '23000' || in_array($driverCode, [1451, 1217], true);
+    return $sqlState === '23000' || in_array($driverCode, [1451, 1217, 1452, 1062], true);
 }
