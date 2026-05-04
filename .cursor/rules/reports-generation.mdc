@@ -1,0 +1,107 @@
+---
+description: Plantilla única de capçalera + maquetació d’informes (cataleg_molins)
+globs: "**/report_run.php,**/report_selector/**,**/report_print.css,**/public/assets/css/report_print.css,**/includes/**/*report*.php,**/views/**/*report*.php,**/views/partials/report_*.php"
+alwaysApply: false
+---
+
+# Informes impresos y PDF — normas de maquetación
+
+Aplica al generar o modificar informes (HTML imprimible, PDF, etc.) en `cataleg_molins`. Textos de cabecera en **catalán**.
+
+## PDF: norma obligatòria (mateix patró que Formació)
+
+A `cataleg_molins` el **PDF no es genera** amb llibreries PHP (Dompdf, mPDF, TCPDF, etc.) ni amb **binaris PDF** des del servidor.
+
+**Prohibit:**
+
+- Afegir dependències **Composer** només per a PDF
+- Usar **Dompdf / mPDF / TCPDF** (o similars)
+- Generar fitxers PDF des de PHP (stream d’`application/pdf` generat per llibreria)
+
+**Patró correcte** (reutilitzable, provat a `formacio_molins_rei`):
+
+1. **Vista HTML standalone** (document complet **sense** `includes/header.php` de l’app: sense layout genèric de navegació)
+2. **`assets/css/report_print.css`** (i còpia sota `public/assets/css/report_print.css`)
+3. **Botó** que executa `window.print();` (l’usuari tria impressora o **Desar com a PDF** al diàleg del navegador)
+4. Opcional: paràmetre **`autoprint=1`** a la query per obrir el diàleg d’impressió en carregar (millor UX en pestanya nova)
+
+**Estructura de fitxers recomanada (per informe):**
+
+- `views/reports/<codi>_print.php` — cos de l’informe (i, si cal, mode «sense capçalera» quan el cos va dins d’un `report-print-shell`)
+- `views/reports/<codi>_print_standalone.php` — pàgina HTML completa: barra d’eines, taula `report-print-shell` amb capçalera al `<thead>`, `require` del cos, enllaç a CSS, script de `window.print()`
+
+**Comportament i maquetació:**
+
+- Orientació: **landscape** o **portrait** segons l’informe, via `@page` a `report_print.css`
+- **Capçalera repetida** en paper: utilitzar **`<thead>`** dins la taula `report-print-shell` (el motor d’impressió la repeteix a cada pàgina)
+- **Salts de pàgina** entre blocs: `page-break-after` / `break-after` (o classes ja definides a `report_print.css` per l’informe)
+- **Logo:** ruta sota `assets/img/logos/` (p. ex. el que retorni el helper de capçalera, com `color_esquerra.png`), servit per `asset_url()`
+
+**Dades i query:**
+
+- Mantenir **tots** els paràmetres d’execució a la query (p. ex. `veure_treballador`, `comentari`, `catalog_year`, `code`); la vista standalone ha de rebre els mateixos criteris que la vista dins l’app
+
+**No duplicar** tot el HTML del cos entre vista «amb app» i standalone: el cos ha de viure en un sol partial (`*_print.php`) amb un interruptor tipus «ometre capçalera» si cal encabir el cos dins el shell.
+
+**Motiu:** simplicitat, sense dependències externes, mateix comportament que Formació, menys problemes de render que les llibreries PDF.
+
+**Abans de donar per bo un informe:**
+
+- [ ] No usa Composer per PDF
+- [ ] No usa llibreries PDF PHP
+- [ ] Funciona amb `window.print()` → «Desar com a PDF»
+- [ ] Es veu bé en PDF del navegador (Chrome/Edge)
+- [ ] Respecta salts de pàgina definits
+- [ ] Logo i capçalera correctes
+
+## Plantilla obligatoria de cabecera (com els formularis)
+
+- **Un sol lloc** ha de definir el HTML de la capçalera d’informe, igual que els manteniments comparteixen `views/partials/maintenance_modal.php` i partials per mòdul.
+- **Cada informe nou** ha d’**incloure** aquesta plantilla (o una funció helper que la renderitzi); **prohibit** duplicar el markup de la capçalera en cada vista o en cada `report_run` específic.
+- La plantilla rep **només dades** (p. ex. `catalog_year`, `report_code`, `report_name`, textos del logo si calen variables); l’estructura visual és sempre la mateixa.
+- **CSS compartit:** classes de capçalera i shell d’impressió centralitzades a `assets/css/report_print.css` (i còpia a `public/assets/css/report_print.css`). Els informes **no** han de definir una capçalera “nova” amb estils inline o fulls CSS duplicats per cada codi d’informe.
+
+**Implementació esperada (patró):**
+
+- Partial PHP únic, p. ex. `views/partials/report_print_header.php` (o el nom que el projecte adopti), cridat des de qualsevol vista d’informe.
+- Opcional: helper a `includes/` que prepari les variables i faci el `require` per evitar duplicar lògica.
+
+Si es canvia el disseny de capçalera, s’edita **només** la plantilla + el CSS compartit, no cada informe.
+
+## Orientación
+
+- Cada informe pot ser **vertical (portrait)** o **horizontal (landscape)** segons el contingut (`@page { size: A4 portrait|landscape; }` o equivalent).
+- La **cabecera** és sempre la mateixa estructura; només varien les regles de pàgina / ample del cos.
+
+## Estructura de la cabecera (contingut de la plantilla)
+
+Tres franges horitzontals sota marges:
+
+### Fila 1
+
+| Zona | Contenido |
+|------|-----------|
+| **Esquerra** | Logo institucional (escut + text «Ajuntament de Molins de Rei» o actiu equivalent del projecte). Alçada alineada amb les dues línies de text centrals/dreta. |
+| **Centre** | `Exercici [AAAA]` amb el **`catalog_year`** validat per l’informe (mateix criteri que `report_run.php`). |
+| **Dreta** | **Codi de l’informe** (`report_code`), en **negreta**. |
+
+### Fila 2
+
+| Zona | Contenido |
+|------|-----------|
+| **Centre** | **Nom de l’informe** (`report_name`), en **negreta** i mida més gran (jerarquia principal). |
+| **Dreta** | `Pàgina [n]` en pantalla / previsualització; si el motor d’impressió ho requereix (p. ex. `counter(page)` a `@page`), seguir el patró ja documentat a `report_print.css` per no duplicar ni trencar la numeració. |
+
+### Fila 3
+
+- **Línia separadora** horitzontal fina, ample útil, entre capçalera i cos.
+
+## Tipografia i estil
+
+- Sans-serif clar i formal (Arial, Helvetica o stack equivalent, alineat amb `report_print.css`).
+- Alineació: exercici centrat (fila 1); codi i «Pàgina» a la **dreta**; títol **centre** (fila 2).
+
+## Dades
+
+- **No hardcodejar** títol ni codi: vénen de `reports` i validació a `report_run.php`.
+- Timestamp de generació només si el producte ho especifica; sense trencar la jerarquia de la capçalera.

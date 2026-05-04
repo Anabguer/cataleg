@@ -59,6 +59,10 @@ $reportsFilters = [
     'f_show_in_general_selector' => get_string('f_show_in_general_selector'),
     'f_is_active' => get_string('f_is_active'),
 ];
+$catalogsFilters = [
+    'f_catalog_code' => get_string('f_catalog_code'),
+    'f_catalog_description' => get_string('f_catalog_description'),
+];
 $sort = maintenance_sort_normalize($module, get_string('sort_by'), get_string('sort_dir'));
 $perPage = (int) get_string('per_page');
 if ($perPage < 1) {
@@ -80,7 +84,9 @@ if ($config['implemented'] ?? false) {
             ? $peopleFilters
             : ($module === 'job_positions'
                 ? $jobPositionsFilters
-                : ($module === 'reports' ? maintenance_reports_normalize_filters($reportsFilters) : [])));
+                : ($module === 'reports'
+                    ? maintenance_reports_normalize_filters($reportsFilters)
+                    : ($module === 'catalogs' ? maintenance_catalogs_normalize_filters($catalogsFilters) : []))));
     $total = maintenance_count($db, $module, $year, $q, $activeFilters);
     $pn = maintenance_normalize_pagination($page, $perPage, $total);
     $page = $pn['page'];
@@ -155,6 +161,7 @@ $maintenancePageInlineConfig = [
     'peopleFilters' => maintenance_people_normalize_filters($peopleFilters),
     'jobPositionsFilters' => maintenance_job_positions_normalize_filters($jobPositionsFilters),
     'reportsFilters' => maintenance_reports_normalize_filters($reportsFilters),
+    'catalogsFilters' => maintenance_catalogs_normalize_filters($catalogsFilters),
     'jobPositionsPeoplePicker' => $jobPositionsPeoplePicker,
     'jobPositionLegalModes' => $jobPositionLegalModes,
     'jobPositionLegalOptions' => $jobPositionLegalOptions,

@@ -116,7 +116,10 @@ $parametersActive = in_array($activeNav, array_column($parametersItems, 'navKey'
     }
     ?>
 </head>
-<body class="app-body">
+<body class="app-body<?php
+    $bodyExtra = isset($bodyExtraClasses) ? trim((string) $bodyExtraClasses) : '';
+    echo $bodyExtra !== '' ? ' ' . htmlspecialchars($bodyExtra, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+?>">
 <div class="app-shell">
     <header class="app-header">
         <div class="app-header__brand">

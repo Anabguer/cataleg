@@ -35,6 +35,7 @@ function maintenance_modules_config(): array
         'management_positions' => ['title' => 'Catàleg places', 'table' => 'positions', 'implemented' => true],
         'job_positions' => ['title' => 'Llocs de Treball', 'table' => 'job_positions', 'implemented' => true],
         'maintenance_subprograms' => ['title' => 'Subprogrames', 'table' => 'subprograms', 'implemented' => true],
+        'catalogs' => ['title' => 'Catàlegs', 'table' => 'catalogs', 'implemented' => true],
         'parameters' => ['title' => 'Paràmetres', 'table' => 'parameters', 'implemented' => true],
         'reports' => ['title' => 'Informes', 'table' => 'reports', 'implemented' => true],
     ];
@@ -57,7 +58,7 @@ function maintenance_sort_normalize(string $module, string $sortBy, string $sort
 /** Mòduls amb llistat SQL genèric (escales / subescales / classes / categories). */
 function maintenance_catalog_list_modules(): array
 {
-    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms', 'parameters', 'reports'];
+    return ['maintenance_scales', 'maintenance_subscales', 'maintenance_classes', 'maintenance_categories', 'maintenance_legal_relationships', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms', 'catalogs', 'parameters', 'reports'];
 }
 
 /** Mòduls de llistat amb persistència CRUD al catàleg (exclou llistats només lectura / accions massives sobre altres taules). */
@@ -1022,6 +1023,53 @@ function maintenance_reports_filters_clause(array $filters): array
     return ['sql' => $sql, 'params' => $params];
 }
 
+/**
+ * @param array<string,string> $raw
+ * @return array{f_catalog_code:string,f_catalog_description:string}
+ */
+function maintenance_catalogs_normalize_filters(array $raw): array
+{
+    return [
+        'f_catalog_code' => trim((string) ($raw['f_catalog_code'] ?? '')),
+        'f_catalog_description' => trim((string) ($raw['f_catalog_description'] ?? '')),
+    ];
+}
+
+/**
+ * @param array{f_catalog_code:string,f_catalog_description:string} $filters
+ * @return array{sql:string,params:array<string,mixed>}
+ */
+function maintenance_catalogs_filters_clause(array $filters): array
+{
+    $sql = '';
+    $params = [];
+    if ($filters['f_catalog_code'] !== '') {
+        $sql .= ' AND t.catalog_code LIKE :cat_f_code';
+        $params['cat_f_code'] = '%' . $filters['f_catalog_code'] . '%';
+    }
+    if ($filters['f_catalog_description'] !== '') {
+        $sql .= ' AND t.catalog_description LIKE :cat_f_desc';
+        $params['cat_f_desc'] = '%' . $filters['f_catalog_description'] . '%';
+    }
+
+    return ['sql' => $sql, 'params' => $params];
+}
+
+function maintenance_catalogs_description_taken(PDO $db, string $description, ?string $excludeCatalogCode): bool
+{
+    $sql = 'SELECT 1 FROM catalogs WHERE catalog_description = :cat_desc_chk';
+    $params = ['cat_desc_chk' => $description];
+    if ($excludeCatalogCode !== null && trim($excludeCatalogCode) !== '') {
+        $sql .= ' AND catalog_code <> :cat_code_excl';
+        $params['cat_code_excl'] = trim($excludeCatalogCode);
+    }
+    $sql .= ' LIMIT 1';
+    $st = $db->prepare($sql);
+    $st->execute($params);
+
+    return (bool) $st->fetch();
+}
+
 function maintenance_count(PDO $db, string $module, int $year, string $q, array $filters = []): int
 {
     $search = maintenance_list_q_search_clause($module, $q);
@@ -1029,6 +1077,24 @@ function maintenance_count(PDO $db, string $module, int $year, string $q, array 
         $ff = maintenance_reports_filters_clause(maintenance_reports_normalize_filters($filters));
         $params = $search['params'] + $ff['params'];
         $sql = 'SELECT COUNT(*) AS c FROM reports t WHERE 1=1' . $search['sql'] . $ff['sql'];
+        $st = $db->prepare($sql);
+        $st->execute($params);
+
+        return (int) (($st->fetch())['c'] ?? 0);
+    }
+    if ($module === 'parameters') {
+        $params = $search['params'];
+        $sql = 'SELECT COUNT(*) AS c FROM parameters t WHERE 1=1' . $search['sql'];
+        $st = $db->prepare($sql);
+        $st->execute($params);
+
+        return (int) (($st->fetch())['c'] ?? 0);
+    }
+    if ($module === 'catalogs') {
+        $search = maintenance_list_q_search_clause($module, $q);
+        $ff = maintenance_catalogs_filters_clause(maintenance_catalogs_normalize_filters($filters));
+        $params = $search['params'] + $ff['params'];
+        $sql = 'SELECT COUNT(*) AS c FROM catalogs t WHERE 1=1' . $search['sql'] . $ff['sql'];
         $st = $db->prepare($sql);
         $st->execute($params);
 
@@ -1133,8 +1199,6 @@ function maintenance_count(PDO $db, string $module, int $year, string $q, array 
                 LEFT JOIN job_positions jp_t ON jp_t.catalog_year = t.catalog_year AND jp_t.job_position_id = t.technical_manager_code
                 LEFT JOIN job_positions jp_e ON jp_e.catalog_year = t.catalog_year AND jp_e.job_position_id = t.elected_manager_code
                 WHERE t.catalog_year = :y' . $search['sql'];
-    } elseif ($module === 'parameters') {
-        $sql = 'SELECT COUNT(*) AS c FROM parameters t WHERE t.catalog_year = :y' . $search['sql'];
     } else {
         return 0;
     }
@@ -1171,6 +1235,41 @@ function maintenance_list(PDO $db, string $module, int $year, string $q, string 
                 FROM reports t
                 WHERE 1=1' . $search['sql'] . $ff['sql'];
         $sql .= ' ORDER BY ' . $order . ', t.report_group ASC, t.report_code ASC ' . db_sql_limit_offset($limit, $offset);
+        $st = $db->prepare($sql);
+        $st->execute($params);
+
+        return $st->fetchAll() ?: [];
+    }
+
+    if ($module === 'parameters') {
+        $search = maintenance_list_q_search_clause($module, $q);
+        $params = $search['params'];
+        $order = match ($sortBy) {
+            'mei_percentage' => 't.mei_percentage ' . $dir,
+            default => 't.catalog_year ' . $dir,
+        };
+        $sql = 'SELECT t.catalog_year, t.catalog_year AS id, t.mei_percentage
+                FROM parameters t
+                WHERE 1=1' . $search['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.catalog_year ASC ' . db_sql_limit_offset($limit, $offset);
+        $st = $db->prepare($sql);
+        $st->execute($params);
+
+        return $st->fetchAll() ?: [];
+    }
+
+    if ($module === 'catalogs') {
+        $search = maintenance_list_q_search_clause($module, $q);
+        $ff = maintenance_catalogs_filters_clause(maintenance_catalogs_normalize_filters($filters));
+        $params = $search['params'] + $ff['params'];
+        $order = match ($sortBy) {
+            'catalog_description' => 't.catalog_description ' . $dir,
+            default => 't.catalog_code ' . $dir,
+        };
+        $sql = 'SELECT t.catalog_code, t.catalog_description, t.catalog_code AS id, t.created_at, t.updated_at
+                FROM catalogs t
+                WHERE 1=1' . $search['sql'] . $ff['sql'];
+        $sql .= ' ORDER BY ' . $order . ', t.catalog_code ASC ' . db_sql_limit_offset($limit, $offset);
         $st = $db->prepare($sql);
         $st->execute($params);
 
@@ -1441,18 +1540,6 @@ function maintenance_list(PDO $db, string $module, int $year, string $q, string 
         $params += $search['params'];
         $sql .= $search['sql'];
         $sql .= ' ORDER BY ' . $order . ' ' . db_sql_limit_offset($limit, $offset);
-    } elseif ($module === 'parameters') {
-        $order = match ($sortBy) {
-            'mei_percentage' => 't.mei_percentage ' . $dir,
-            default => 't.catalog_year ' . $dir,
-        };
-        $sql = 'SELECT t.catalog_year, t.catalog_year AS id, t.mei_percentage
-                FROM parameters t
-                WHERE t.catalog_year = :y';
-        $search = maintenance_list_q_search_clause($module, $q);
-        $params += $search['params'];
-        $sql .= $search['sql'];
-        $sql .= ' ORDER BY ' . $order . ', t.catalog_year ASC ' . db_sql_limit_offset($limit, $offset);
     } elseif ($module === 'maintenance_social_security_companies') {
         $order = match ($sortBy) {
             'company_description' => 't.company_description ' . $dir,
@@ -1807,6 +1894,12 @@ function maintenance_get_by_id(PDO $db, string $module, int $year, string $id): 
                 LEFT JOIN job_positions jp_t ON jp_t.catalog_year = t.catalog_year AND jp_t.job_position_id = t.technical_manager_code
                 LEFT JOIN job_positions jp_e ON jp_e.catalog_year = t.catalog_year AND jp_e.job_position_id = t.elected_manager_code
                 WHERE t.catalog_year = :y AND t.subprogram_id = :id LIMIT 1';
+    } elseif ($module === 'catalogs') {
+        $st = $db->prepare('SELECT catalog_code, catalog_description, catalog_code AS id, created_at, updated_at FROM catalogs WHERE catalog_code = :cat_pk_get LIMIT 1');
+        $st->execute(['cat_pk_get' => $id]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
     } elseif ($module === 'parameters') {
         if (!preg_match('/^\d{4}$/', $id)) {
             return null;
@@ -1967,6 +2060,22 @@ function maintenance_id_exists(PDO $db, string $module, int $year, string $id, ?
         if ($excludeId !== null) {
             $params['exclude_id'] = (int) $excludeId;
         }
+        $st->execute($params);
+
+        return (bool) $st->fetch();
+    } elseif ($module === 'catalogs') {
+        $code = trim($id);
+        if ($code === '') {
+            return false;
+        }
+        $sql = 'SELECT catalog_code FROM catalogs WHERE catalog_code = :cat_id_ex';
+        $params = ['cat_id_ex' => $code];
+        if ($excludeId !== null && trim((string) $excludeId) !== '') {
+            $sql .= ' AND catalog_code <> :cat_excl_id';
+            $params['cat_excl_id'] = trim((string) $excludeId);
+        }
+        $sql .= ' LIMIT 1';
+        $st = $db->prepare($sql);
         $st->execute($params);
 
         return (bool) $st->fetch();
@@ -2429,6 +2538,48 @@ function maintenance_save(PDO $db, string $module, int $year, int|string|null $o
             'active' => $isAct,
             'id' => $originalPk,
         ]);
+
+        return;
+    }
+    if ($module === 'catalogs') {
+        $codeIn = trim((string) ($data['catalog_code'] ?? $data['id'] ?? ''));
+        $desc = trim((string) ($data['catalog_description'] ?? ''));
+        $errors = [];
+        if ($codeIn === '') {
+            $errors['catalog_code'] = 'El codi és obligatori.';
+        } elseif (mb_strlen($codeIn) > 20) {
+            $errors['catalog_code'] = 'El codi no pot superar 20 caràcters.';
+        }
+        if ($desc === '') {
+            $errors['catalog_description'] = 'La descripció és obligatòria.';
+        } elseif (mb_strlen($desc) > 255) {
+            $errors['catalog_description'] = 'La descripció no pot superar 255 caràcters.';
+        }
+        $origTrim = $originalId !== null ? trim((string) $originalId) : '';
+        $isCreate = $origTrim === '';
+        if ($errors !== []) {
+            throw new InvalidArgumentException(json_encode($errors, JSON_THROW_ON_ERROR));
+        }
+        if ($isCreate) {
+            if (maintenance_id_exists($db, $module, $year, $codeIn, null)) {
+                throw new InvalidArgumentException(json_encode(['catalog_code' => 'Ja existeix aquest codi de catàleg.'], JSON_THROW_ON_ERROR));
+            }
+            if (maintenance_catalogs_description_taken($db, $desc, null)) {
+                throw new InvalidArgumentException(json_encode(['catalog_description' => 'Ja existeix aquesta descripció.'], JSON_THROW_ON_ERROR));
+            }
+            $stIns = $db->prepare('INSERT INTO catalogs (catalog_code, catalog_description, created_at, updated_at) VALUES (:cc_new, :cd_new, NOW(), NOW())');
+            $stIns->execute(['cc_new' => $codeIn, 'cd_new' => $desc]);
+
+            return;
+        }
+        if (!maintenance_id_exists($db, $module, $year, $origTrim, null)) {
+            throw new RuntimeException('Registre no trobat.');
+        }
+        if (maintenance_catalogs_description_taken($db, $desc, $origTrim)) {
+            throw new InvalidArgumentException(json_encode(['catalog_description' => 'Ja existeix aquesta descripció.'], JSON_THROW_ON_ERROR));
+        }
+        $stUpd = $db->prepare('UPDATE catalogs SET catalog_description = :cd_edit, updated_at = NOW() WHERE catalog_code = :cc_edit');
+        $stUpd->execute(['cd_edit' => $desc, 'cc_edit' => $origTrim]);
 
         return;
     }
@@ -4043,6 +4194,18 @@ function maintenance_delete(PDO $db, string $module, int $year, string $id): voi
         }
         $st = $db->prepare('DELETE FROM reports WHERE id = :rid LIMIT 1');
         $st->execute(['rid' => (int) $rid]);
+        if ($st->rowCount() === 0) {
+            throw new RuntimeException('Registre no trobat.');
+        }
+
+        return;
+    } elseif ($module === 'catalogs') {
+        $ccDel = trim($id);
+        if ($ccDel === '') {
+            throw new InvalidArgumentException('ID invàlid.');
+        }
+        $st = $db->prepare('DELETE FROM catalogs WHERE catalog_code = :cc_del LIMIT 1');
+        $st->execute(['cc_del' => $ccDel]);
         if ($st->rowCount() === 0) {
             throw new RuntimeException('Registre no trobat.');
         }

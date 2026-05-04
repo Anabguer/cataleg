@@ -28,14 +28,14 @@ declare(strict_types=1);
                 <div class="form-group form-grid__full js-maintenance-msg" hidden>
                     <div class="alert alert--error" role="alert" data-maintenance-form-error></div>
                 </div>
-                <?php if (($module ?? '') !== 'people' && ($module ?? '') !== 'job_positions' && ($module ?? '') !== 'parameters' && ($module ?? '') !== 'reports'): ?>
+                <?php if (($module ?? '') !== 'people' && ($module ?? '') !== 'job_positions' && ($module ?? '') !== 'parameters' && ($module ?? '') !== 'reports' && ($module ?? '') !== 'catalogs'): ?>
                     <div class="form-group" data-maintenance-field="id">
                         <label class="form-label" for="maintenance_id" data-maintenance-label-id>Codi <span class="users-modal-form__req">*</span></label>
                         <input class="form-input" id="maintenance_id" name="id" type="number" min="1" required data-field="id">
                         <p class="form-error" data-error-for="id" hidden></p>
                     </div>
                 <?php endif; ?>
-                <?php if (($module ?? '') !== 'job_positions' && ($module ?? '') !== 'parameters' && ($module ?? '') !== 'reports'): ?>
+                <?php if (($module ?? '') !== 'job_positions' && ($module ?? '') !== 'parameters' && ($module ?? '') !== 'reports' && ($module ?? '') !== 'catalogs'): ?>
                 <div class="form-group" data-maintenance-field="name">
                     <label class="form-label" for="maintenance_name" data-maintenance-label-name>Nom <span class="users-modal-form__req">*</span></label>
                     <input class="form-input" id="maintenance_name" name="name" type="text" required data-field="name">
@@ -474,6 +474,9 @@ declare(strict_types=1);
                 <?php endif; ?>
                 <?php if (($module ?? '') === 'reports'): ?>
                     <?php require __DIR__ . '/maintenance_modal_reports.php'; ?>
+                <?php endif; ?>
+                <?php if (($module ?? '') === 'catalogs'): ?>
+                    <?php require __DIR__ . '/maintenance_modal_catalogs.php'; ?>
                 <?php endif; ?>
                 <?php if (($module ?? '') === 'people'): ?>
                 <div class="form-grid--three-cols">

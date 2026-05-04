@@ -73,6 +73,7 @@
         if(mod==='maintenance_subprograms') return row && row.subprogram_id !== undefined ? row.subprogram_id : '';
         if(mod==='parameters') return row && (row.catalog_year != null && String(row.catalog_year).trim() !== '') ? String(row.catalog_year) : (row && row.id != null ? String(row.id) : '');
         if(mod==='reports') return row && row.id != null ? String(row.id) : '';
+        if(mod==='catalogs') return row && row.catalog_code != null && String(row.catalog_code).trim() !== '' ? String(row.catalog_code) : '';
         return row && (row.scale_id || row.subscale_id || row.category_id || '');
     }
     function rowNameFromData(row){
@@ -106,6 +107,7 @@
         if(mod==='maintenance_social_security_coefficients') return '';
         if(mod==='maintenance_subprograms') return row && row.subprogram_name !== undefined ? row.subprogram_name : '';
         if(mod==='reports') return row && row.report_name !== undefined ? row.report_name : '';
+        if(mod==='catalogs') return row && row.catalog_description !== undefined ? row.catalog_description : '';
         return row && (row.scale_name || row.subscale_name || row.category_name || '');
     }
     function rowShortNameFromData(row){
@@ -1476,9 +1478,10 @@
                 idInput.setAttribute('min', '1');
             }
         }
-        show('id', mod !== 'maintenance_programs' && mod !== 'maintenance_subprograms' && mod !== 'parameters' && mod !== 'reports');
+        show('id', mod !== 'maintenance_programs' && mod !== 'maintenance_subprograms' && mod !== 'parameters' && mod !== 'reports' && mod !== 'catalogs');
         show('parameters_fields', mod === 'parameters');
         show('reports_fields', mod === 'reports');
+        show('catalogs_fields', mod === 'catalogs');
         show('subfunction_id', mod === 'maintenance_programs');
         show('program_number', mod === 'maintenance_programs');
         show('program_computed_code', mod === 'maintenance_programs');
@@ -1597,7 +1600,7 @@
         show('general_specific_compensation_name', mod === 'maintenance_specific_compensation_general');
         show('decrease_amount', mod === 'maintenance_specific_compensation_general');
         show('decrease_amount_new', mod === 'maintenance_specific_compensation_general');
-        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general' && mod !== 'management_positions' && mod !== 'people' && mod !== 'parameters' && mod !== 'reports');
+        show('name', mod !== 'maintenance_social_security_coefficients' && mod !== 'maintenance_salary_base_by_group' && mod !== 'maintenance_destination_allowances' && mod !== 'maintenance_seniority_pay_by_group' && mod !== 'maintenance_specific_compensation_special_prices' && mod !== 'maintenance_specific_compensation_general' && mod !== 'management_positions' && mod !== 'people' && mod !== 'parameters' && mod !== 'reports' && mod !== 'catalogs');
         if (nameInput) {
             if (mod === 'maintenance_salary_base_by_group' || mod === 'maintenance_destination_allowances' || mod === 'maintenance_seniority_pay_by_group' || mod === 'maintenance_specific_compensation_special_prices' || mod === 'maintenance_specific_compensation_general') nameInput.removeAttribute('required');
             else nameInput.setAttribute('required', 'required');
@@ -1778,6 +1781,12 @@
             var rgo0 = $('[data-field="report_group_order"]', form);
             if (rgo0) rgo0.value = '0';
         }
+        if (module() === 'catalogs') {
+            var cc0 = $('[data-field="catalog_code"]', form);
+            var cd0 = $('[data-field="catalog_description"]', form);
+            if (cc0) cc0.value = '';
+            if (cd0) cd0.value = '';
+        }
         applyCascades();
     }
     function enforceJobPositionFullCodeReadonly() {
@@ -1887,6 +1896,14 @@
             var jpOrig = $('[data-field="original_id"]', f);
             setJobPositionIdentificationLocked(!!(jpOrig && String(jpOrig.value || '').trim() !== ''));
             enforceJobPositionFullCodeReadonly();
+        }
+        if (module() === 'catalogs') {
+            var ccEl = f.querySelector('[data-field="catalog_code"]');
+            var catOrig = $('[data-field="original_id"]', f);
+            var hasCatOrig = !!(catOrig && String(catOrig.value || '').trim() !== '');
+            if (ccEl && !currentModalReadonly) {
+                ccEl.readOnly = hasCatOrig;
+            }
         }
     }
     function setMode(create, readOnly){
@@ -2047,6 +2064,18 @@
                 if (chkShow) chkShow.checked = Number(r.show_in_general_selector) === 1;
                 var chkAct = $('[data-field="is_active"]', f);
                 if (chkAct) chkAct.checked = Number(r.is_active) === 1;
+                setReadOnlyMode(!!readOnly, f);
+                applyCascades();
+                openModal();
+                return;
+            }
+            if (module() === 'catalogs') {
+                var pkCat = String(r.catalog_code != null ? r.catalog_code : '');
+                $('[data-field="original_id"]', f).value = pkCat;
+                var ccF = $('[data-field="catalog_code"]', f);
+                var cdF = $('[data-field="catalog_description"]', f);
+                if (ccF) ccF.value = pkCat;
+                if (cdF) cdF.value = String(r.catalog_description != null ? r.catalog_description : '');
                 setReadOnlyMode(!!readOnly, f);
                 applyCascades();
                 openModal();
@@ -2775,6 +2804,12 @@
             if ((fd.get('report_code') || '').toString().trim() === '') { showErrors(f, { report_code: 'El codi de l’informe és obligatori.' }); return; }
             if ((fd.get('report_name') || '').toString().trim() === '') { showErrors(f, { report_name: 'El nom és obligatori.' }); return; }
         }
+        if (module() === 'catalogs') {
+            var ccSave = (fd.get('catalog_code') || '').toString().trim();
+            var cdSave = (fd.get('catalog_description') || '').toString().trim();
+            if (ccSave === '') { showErrors(f, { catalog_code: 'El codi és obligatori.' }); return; }
+            if (cdSave === '') { showErrors(f, { catalog_description: 'La descripció és obligatòria.' }); return; }
+        }
         var payload={
             action:'save', module:module(), csrf_token:csrf,
             original_id:(fd.get('original_id')||'').toString(),
@@ -2965,6 +3000,12 @@
             payload.work_center_id = (fd.get('work_center_id') || '').toString();
             payload.notes = (fd.get('notes') || '').toString();
             payload.assigned_person_ids = jobPositionsAssignedGetRows().map(function (x) { return x.person_id; });
+        }
+        if (module() === 'catalogs') {
+            var ccP = (fd.get('catalog_code') || '').toString().trim();
+            payload.id = ccP;
+            payload.catalog_code = ccP;
+            payload.catalog_description = (fd.get('catalog_description') || '').toString().trim();
         }
         fetch(apiUrl(),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(payload)})
             .then(function (r) {

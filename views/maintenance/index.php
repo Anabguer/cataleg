@@ -20,11 +20,12 @@ $mpFilters = (array) ($maintenancePageInlineConfig['managementPositionsFilters']
 $peopleFilters = (array) ($maintenancePageInlineConfig['peopleFilters'] ?? []);
 $jpFilters = (array) ($maintenancePageInlineConfig['jobPositionsFilters'] ?? []);
 $reportsFilters = (array) ($maintenancePageInlineConfig['reportsFilters'] ?? []);
-$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : ($module === 'job_positions' ? $jpFilters : ($module === 'reports' ? $reportsFilters : []))));
+$catalogsFilters = (array) ($maintenancePageInlineConfig['catalogsFilters'] ?? []);
+$filterBase = maintenance_view_filter_query_base($module, $q, $perPage, $sort['by'], $sort['dir'], $module === 'management_positions' ? $mpFilters : ($module === 'people' ? $peopleFilters : ($module === 'job_positions' ? $jpFilters : ($module === 'reports' ? $reportsFilters : ($module === 'catalogs' ? $catalogsFilters : [])))));
 
 $pageHeader = page_header_with_escut([
     'title' => (string) $config['title'],
-    'subtitle' => (($module === 'management_positions' || $module === 'people' || $module === 'job_positions' || $module === 'reports') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year,
+    'subtitle' => ($module === 'catalogs' ? 'Catàlegs · sense filtre per any de catàleg' : (($module === 'management_positions' || $module === 'people' || $module === 'job_positions' || $module === 'reports') ? 'Gestió · Any actiu ' : 'Manteniment auxiliar · Any actiu ') . $year),
 ]);
 
 ob_start();
@@ -276,6 +277,16 @@ ob_start();
             </select>
         </div>
     <?php endif; ?>
+    <?php if ($module === 'catalogs'): ?>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_cat_code">Codi</label>
+            <input class="form-input" id="f_cat_code" name="f_catalog_code" value="<?= e((string) ($catalogsFilters['f_catalog_code'] ?? '')) ?>">
+        </div>
+        <div class="filter-bar__field">
+            <label class="form-label" for="f_cat_desc">Descripció</label>
+            <input class="form-input" id="f_cat_desc" name="f_catalog_description" value="<?= e((string) ($catalogsFilters['f_catalog_description'] ?? '')) ?>">
+        </div>
+    <?php endif; ?>
     <div class="users-filter-actions">
         <button type="submit" class="btn btn--filter-icon btn--filter-apply" title="Aplicar filtres" aria-label="Aplicar filtres">
             <img src="<?= e(asset_url('img/icon_filter_apply.svg')) ?>" alt="" width="48" height="48">
@@ -420,6 +431,8 @@ ob_start();
                 $rid = trim((string) ($r['catalog_year'] ?? $r['id'] ?? ''));
             } elseif ($module === 'reports') {
                 $rid = (string) (int) ($r['id'] ?? 0);
+            } elseif ($module === 'catalogs') {
+                $rid = trim((string) ($r['catalog_code'] ?? ''));
             } else {
                 $rid = trim((string) ($r['scale_id'] ?? $r['subscale_id'] ?? $r['category_id'] ?? $r['class_id'] ?? $r['administrative_status_id'] ?? $r['position_class_id'] ?? $r['legal_relation_id'] ?? $r['access_type_id'] ?? $r['access_system_id'] ?? $r['work_center_id'] ?? $r['availability_id'] ?? $r['provision_method_id'] ?? $r['org_unit_level_1_id'] ?? $r['org_unit_level_2_id'] ?? $r['org_unit_level_3_id'] ?? $r['program_id'] ?? $r['subprogram_id'] ?? $r['position_id'] ?? ''));
             }

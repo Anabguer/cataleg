@@ -100,7 +100,7 @@ try {
         }
         try {
             $originalIdRaw = (string) ($in['original_id'] ?? '');
-            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'management_positions', 'people', 'job_positions', 'parameters'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
+            $originalForSave = $isCreate ? null : (in_array($module, ['maintenance_programs', 'maintenance_subprograms', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'management_positions', 'people', 'job_positions', 'parameters', 'catalogs'], true) ? trim($originalIdRaw) : (int) ($in['original_id'] ?? 0));
             if ($module === 'people') {
                 error_log('PEOPLE PAYLOAD: ' . json_encode([
                     'id' => $in['id'] ?? null,
@@ -256,6 +256,7 @@ try {
                 'classification_group_slash' => (string) ($in['classification_group_slash'] ?? ''),
                 'special_specific_compensation_amount' => (string) ($in['special_specific_compensation_amount'] ?? ''),
                 'catalog_code' => (string) ($in['catalog_code'] ?? ''),
+                'catalog_description' => (string) ($in['catalog_description'] ?? ''),
                 'workday_type' => (string) ($in['workday_type'] ?? ''),
                 'working_time_dedication' => (string) ($in['working_time_dedication'] ?? ''),
                 'schedule_text' => (string) ($in['schedule_text'] ?? ''),

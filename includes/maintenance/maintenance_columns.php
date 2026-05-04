@@ -310,6 +310,7 @@ function maintenance_list_sort_keys(string $module): array
             'is_mandatory_service', 'has_corporate_agreements',
         ],
         'parameters' => ['catalog_year', 'mei_percentage'],
+        'catalogs' => ['catalog_code', 'catalog_description'],
         'reports' => [
             'report_group_order', 'report_group', 'report_code', 'report_name', 'report_version',
             'show_in_general_selector', 'is_active',
@@ -332,7 +333,7 @@ function maintenance_list_sort_keys(string $module): array
  */
 function maintenance_table_columns(string $module, bool $implemented): array
 {
-    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms', 'parameters', 'reports'], true);
+    $sortList = $implemented && in_array($module, ['maintenance_scales', 'maintenance_subscales', 'maintenance_categories', 'maintenance_classes', 'maintenance_administrative_statuses', 'maintenance_position_classes', 'maintenance_legal_relationships', 'maintenance_access_types', 'maintenance_access_systems', 'maintenance_work_centers', 'maintenance_availability_types', 'maintenance_provision_forms', 'maintenance_organic_level_1', 'maintenance_organic_level_2', 'maintenance_organic_level_3', 'maintenance_programs', 'maintenance_social_security_companies', 'maintenance_social_security_coefficients', 'maintenance_social_security_base_limits', 'maintenance_salary_base_by_group', 'maintenance_destination_allowances', 'maintenance_seniority_pay_by_group', 'maintenance_specific_compensation_special_prices', 'maintenance_specific_compensation_general', 'maintenance_personal_transitory_bonus', 'people', 'management_positions', 'job_positions', 'maintenance_subprograms', 'catalogs', 'parameters', 'reports'], true);
 
     if ($module === 'maintenance_scales') {
         return [
@@ -626,6 +627,12 @@ function maintenance_table_columns(string $module, bool $implemented): array
             ['sort_key' => 'is_active', 'label' => 'Actiu', 'sortable' => $sortList, 'cell' => ['type' => 'bool_si_no_chip', 'field' => 'is_active', 'align' => 'center', 'class' => $reportsBool, 'header_class' => $reportsBool]],
         ];
     }
+    if ($module === 'catalogs') {
+        return [
+            ['sort_key' => 'catalog_code', 'label' => 'Codi', 'sortable' => $sortList, 'cell' => ['type' => 'text', 'field' => 'catalog_code', 'strong' => true]],
+            ['sort_key' => 'catalog_description', 'label' => 'Descripció', 'sortable' => $sortList, 'cell' => ['type' => 'text_truncate', 'field' => 'catalog_description', 'truncate_class' => 'table__text-truncate']],
+        ];
+    }
 
     return [
         ['sort_key' => 'id', 'label' => 'Codi', 'sortable' => false, 'cell' => ['type' => 'text', 'field' => '_empty']],
@@ -666,6 +673,7 @@ function maintenance_default_sort_key(string $module): string
         'management_positions' => 'position_id',
         'job_positions' => 'job_position_id',
         'maintenance_subprograms' => 'subprogram_program_id',
+        'catalogs' => 'catalog_code',
         'parameters' => 'catalog_year',
         'reports' => 'report_group_order',
         default => 'id',
@@ -801,6 +809,10 @@ function maintenance_sort_key_legacy_map(string $module): array
             'id' => 'subprogram_code',
             'subprogram_id' => 'subprogram_code',
             'name' => 'subprogram_name',
+        ],
+        'catalogs' => [
+            'id' => 'catalog_code',
+            'name' => 'catalog_description',
         ],
         'parameters' => [
             'id' => 'catalog_year',
@@ -1768,6 +1780,14 @@ function maintenance_list_q_search_clause(string $module, string $q): array
                 'mq_rs_v' => $qLike,
                 'mq_rs_e' => $qLike,
             ],
+        ];
+    }
+    if ($module === 'catalogs') {
+        $qLike = '%' . $q . '%';
+
+        return [
+            'sql' => ' AND (t.catalog_code LIKE :mq_cat_c OR t.catalog_description LIKE :mq_cat_d)',
+            'params' => ['mq_cat_c' => $qLike, 'mq_cat_d' => $qLike],
         ];
     }
     if ($module === 'maintenance_programs') {

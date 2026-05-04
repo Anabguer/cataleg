@@ -19,9 +19,14 @@ $pageTitle = 'Selector general d’informes';
 $activeNav = 'report_selector';
 $extraCss = ['css/module-users.css', 'css/reports.css'];
 $extraScripts = ['report_selector.js'];
+require_once APP_ROOT . '/includes/reports/report_helpers.php';
+
+$reportParams = report_selector_param_fieldsets();
+
 $reportSelectorPageInlineConfig = [
     'runUrl' => app_url('report_run.php'),
     'catalogYear' => $year,
+    'reportParams' => $reportParams,
 ];
 
 require APP_ROOT . '/includes/header.php';
